@@ -5,7 +5,7 @@
 git submodule add git@github.com:larus-breeze/sw_sensor_algorithms.git lib
 
 # Update submodule
-git submodule update --init --recursive
+Open submodule folder "lib" and run "git pull" to update the submodule to the latest commit. 
 
 # Clone repository including the submodules: 
 git clone --recursive URL git://github.com/foo/example.git
