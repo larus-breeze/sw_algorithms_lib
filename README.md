@@ -3,9 +3,9 @@
     
 # Add as submodule to repository:
 git submodule add git@github.com:larus-breeze/sw_sensor_algorithms.git lib
-    
-Init submodules with: git submodule update --init
-Update submodules with: git submodule update
 
-Alternatively use recursive flag when cloning: 
+# Update submodule
+git submodule update --init --recursive
+
+# Clone repository including the submodules: 
 git clone --recursive URL git://github.com/foo/example.git
