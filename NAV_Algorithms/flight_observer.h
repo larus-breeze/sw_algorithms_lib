@@ -103,7 +103,7 @@ private:
 	float vario_uncompensated_GNSS;
 	float vario_uncompensated_pressure;
 
-	HP_LP_fusion <float> speed_compensation_fusioner;
+	HP_LP_fusion <float, float> speed_compensation_fusioner;
 
 	KalmanVario_PVA_t KalmanVario_GNSS;
 	KalmanVario_t KalmanVario_pressure;

@@ -53,6 +53,7 @@ void flight_observer_t::update (
     		   ) * RECIP_GRAVITY;
 
       speed_compensation_GNSS = speed_compensation_fusioner.respond( speed_compensation, speed_compensation_TAS);
+//      speed_compensation_GNSS = speed_compensation;
       vario_averager_GNSS.respond( speed_compensation_GNSS + vario_uncompensated_GNSS);
     }
 }
