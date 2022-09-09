@@ -4,7 +4,9 @@
 # Add as submodule to repository:
 git submodule add git@github.com:larus-breeze/sw_sensor_algorithms.git lib
 
-# Update submodule
+# Init and Update submodule
+git submodule init 
+git submodule update
 Open submodule folder "lib" and run "git pull" to update the submodule to the latest commit. 
 
 # Clone repository including the submodules: 
