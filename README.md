@@ -9,3 +9,6 @@ Open submodule folder "lib" and run "git pull" to update the submodule to the la
 
 # Clone repository including the submodules: 
 git clone --recursive URL git://github.com/foo/example.git
+
+# Update submodule from using repository
+just cd into the submodules folder and use git commit, push , ..
