@@ -162,7 +162,7 @@ char * my_ftoa( char * target, float value)
  	*target++ = '.';
 
  	value *= 1000000.0f;
- 	unsigned fractional_number = ROUND( value);
+ 	unsigned fractional_number = round( value);
  	for( unsigned digit=0; digit<6; ++digit)
  	  {
  	    target[5-digit] = (char)(fractional_number % 10 + '0');
