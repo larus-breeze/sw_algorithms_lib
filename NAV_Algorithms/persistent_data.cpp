@@ -24,6 +24,7 @@
 
 #include "system_configuration.h"
 #include "embedded_memory.h"
+#include "embedded_math.h"
 #include "persistent_data.h"
 
 ROM persistent_data_t PERSISTENT_DATA[]=
@@ -71,6 +72,9 @@ const persistent_data_t * find_parameter_from_ID( EEPROM_PARAMETER_ID id)
 }
 
 #if UNIX != 1
+
+#include "eeprom.h"
+#include "my_assert.h"
 
 #define READ true
 #define WRITE false
