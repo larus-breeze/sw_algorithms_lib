@@ -1,9 +1,26 @@
-/*
- * organizer.h
- *
- *  Created on: Sep 5, 2022
- *      Author: schaefer
- */
+/***********************************************************************//**
+ * @file		organizer.h
+ * @brief		combine algorithms to be used by the flight sensor
+ * @author		Dr. Klaus Schaefer
+ * @copyright 		Copyright 2021 Dr. Klaus Schaefer. All rights reserved.
+ * @license 		This project is released under the GNU Public License GPL-3.0
+
+    <Larus Flight Sensor Firmware>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ **************************************************************************/
 
 #ifndef ORGANIZER_H_
 #define ORGANIZER_H_
@@ -109,12 +126,14 @@ public:
 
 private:
   navigator_t navigator;
-  float3vector acc, mag, gyro;
-  float3matrix sensor_mapping;
-  float declination;
-  float pitot_offset;
-  float pitot_span;
-  float QNH_offset;
+  float3vector acc; //!< acceleration in airframe system
+  float3vector mag; //!< normalized magnetic induction in airframe system
+  float3vector gyro; //!< rotation-rates in airframe system
+  float3matrix sensor_mapping; //!< sensor -> airframe rotation matrix
+  float declination;  //!< magnetic declination / rad
+  float pitot_offset; //!< pitot pressure sensor offset
+  float pitot_span;   //!< pitot pressure sensor span factor
+  float QNH_offset;   //!< static pressure sensor offset
 };
 
 #endif /* ORGANIZER_H_ */

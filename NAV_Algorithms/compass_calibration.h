@@ -35,6 +35,7 @@
 extern Queue< linear_least_square_result<float>[3] > magnetic_calibration_queue;
 #endif
 
+//! maintain offset and slope data for one sensor axis
 class calibration_t
 {
 public:
@@ -47,9 +48,10 @@ public:
   {
     return variance < 1.0e9f;
   }
+//! feed in new calibration from linear least square fit
   void refresh ( linear_least_square_result<float> &result)
     {
-#if 0
+#if 0 // todo fixme : when shall this be executed ?
     if( ! is_initialized()) // first calibration coming in
 	{
 	  offset = result.y_offset;
