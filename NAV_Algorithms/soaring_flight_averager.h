@@ -1,5 +1,5 @@
 /***********************************************************************//**
- * @file 		smart_averager.h
+ * @file 		soaring_flight_averager.h
  * @brief 		specialized averager for circling and straight flight
  * @author		Dr. Klaus Schaefer
  * @copyright 		Copyright 2021 Dr. Klaus Schaefer. All rights reserved.
@@ -32,11 +32,12 @@
 #define ONE_DIV_2PI 0.159155f
 #define PI_TIMES_2 6.2832f
 
+//! template for an average filter for circling and straight flight
 template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false>
-  class smart_averager
+  class soaring_flight_averager
   {
   public:
-    smart_averager (float cutoff_div_fsample) :
+    soaring_flight_averager (float cutoff_div_fsample) :
 	active_state (STRAIGHT_FLIGHT),
 	averager (cutoff_div_fsample),
 	present_output(0)

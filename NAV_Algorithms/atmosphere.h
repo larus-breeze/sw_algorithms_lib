@@ -40,6 +40,7 @@
 /*! The offest for the conversion from degree celsius to kelvin */
 #define CELSIUS_TO_KELVIN_OFFSET 273.15f
 
+//! this class maintains instant atmosphere data like pressure, density etc
 class atmosphere_t
 {
 public:

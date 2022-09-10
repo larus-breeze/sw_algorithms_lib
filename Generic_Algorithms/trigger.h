@@ -1,6 +1,6 @@
 /***********************************************************************//**
  * @file		trigger.h
- * @brief		class for hysteresis-based trigger
+ * @brief		class for hysteresis-based triggering on input data
  * @author		Dr. Klaus Schaefer
  * @copyright 		Copyright 2021 Dr. Klaus Schaefer. All rights reserved.
  * @license 		This project is released under the GNU Public License GPL-3.0
@@ -25,6 +25,7 @@
 #ifndef TRIGGER_H_
 #define TRIGGER_H_
 
+//! class for hysteresis-based triggering on input data
 class trigger
 {
 public:

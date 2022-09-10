@@ -32,7 +32,7 @@
 #include "euler.h"
 #include "asin_atan.h"
 
-//! quaternion - special form of vector<4>
+//! maintain attitude and provide coordinate transformation services
 template <class datatype > class quaternion: public vector <datatype, 4>
 {
 public:

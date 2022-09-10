@@ -25,6 +25,7 @@
 #ifndef DELAY_LINE_H_
 #define DELAY_LINE_H_
 
+//! delay line for testing purposes (template)
 template <class data_t, unsigned length> class delay_line
 {
 public:

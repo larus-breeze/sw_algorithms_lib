@@ -27,6 +27,7 @@
 
 #include "ascii_support.h"
 
+//! abstraction for serial input device
 class serial_input
 {
 public:
@@ -44,6 +45,8 @@ public:
 	  return get(); // default if blocking not supported
 	}
 };
+
+//! abstraction for serial output device
 class serial_output
 {
 public:
@@ -58,10 +61,12 @@ public:
 	void blank( void);
 };
 
+//! abstraction for serial input output device
 class serial_io: public serial_output, public serial_input
 {
 };
 
+//! generic helper class for ASCII output
 template <unsigned size> class ascii_string_writer : public serial_output
 {
 public:

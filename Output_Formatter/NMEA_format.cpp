@@ -453,7 +453,7 @@ char * NMEA_append_tail( char *p)
  	return p+5;
  }
 
-void format_NMEA_string( const output_data_t &output_data, NMEA_buffer_t &NMEA_buf, float declination)
+void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA_buf, float declination)
 {
   char *next;
 

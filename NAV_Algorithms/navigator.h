@@ -27,13 +27,14 @@
 
 #include <system_configuration.h>
 #include <AHRS.h>
+#include <soaring_flight_averager.h>
 #include "GNSS.h"
 #include "differentiator.h"
-#include "smart_averager.h"
 #include "atmosphere.h"
 #include "flight_observer.h"
 #include "data_structures.h"
 
+//! organizes horizontal navigation, wind observation and variometer
 class navigator_t
 {
 public:
@@ -166,9 +167,9 @@ private:
   float 	GNSS_negative_altitude;
   unsigned	GNSS_fix_type;
 
-  smart_averager< float> 	vario_integrator;
-  smart_averager< float3vector, true> wind_average_observer; // configure wind average clamping on first circle
-  smart_averager< float3vector> relative_wind_observer;
+  soaring_flight_averager< float> 	vario_integrator;
+  soaring_flight_averager< float3vector, true> wind_average_observer; // configure wind average clamping on first circle
+  soaring_flight_averager< float3vector> relative_wind_observer;
   pt2<float3vector,float> corrected_wind_averager;
   pt2<float,float> TAS_averager;
 };

@@ -29,6 +29,7 @@
 #include "navigator.h"
 #include "flight_observer.h"
 
+//! set of algorithms and data to be used by Larus flight sensor
 class organizer_t
 {
 public:

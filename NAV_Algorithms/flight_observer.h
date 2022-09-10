@@ -40,6 +40,7 @@
 #include "pt2.h"
 #include "HP_LP_fusion.h"
 
+//! this class is responsible for all glider flight data
 class flight_observer_t
 {
 public:

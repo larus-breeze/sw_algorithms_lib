@@ -83,6 +83,7 @@ public:
   float variance; 	//!< measure of precision: sensor calibration parameter variance
 };
 
+//! this class maintains 3d magnetic calibration data
 class compass_calibration_t
 {
 public:

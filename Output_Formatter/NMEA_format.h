@@ -8,7 +8,8 @@
 
 #include "data_structures.h"
 
-class NMEA_buffer_t
+//! contains a string including it's length
+class string_buffer_t
 {
 public:
   char string[255];
@@ -26,6 +27,7 @@ char *append_HCHDM( float magnetic_heading, char *p);
 char * NMEA_append_tail( char *p);
 bool NMEA_checksum( const char *line);
 
-void format_NMEA_string( const output_data_t &output_data, NMEA_buffer_t &NMEA_buf, float declination);
+//! combine all data to be output to the NMEA port
+void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA_buf, float declination);
 
 #endif /* APPLICATION_NMEA_FORMAT_H_ */

@@ -27,6 +27,7 @@
 
 #include "embedded_math.h"
 
+//! maintains result and precision data from a linear least square fit
 template<typename sample_type>
   class linear_least_square_result
   {
@@ -45,7 +46,7 @@ template<typename sample_type>
     uint32_t id; //!< channel identifier (for logging)
   };
 
-//! @brief linear fit y = a + b * x
+//! @brief linear least square fit for  y = a + b * x
 template<typename sample_type, typename evaluation_type=sample_type>
   class linear_least_square_fit
   {

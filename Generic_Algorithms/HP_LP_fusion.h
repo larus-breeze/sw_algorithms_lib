@@ -27,6 +27,7 @@
 
 #include "embedded_math.h"
 
+//! template for a highpass + lowpass data fusion filter
 template<typename type, typename basetype> class HP_LP_fusion
 {
 public:

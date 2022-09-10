@@ -25,6 +25,7 @@
 #ifndef RINGBUFER_H
 #define RINGBUFER_H
 
+//! ring buffer helper class (template)
 template <class datatype, unsigned size> class RingBuffer
    {
 public:

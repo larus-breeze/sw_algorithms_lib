@@ -32,7 +32,6 @@
 #include "embedded_math.h"
 
 template <class datatype, int size> class matrix;
-template <class datatype> class Cbn;
 template <class datatype> class quaternion;
 
 //! mathematical vector of arbitrary type and size
@@ -41,7 +40,6 @@ class vector
 {
 	friend class matrix<datatype, size>;
 	friend class quaternion<datatype>;
-	friend class Cbn<datatype>;
 public:
 
 	vector( void)

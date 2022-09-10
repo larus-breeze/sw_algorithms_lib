@@ -28,6 +28,7 @@
 #include "float3vector.h"
 #include "AHRS.h"
 
+//! specialized filter for 2d wind data
 class wind_observer_t
 {
 public:

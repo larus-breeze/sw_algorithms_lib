@@ -34,6 +34,7 @@ extern int64_t FAT_time; //!< DOS FAT time for file usage
 extern bool GNSS_new_data_ready;
 extern bool D_GNSS_new_data_ready;
 
+//! binary data stream coming from the Ublox GNSS receiver
 typedef struct
 {
   uint32_t iTOW; // time of week
@@ -65,6 +66,7 @@ typedef struct
   uint8_t reserved[14]; // useless
 } uBlox_pvt;
 
+//! binary data stream coming from the Ublox D-GNSS receiver
 typedef struct
 {
   uint8_t version; 	// =0x01
@@ -97,6 +99,7 @@ typedef enum { GNSS_HAVE_FIX, GNSS_NO_FIX, GNSS_ERROR} GNSS_Result;
 #define SAT_FIX 	1 // bits within sat_fix
 #define SAT_HEADING 	2
 
+//! this structure contains all important data from the GNSS
 typedef struct
 {
   float3vector position;  	//!< NED / meters
@@ -128,6 +131,7 @@ typedef struct
   uint16_t dummy;
 } coordinates_t;
 
+//! this class is organizing the data transfer from uBlox-GNSS to Larus
 class GNSS_type
 {
 public:
