@@ -21,6 +21,8 @@ extern float3vector nav_induction;
 
 enum { ROLL, NICK, YAW};
 enum { FRONT, RIGHT, BOTTOM};
+enum { NORTH, EAST, DOWN};
+
 typedef enum  { STRAIGHT_FLIGHT, TRANSITION, CIRCLING} circle_state_t;
 
 #define ANGLE_F_BY_FS  ( 1.0f / 0.5f / 100.0f) // 0.5s

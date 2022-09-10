@@ -9,9 +9,7 @@
 #define DATA_STRUCTURES_H_
 
 #include "system_configuration.h"
-#include "float3vector.h"
-#include "euler.h"
-#include "quaternion.h"
+#include "AHRS.h"
 #include "GNSS.h"
 
 #pragma pack(push, 1)

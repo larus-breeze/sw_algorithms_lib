@@ -29,8 +29,6 @@
 #include "float3vector.h"
 #include "embedded_memory.h"
 
-enum { NORTH, EAST, DOWN};
-
 extern int64_t FAT_time; //!< DOS FAT time for file usage
 
 extern bool GNSS_new_data_ready;
