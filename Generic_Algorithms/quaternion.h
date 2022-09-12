@@ -30,7 +30,6 @@
 #include "float3matrix.h"
 #include "float3vector.h"
 #include "euler.h"
-#include "asin_atan.h"
 
 //! maintain attitude and provide coordinate transformation services
 template <class datatype > class quaternion: public vector <datatype, 4>

@@ -9,6 +9,5 @@
 #define ASIN_ATAN_H_
 
 float my_asinf(float);
-float my_atan2f(float y, float x);
 
 #endif /* ASIN_ATAN_H_ */
