@@ -12,7 +12,7 @@
 class string_buffer_t
 {
 public:
-  char string[255];
+  char string[512];
   uint8_t length;
 };
 
