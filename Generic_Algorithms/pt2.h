@@ -68,10 +68,11 @@ public:
 		b1 /= delta;
 		b2 /= delta;
 	}
-	void settle( const datatype &input)
+	void settle( const datatype &present_input)
 	{
 		basetype tuning = ONE  / ( ONE + a1 + a2);
-		old.setAllValues( input * tuning);
+		old.setAllValues( present_input * tuning);
+		input = output = present_input;
 	}
 	datatype respond( const datatype &input)
 	{
