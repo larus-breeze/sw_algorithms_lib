@@ -29,7 +29,7 @@
 #define ONE_DIV_BY_GRAVITY_TIMES_2 0.0509684f
 #define RECIP_GRAVITY 0.1094f
 
-// to be called at 100 Hz
+//! calculate instant windspeed and variometer data, update @ 100 Hz
 void flight_observer_t::update (
     const float3vector &gnss_velocity,
     const float3vector &gnss_acceleration,
@@ -38,12 +38,13 @@ void flight_observer_t::update (
     float GNSS_negative_altitude,
     float pressure_altitude,
     float TAS,
+    float IAS,
     circle_state_t circle_state,
     const float3vector &wind_average
   )
 {
   vario_uncompensated_pressure = KalmanVario_pressure.update ( pressure_altitude, ahrs_acceleration.e[DOWN]);
-  speed_compensation_TAS = kinetic_energy_differentiator.respond( TAS * TAS * ONE_DIV_BY_GRAVITY_TIMES_2);
+  speed_compensation_TAS = kinetic_energy_differentiator.respond( IAS * IAS * ONE_DIV_BY_GRAVITY_TIMES_2);
   vario_averager_pressure.respond( speed_compensation_TAS  - vario_uncompensated_pressure); 	// -> positive on positive energy gain
 
   if( isnan( gnss_acceleration.e[NORTH])) // no GNSS fix by now

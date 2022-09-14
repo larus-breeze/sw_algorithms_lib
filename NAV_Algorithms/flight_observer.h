@@ -68,6 +68,7 @@ public:
 	    float GNSS_altitude,
 	    float pressure_altitude,
 	    float TAS,
+	    float IAS,
 	    circle_state_t circle_state,
 	    const float3vector &wind_average
 	);
