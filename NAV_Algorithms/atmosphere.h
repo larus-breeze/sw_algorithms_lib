@@ -28,6 +28,7 @@
 
 #include "embedded_math.h"
 #include <air_density_observer.h>
+#include <pt2.h>
 
 #define RECIP_STD_DENSITY_TIMES_2 1.632f
 
@@ -51,8 +52,15 @@ public:
     temperature(20.0f),
     humidity( 0.0f),
     density_correction(1.0f),
+    density_correction_averager(0.001f),
     QFF(101325)
-  {}
+  {
+    density_correction_averager.settle(1.0f);
+  }
+  void update_density_correction( void)
+  {
+    density_correction_averager.respond(density_correction);
+  }
   void initialize( float altitude)
   {
     density_QFF_calculator.initialize(altitude);
@@ -67,7 +75,7 @@ public:
   }
   float get_density( void) const
   {
-    return  (1.0496346613e-5f * pressure + 0.1671546011f) * density_correction;
+    return  (1.0496346613e-5f * pressure + 0.1671546011f) * density_correction_averager.get_output();
   }
   float get_negative_altitude( void) const
   {
@@ -119,6 +127,7 @@ private:
   float temperature;
   float humidity;
   float density_correction;
+  pt2<float,float> density_correction_averager;
   float QFF;
   air_density_observer density_QFF_calculator;
 };

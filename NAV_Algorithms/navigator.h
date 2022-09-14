@@ -50,7 +50,8 @@ public:
 	 corrected_wind_averager( 1.0f / 15.0f / 10.0f), 	// 15s @ 10Hz
 	 GNSS_speed( ZERO),
 	 GNSS_negative_altitude( ZERO),
-	 TAS_averager(1.0f / 1.0f / 100.0f)
+	 TAS_averager(1.0f / 1.0f / 100.0f),
+	 IAS_averager(1.0f / 1.0f / 100.0f)
   {};
 
   void set_density_data( float temperature, float humidity)
@@ -89,7 +90,7 @@ public:
    * @brief update absolute pressure
    * called @ 100 Hz
    */
-  void update_pressure_and_altitude( float pressure, float MSL_altitude)
+  void update_pressure( float pressure)
   {
     atmosphere.set_pressure(pressure);
   }
@@ -101,33 +102,41 @@ public:
   /**
    * @brief update pitot pressure
    * called @ 100 Hz
+   *
+   * Calculate actual TAS and IAS from pitot pressure and density
    */
   void update_pitot( float pressure)
   {
     pitot_pressure=pressure;
     TAS = atmosphere.get_TAS_from_dynamic_pressure ( pitot_pressure);
-    IAS = atmosphere.get_IAS_from_dynamic_pressure ( pitot_pressure);
     TAS_averager.respond(TAS);
+    IAS = atmosphere.get_IAS_from_dynamic_pressure ( pitot_pressure);
+    IAS_averager.respond(IAS);
   }
+
   /**
    * @brief update AHRS from IMU
-   * called @ 100 Hz, triggers all fast calculations
+   *
+   * to be called @ 100 Hz, triggers all fast calculations,
+   * especially AHRS attitude data and fast flight-observer stuff
    */
   void update_IMU( const float3vector &acc, const float3vector &mag, const float3vector &gyro);
+
   /**
    * @brief update navigation GNSS
-   * called @ 10 Hz
+   *
+   * to be called @ 10 Hz
+   * calculate wind data and vario average for "vario integrator"
    */
-
-  void update_GNSS( const coordinates_t &coordinates /* , const float3vector & _GNSS_acceleration*/);
+  void update_GNSS( const coordinates_t &coordinates);
 
   /**
    * @brief return aggregate flight observer
    */
-  const flight_observer_t &get_flight_observer( void) const
-    {
-    return flight_observer;
-    }
+//  const flight_observer_t &get_flight_observer( void) const
+//    {
+//    return flight_observer;
+//    }
 
   void set_attitude( float roll, float nick, float yaw)
   {
@@ -172,6 +181,7 @@ private:
   soaring_flight_averager< float3vector> relative_wind_observer;
   pt2<float3vector,float> corrected_wind_averager;
   pt2<float,float> TAS_averager;
+  pt2<float,float> IAS_averager;
 };
 
 #endif /* NAVIGATORT_H_ */

@@ -57,7 +57,7 @@ public:
 
   void initialize_after_first_measurement( output_data_t & output_data)
   {
-    navigator.update_pressure_and_altitude( output_data.m.static_pressure - QNH_offset, -output_data.c.position.e[DOWN]);
+    navigator.update_pressure( output_data.m.static_pressure - QNH_offset);
     navigator.initialize_QFF_density_metering( -output_data.c.position[DOWN]);
     navigator.reset_altitude ();
 
@@ -75,7 +75,7 @@ public:
 
   void on_new_pressure_data( output_data_t & output_data)
   {
-    navigator.update_pressure_and_altitude(output_data.m.static_pressure - QNH_offset, -output_data.c.position[DOWN]);
+    navigator.update_pressure(output_data.m.static_pressure - QNH_offset);
     navigator.update_pitot ( (output_data.m.pitot_pressure - pitot_offset) * pitot_span);
   }
 

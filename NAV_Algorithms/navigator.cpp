@@ -59,6 +59,7 @@ void navigator_t::update_IMU (
       GNSS_negative_altitude,
       atmosphere.get_negative_altitude(),
       TAS,
+      IAS,
       ahrs.get_circling_state(),
       wind_average_observer.get_value()
       );
@@ -67,6 +68,8 @@ void navigator_t::update_IMU (
 // to be called at 10 Hz
 void navigator_t::update_GNSS (const coordinates_t &coordinates)
 {
+  atmosphere.update_density_correction(); // here because of the 10 Hz call frequency
+
   if( coordinates.sat_fix_type == SAT_FIX_NONE) // presently no GNSS fix
       return; // todo needs to be improved
 
@@ -101,10 +104,11 @@ void navigator_t::update_GNSS (const coordinates_t &coordinates)
 			   ahrs.get_circling_state ());
 }
 
+//! copy all navigator data into output_data structure
 void navigator_t::report_data( output_data_t &d)
 {
     d.TAS 			= TAS_averager.get_output();
-    d.IAS 			= IAS;
+    d.IAS 			= IAS_averager.get_output();
 
     d.euler			= ahrs.get_euler();
     d.q				= ahrs.get_attitude();
