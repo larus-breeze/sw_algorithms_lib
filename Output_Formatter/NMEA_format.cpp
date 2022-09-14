@@ -1,8 +1,27 @@
-/** ***********************************************************************
+/***********************************************************************//**
  * @file		NMEA_format.cpp
- * @brief		converters for NMEA string output
+ * @brief		ASCII converters for NMEA string output
  * @author		Dr. Klaus Schaefer
+ * @copyright 		Copyright 2021 Dr. Klaus Schaefer. All rights reserved.
+ * @license 		This project is released under the GNU Public License GPL-3.0
+
+    <Larus Flight Sensor Firmware>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
  **************************************************************************/
+
 #include "NMEA_format.h"
 #include "embedded_math.h"
 
@@ -13,15 +32,7 @@
 
 ROM char HEX[]="0123456789ABCDEF";
 
-inline float clip( float x, float min, float max )
-{
-  if( x < min)
-    x = min;
-  else if (x > max)
-    x = max;
-  return x;
-}
-
+//! integer to ASCII returning the string end
 char * format_integer( uint32_t value, char *s)
 {
   if( value < 10)
@@ -37,6 +48,7 @@ char * format_integer( uint32_t value, char *s)
   return s;
 }
 
+//! format an integer into ASCII with exactly two digits after the decimal point
 char * integer_to_ascii_2_decimals( int32_t number, char *s)
 {
   if( number < 0)
@@ -53,6 +65,7 @@ char * integer_to_ascii_2_decimals( int32_t number, char *s)
   return s+2;
 }
 
+//! basically: kind of strcat returning the pointer to the string-end
 inline char *append_string( char *target, const char *source)
 {
   while( *source)
@@ -61,8 +74,8 @@ inline char *append_string( char *target, const char *source)
   return target;
 }
 
-char *
-angle_format ( double angle, char * p, char posc, char negc)
+//! append an angle in ASCII into a NMEA string
+char * angle_format ( double angle, char * p, char posc, char negc)
 {
   bool pos = angle > 0.0f;
   if (!pos)
@@ -108,6 +121,7 @@ sqr (float a)
 }
 ROM char GPRMC[]="$GPRMC,";
 
+//! NMEA-format time, position, groundspeed, track data
 char *format_RMC (const coordinates_t &coordinates, char *p)
 {
   p = append_string( p, GPRMC);
@@ -189,6 +203,7 @@ char *format_RMC (const coordinates_t &coordinates, char *p)
 
 ROM char GPGGA[]="$GPGGA,";
 
+//! NMEA-format position report, sat number and GEO separation
 char *format_GGA( const coordinates_t &coordinates, char *p)
 {
   p = append_string( p, GPGGA);
@@ -261,6 +276,7 @@ char *format_GGA( const coordinates_t &coordinates, char *p)
 
 ROM char GPMWV[]="$GPMWV,";
 
+//! format wind reporting NMEA sequence
 char *format_MWV ( float wind_north, float wind_east, char *p)
 {
   p = append_string( p, GPMWV);
@@ -359,6 +375,7 @@ char *format_PTAS1 ( float vario, float avg_vario, float altitude, float TAS, ch
 
 ROM char POV[]="$POV,S,";
 
+//! format the OpenVario sequence TAS, pressures and TEK variometer
 char *format_POV( float TAS, float pabs, float pitot, float TEK_vario, float voltage, char *p)
 {
   p = append_string( p, POV);
@@ -370,7 +387,7 @@ char *format_POV( float TAS, float pabs, float pitot, float TEK_vario, float vol
   if( pitot < 0.0f)
     pitot = 0.0f;
   p = append_string( p, ",Q,");
-  p = integer_to_ascii_2_decimals( (int)(pitot * 100.0f), p); // dynamic pressure / Pa
+  p = integer_to_ascii_2_decimals( (int)pitot, p); // dynamic pressure / Pa
 
   p = append_string( p, ",E,");
   p = integer_to_ascii_2_decimals( (int)(voltage * 100.0f), p);
@@ -383,6 +400,7 @@ char *format_POV( float TAS, float pabs, float pitot, float TEK_vario, float vol
   return p;
 }
 
+//! add the elements reporting outside humidity and temperature to POV
 char *append_POV( float humidity, float temperature, char *p)
 {
   p = append_string( p, ",H,");
@@ -398,6 +416,7 @@ char *append_POV( float humidity, float temperature, char *p)
 
 ROM char HCHDM[]="$HCHDM,";
 
+//! create HCHDM sentence to report magnetic heading
 char *append_HCHDM( float magnetic_heading, char *p) // report magnetic heading
 {
   int heading = (int)(magnetic_heading * 573.0f); // -> 1/10 degree
@@ -426,6 +445,7 @@ inline char hex4( uint8_t data)
   return HEX[data];
 }
 
+//! test a line for valid NMEA checksum
 bool NMEA_checksum( const char *line)
  {
  	uint8_t checksum = 0;
@@ -437,6 +457,7 @@ bool NMEA_checksum( const char *line)
  	return ( (p[0] == '*') && hex4( checksum >> 4) == p[1]) && ( hex4( checksum & 0x0f) == p[2]) && (p[3] == 0);
  }
 
+//! add end delimiter, evaluate and add checksum and add CR+LF
 char * NMEA_append_tail( char *p)
  {
  	uint8_t checksum = 0;
@@ -453,6 +474,7 @@ char * NMEA_append_tail( char *p)
  	return p+5;
  }
 
+//! this procedure formats all our NMEA sequences
 void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA_buf, float declination)
 {
   char *next;
