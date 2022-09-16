@@ -148,5 +148,6 @@ void navigator_t::report_data( output_data_t &d)
     d.HeadingDifferenceAhrsDgnss = ahrs.getHeadingDifferenceAhrsDgnss();
     d.QFF			= atmosphere.get_QFF();
     d.air_density		= atmosphere.get_density();
+    d.vert_comp			= flight_observer.get_vertical_speed_compensation();
 }
 

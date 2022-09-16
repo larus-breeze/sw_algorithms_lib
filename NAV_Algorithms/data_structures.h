@@ -99,6 +99,7 @@ typedef struct
   float HeadingDifferenceAhrsDgnss;
   float QFF;
   float air_density;
+  float vert_comp;
 } output_data_t;
 
 #pragma pack(pop)

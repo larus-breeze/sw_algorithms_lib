@@ -59,18 +59,39 @@ void flight_observer_t::update (
       float3vector air_velocity = heading_vector * TAS;
       windspeed_instant_observer.update( gnss_velocity - air_velocity, heading_vector, circle_state);
 
-      // non TEC compensated vario, negative if *climbing* !
+      // non TEC compensated vario in NED-system, reports negative if *climbing* !
       vario_uncompensated_GNSS = - KalmanVario_GNSS.update ( GNSS_negative_altitude, gnss_velocity.e[DOWN], ahrs_acceleration.e[DOWN]);
 
-      float speed_compensation =
-    		  (
-    		      ((gnss_velocity.e[NORTH] - wind_average.e[NORTH]) * gnss_acceleration.e[NORTH]) +
-    		      ((gnss_velocity.e[EAST]  - wind_average.e[EAST])  * gnss_acceleration.e[EAST])  +
-    		      (KalmanVario_GNSS.get_x(KalmanVario_PVA_t::VARIO) * KalmanVario_GNSS.get_x(KalmanVario_PVA_t::ACCELERATION_OBSERVED))
-    		   ) * RECIP_GRAVITY;
+#if VARIO_USE_SQUARED_VELOCITY // use squared absolute velocity for speed-compensation
+      specific_energy = specific_energy * 0.9f + 0.1f *  // primitive PT1 smoothing for upsampling
+	  (
+	  SQR( gnss_velocity.e[NORTH] - wind_average.e[NORTH]) +
+	  SQR( gnss_velocity.e[EAST]  - wind_average.e[EAST])  +
+	  SQR( KalmanVario_GNSS.get_x(KalmanVario_PVA_t::VARIO)
+	       ));
 
-      speed_compensation_GNSS = speed_compensation_fusioner.respond( speed_compensation, speed_compensation_TAS);
-      vario_averager_GNSS.respond( speed_compensation_GNSS + vario_uncompensated_GNSS);
+      float speed_compensation = specific_energy_differentiator.respond(specific_energy) * ONE_DIV_BY_GRAVITY_TIMES_2;
+      vertical_speed_compensation_AHRS = speed_compensation;
+      vario_averager_GNSS.respond( vario_uncompensated_GNSS + speed_compensation);
+#else
+
+      vertical_speed_compensation_AHRS = KalmanVario_GNSS.get_x(KalmanVario_PVA_t::VARIO) * KalmanVario_GNSS.get_x(KalmanVario_PVA_t::ACCELERATION_OBSERVED)
+				    * RECIP_GRAVITY;
+
+      horizontal_speed_compensation_GNSS =
+    		  (
+    		  ((gnss_velocity.e[NORTH] - wind_average.e[NORTH]) * gnss_acceleration.e[NORTH]) +
+    		  ((gnss_velocity.e[EAST]  - wind_average.e[EAST])  * gnss_acceleration.e[EAST])
+    		  ) * RECIP_GRAVITY;
+
+#if VARIO_USE_GNSS_IAS_FUSION // use highpass+lowpass fusion-filter to combine GNSS and TAS speed compensation signals
+      float fusioned = speed_compensation_fusioner.respond( horizontal_speed_compensation_GNSS + vertical_speed_compensation_AHRS, speed_compensation_TAS);
+      vertical_speed_compensation_AHRS = fusioned; // todo patch
+      vario_averager_GNSS.respond( fusioned + vario_uncompensated_GNSS);
+#else
+      vario_averager_GNSS.respond( horizontal_speed_compensation_GNSS + vertical_speed_compensation_AHRS + vario_uncompensated_GNSS);
+#endif  // fusion filter
+#endif  // use squared absolute velocity
     }
 }
 
