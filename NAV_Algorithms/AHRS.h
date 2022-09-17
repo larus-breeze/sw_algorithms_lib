@@ -44,7 +44,6 @@ enum { NORTH, EAST, DOWN};
 typedef enum  { STRAIGHT_FLIGHT, TRANSITION, CIRCLING} circle_state_t;
 
 #define ANGLE_F_BY_FS  ( 1.0f / 0.5f / 100.0f) // 0.5s
-#define ACC_FUSION_HANDOVER_FEEDBACK -0.999f
 #define G_LOAD_F_BY_FS ( 1.0f / 0.25f / 100.0f) // 0.25s
 
 typedef integrator<float, float3vector> vector3integrator;
@@ -196,7 +195,6 @@ private:
   float3vector gyro_correction;
   float3vector gyro_integrator;
   float3vector acceleration_nav_frame;
-  HP_LP_fusion < float3vector, float> acceleration_nav_frame_fusion;
   float3vector induction_nav_frame; 	//!< observed NAV induction
   float3vector expected_nav_induction;	//!< expected NAV induction
   float3matrix body2nav;

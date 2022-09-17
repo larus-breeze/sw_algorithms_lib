@@ -128,7 +128,6 @@ AHRS_type::AHRS_type (float sampling_time)
   Ts_div_2 (sampling_time / 2.0f),
   gyro_integrator({0}),
   circling_counter(0),
-  acceleration_nav_frame_fusion(ACC_FUSION_HANDOVER_FEEDBACK),
   slip_angle_averager( ANGLE_F_BY_FS),
   nick_angle_averager( ANGLE_F_BY_FS),
   G_load_averager(     G_LOAD_F_BY_FS),
@@ -179,7 +178,7 @@ AHRS_type::update_attitude ( const float3vector &acc,
 
   attitude.get_rotation_matrix (body2nav);
 
-//acceleration_nav_frame = body2nav * acc; // has been moved
+  acceleration_nav_frame = body2nav * acc;
   induction_nav_frame 	 = body2nav * mag;
   euler = attitude;
 
@@ -342,10 +341,6 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   // feed quaternion update with corrected sensor readings
   update_attitude(acc, gyro + gyro_correction, mag);
 
-  // combine INS and GNSS acceleration signals
-  acceleration_nav_frame = acceleration_nav_frame_fusion.respond( body2nav * acc, GNSS_acceleration);
-  //acceleration_nav_frame = body2nav * acc;
-
   // only here we get fresh magnetic entropy
   // and: wait for low control loop error
   if ( (circle_state == CIRCLING) && ( nav_correction.abs() < 5.0f)) // value 5.0 observed from flight data
@@ -446,9 +441,6 @@ AHRS_type::update_special (const float3vector &gyro, const float3vector &acc,
   // feed quaternion update with corrected sensor readings
   update_attitude(acc, gyro + gyro_correction, mag);
 
-  // combine INS and GNSS acceleration signals
-  acceleration_nav_frame = acceleration_nav_frame_fusion.respond( body2nav * acc, GNSS_acceleration);
-  //acceleration_nav_frame = body2nav * acc;
 }
 
 
