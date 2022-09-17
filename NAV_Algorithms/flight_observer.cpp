@@ -60,15 +60,19 @@ void flight_observer_t::update (
       windspeed_instant_observer.update( gnss_velocity - air_velocity, heading_vector, circle_state);
 
       // non TEC compensated vario in NED-system, reports negative if *climbing* !
+#if 1
       vario_uncompensated_GNSS = - KalmanVario_GNSS.update ( GNSS_negative_altitude, gnss_velocity.e[DOWN], ahrs_acceleration.e[DOWN]);
+#else
+      vario_uncompensated_GNSS = - gnss_velocity.e[DOWN];
+#endif
 
-#if VARIO_USE_SQUARED_VELOCITY // use squared absolute velocity for speed-compensation
+#if VARIO_USE_SQUARED_VELOCITY != 0 // use squared absolute velocity for speed-compensation
       specific_energy = specific_energy * 0.9f + 0.1f *  // primitive PT1 smoothing for upsampling
 	  (
 	  SQR( gnss_velocity.e[NORTH] - wind_average.e[NORTH]) +
 	  SQR( gnss_velocity.e[EAST]  - wind_average.e[EAST])  +
-	  SQR( KalmanVario_GNSS.get_x(KalmanVario_PVA_t::VARIO)
-	       ));
+	  SQR( gnss_velocity.e[DOWN]) * VERTICAL_ENERGY_TUNING_FAKTOR
+	       );
 
       float speed_compensation = specific_energy_differentiator.respond(specific_energy) * ONE_DIV_BY_GRAVITY_TIMES_2;
       vertical_speed_compensation_AHRS = speed_compensation;

@@ -32,6 +32,7 @@
 #include "KalmanVario_PVA.h"
 #include "embedded_math.h"
 #include "windobserver.h"
+#include "NAV_tuning_parameters.h"
 
 #if USE_HARDWARE_EEPROM	== 0
 #include "EEPROM_emulation.h"

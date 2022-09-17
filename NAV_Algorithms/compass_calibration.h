@@ -29,6 +29,7 @@
 #include "float3vector.h"
 #include "Linear_Least_Square_Fit.h"
 #include "persistent_data.h"
+#include "NAV_tuning_parameters.h"
 
 #if WRITE_MAG_CALIB_EEPROM
 #include "FreeRTOS_wrapper.h"
