@@ -126,7 +126,7 @@ void navigator_t::report_data( output_data_t &d)
     d.wind_average		= wind_average_observer.get_value();  // smart long-term avg
 
     d.speed_compensation_TAS 	= flight_observer.get_speed_compensation_TAS();
-    d.speed_compensation_INS 	= flight_observer.get_speed_compensation_INS();
+    d.speed_compensation_GNSS 	= flight_observer.get_speed_compensation_GNSS();
     d.effective_vertical_acceleration
 				= flight_observer.get_effective_vertical_acceleration();
 
@@ -148,6 +148,5 @@ void navigator_t::report_data( output_data_t &d)
     d.HeadingDifferenceAhrsDgnss = ahrs.getHeadingDifferenceAhrsDgnss();
     d.QFF			= atmosphere.get_QFF();
     d.air_density		= atmosphere.get_density();
-    d.vert_comp			= flight_observer.get_vertical_speed_compensation();
 }
 

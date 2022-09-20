@@ -55,9 +55,6 @@ public:
   speed_compensation_TAS( ZERO),
   vario_uncompensated_GNSS( ZERO),
   vario_uncompensated_pressure( ZERO),
-#if VARIO_USE_GNSS_IAS_FUSION
-  speed_compensation_fusioner( 0.998f),
-#endif
   KalmanVario_GNSS( 0.0f, 0.0f, 0.0f, -9.81f),
   KalmanVario_pressure( 0.0f, 0.0f, 0.0f, -9.81f),
   specific_energy_differentiator( 1.0f, 1.0f / 100.0f),
@@ -87,15 +84,9 @@ public:
 		return speed_compensation_TAS;
 	}
 
-	float get_speed_compensation_INS( void ) const
+	float get_speed_compensation_GNSS( void ) const
 	{
-		return horizontal_speed_compensation_GNSS + vertical_speed_compensation_AHRS;
-//		return horizontal_speed_compensation_GNSS; // todo patch
-	}
-
-	float get_vertical_speed_compensation( void ) const
-	{
-		return vertical_speed_compensation_AHRS;
+		return speed_compensation_GNSS;
 	}
 
 	float get_vario_uncompensated_GNSS( void ) const
@@ -128,20 +119,17 @@ private:
 	pt2<float,float> vario_averager_GNSS;
 	wind_observer_t windspeed_instant_observer;
 
+	// filter systems for variometer
 	differentiator<float,float>kinetic_energy_differentiator;
-
-	float speed_compensation_TAS;
-	float horizontal_speed_compensation_GNSS;
-	float vertical_speed_compensation_AHRS;
-	float vario_uncompensated_GNSS;
-	float vario_uncompensated_pressure;
-
-#if VARIO_USE_GNSS_IAS_FUSION
-	HP_LP_fusion <float, float> speed_compensation_fusioner;
-#endif
 	KalmanVario_PVA_t KalmanVario_GNSS;
 	KalmanVario_t KalmanVario_pressure;
 	differentiator<float,float>specific_energy_differentiator;
+
+	// variometer-relevant signals
+	float speed_compensation_TAS;
+	float speed_compensation_GNSS;
+	float vario_uncompensated_GNSS;
+	float vario_uncompensated_pressure;
 	float specific_energy;
 };
 

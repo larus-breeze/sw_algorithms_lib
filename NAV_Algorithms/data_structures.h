@@ -70,7 +70,7 @@ typedef struct
   float vario;
   float vario_pressure;
   float speed_compensation_TAS;
-  float speed_compensation_INS;
+  float speed_compensation_GNSS;
   float integrator_vario;
   float3vector wind;
   float3vector wind_average;
@@ -99,7 +99,6 @@ typedef struct
   float HeadingDifferenceAhrsDgnss;
   float QFF;
   float air_density;
-  float vert_comp;
 } output_data_t;
 
 #pragma pack(pop)

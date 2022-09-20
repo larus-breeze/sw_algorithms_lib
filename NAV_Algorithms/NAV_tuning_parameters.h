@@ -33,7 +33,6 @@
 #define STABLE_CIRCLING_LIMIT	(30 * 100) // seconds @ 100 Hz for MAG auto calibration
 
 #define VARIO_USE_SQUARED_VELOCITY 1 // use squared absolute air velocity for speed-compensation
-#define VARIO_USE_GNSS_IAS_FUSION  1
-#define VERTICAL_ENERGY_TUNING_FAKTOR 0.75f
+#define VERTICAL_ENERGY_TUNING_FACTOR 0.75f
 
 #endif /* NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_ */
