@@ -120,15 +120,23 @@ public:
    * to be called @ 100 Hz, triggers all fast calculations,
    * especially AHRS attitude data and fast flight-observer stuff
    */
-  void update_IMU( const float3vector &acc, const float3vector &mag, const float3vector &gyro);
+  void update_every_10ms( const float3vector &acc, const float3vector &mag, const float3vector &gyro);
 
   /**
-   * @brief update navigation GNSS
-   *
-   * to be called @ 10 Hz
-   * calculate wind data and vario average for "vario integrator"
-   */
-  void update_GNSS( const coordinates_t &coordinates);
+     * @brief slow update flight observer data
+     *
+     * to be called @ 10 Hz
+     * calculate wind data and vario average for "vario integrator"
+     */
+  void update_every_100ms( const coordinates_t &coordinates);
+
+    /**
+       * @brief update on new navigation data from GNSS
+       *
+       * to be called @ 50 .. 100 Hz (GNSS-dependent)
+       * set new position fix etc.
+       */
+  void update_GNSS_data( const coordinates_t &coordinates);
 
   /**
    * @brief return aggregate flight observer

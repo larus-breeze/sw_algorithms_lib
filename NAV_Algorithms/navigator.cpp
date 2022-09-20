@@ -25,7 +25,7 @@
 #include <navigator.h>
 
 // to be called at 100 Hz
-void navigator_t::update_IMU (
+void navigator_t::update_every_10ms (
     const float3vector &acc,
     const float3vector &mag,
     const float3vector &gyro)
@@ -65,13 +65,10 @@ void navigator_t::update_IMU (
       );
 }
 
-// to be called at 10 Hz
-void navigator_t::update_GNSS (const coordinates_t &coordinates)
+void navigator_t::update_GNSS_data( const coordinates_t &coordinates)
 {
-  atmosphere.update_density_correction(); // here because of the 10 Hz call frequency
-
   if( coordinates.sat_fix_type == SAT_FIX_NONE) // presently no GNSS fix
-      return; // todo needs to be improved
+      return; // todo needs to be improved, what can we do ?
 
   GNSS_fix_type		= coordinates.sat_fix_type;
   GNSS_velocity 	= coordinates.velocity;
@@ -79,6 +76,12 @@ void navigator_t::update_GNSS (const coordinates_t &coordinates)
   GNSS_heading 		= coordinates.relPosHeading;
   GNSS_negative_altitude= coordinates.position.e[DOWN];
   GNSS_speed 		= coordinates.speed_motion;
+}
+
+// to be called at 10 Hz
+void navigator_t::update_every_100ms (const coordinates_t &coordinates)
+{
+  atmosphere.update_density_correction(); // here because of the 10 Hz call frequency
 
   wind_average_observer.update( flight_observer.get_instant_wind(), // do this here because of the update rate 10Hz
 				ahrs.get_euler ().y,

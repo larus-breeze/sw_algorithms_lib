@@ -79,18 +79,22 @@ public:
     navigator.update_pitot ( (output_data.m.pitot_pressure - pitot_offset) * pitot_span);
   }
 
-  void update_GNSS( output_data_t & output_data)
+  void update_every_100ms( output_data_t & output_data)
   {
-    navigator.update_GNSS ( output_data.c);
+    navigator.update_every_100ms ( output_data.c);
     navigator.feed_QFF_density_metering( output_data.m.static_pressure - QNH_offset, -output_data.c.position[DOWN]);
   }
 
   void set_attitude ( float roll, float nick, float present_heading)
   {
-	navigator.set_attitude ( roll, nick, present_heading);
+    navigator.set_attitude ( roll, nick, present_heading);
+  }
+  void update_GNSS_data( const coordinates_t &coordinates)
+  {
+    navigator.update_GNSS_data(coordinates);
   }
 
-  void update_IMU( output_data_t & output_data)
+  void update_every_10ms( output_data_t & output_data)
   {
     // rotate sensor coordinates into airframe coordinates
     acc  = sensor_mapping * output_data.m.acc;
@@ -101,7 +105,7 @@ public:
     output_data.body_acc  = acc;
     output_data.body_gyro = gyro;
 
-    navigator.update_IMU (acc, mag, gyro);
+    navigator.update_every_10ms (acc, mag, gyro);
   }
 
   void report_data ( output_data_t &data)
@@ -119,8 +123,7 @@ public:
     navigator.disregard_density_data();
   }
 
-  float
-  getDeclination () const
+  float getDeclination () const
   {
     return declination;
   }
