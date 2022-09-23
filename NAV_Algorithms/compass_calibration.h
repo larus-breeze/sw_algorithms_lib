@@ -45,35 +45,16 @@ public:
     scale( 1.0f / slope),
     variance ( 1.0e10f)
   {}
-  bool is_initialized( void) const
-  {
-    return variance < 1.0e9f;
-  }
-//! feed in new calibration from linear least square fit
+
+  //! feed in new calibration from linear least square fit
   void refresh ( linear_least_square_result<float> &result)
     {
-#if 0 // todo fixme : when shall this be executed ?
-    if( ! is_initialized()) // first calibration coming in
-	{
-	  offset = result.y_offset;
-	  scale = 1.0f / result.slope;
-	  variance = result.variance_offset + result.variance_slope;
-	}
-      else
-	{
-	  offset   = offset   * MAG_CALIB_LETHARGY + ( result.y_offset          * (1.0f - MAG_CALIB_LETHARGY));
-	  scale    = scale    * MAG_CALIB_LETHARGY + ( (1.0f / result.slope) * (1.0f - MAG_CALIB_LETHARGY)) ;
-	  variance = variance * MAG_CALIB_LETHARGY + ( (result.variance_offset + result.variance_slope)
-									 * (1.0f - MAG_CALIB_LETHARGY));
-	}
-#else
-	  offset   = offset   * MAG_CALIB_LETHARGY + ( result.y_offset          * (1.0f - MAG_CALIB_LETHARGY));
-	  scale    = scale    * MAG_CALIB_LETHARGY + ( (1.0f / result.slope) * (1.0f - MAG_CALIB_LETHARGY)) ;
-	  variance = variance * MAG_CALIB_LETHARGY + ( (result.variance_offset + result.variance_slope)
-									 * (1.0f - MAG_CALIB_LETHARGY));
-#endif
+      offset = result.y_offset;
+      scale = 1.0f / result.slope;
+      variance = result.variance_offset + result.variance_slope;
     }
 
+  //! calibrate instant sensor reading using calibration data
   float calibrate( float sensor_reading)
   {
     return (sensor_reading - offset) * scale;
