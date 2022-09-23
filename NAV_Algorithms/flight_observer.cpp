@@ -30,7 +30,7 @@
 #define RECIP_GRAVITY 0.1094f
 
 //! calculate instant windspeed and variometer data, update @ 100 Hz
-void flight_observer_t::update (
+void flight_observer_t::update_every_10ms (
     const float3vector &gnss_velocity,
     const float3vector &gnss_acceleration,
     const float3vector &ahrs_acceleration,

@@ -61,7 +61,7 @@ public:
   specific_energy(0.0f)
   {
   };
-	void update
+	void update_every_10ms
 	(
 	    const float3vector &gnss_velocity,
 	    const float3vector &gnss_acceleration,

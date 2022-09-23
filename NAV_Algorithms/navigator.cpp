@@ -51,7 +51,7 @@ void navigator_t::update_every_10ms (
   heading_vector[EAST]  = ahrs.get_east  ();
   heading_vector[DOWN]  = ahrs.get_down  (); // todo: do we need this one ?
 
-  flight_observer.update (
+  flight_observer.update_every_10ms (
       GNSS_velocity,
       GNSS_acceleration,
       ahrs.get_nav_acceleration (),
@@ -151,5 +151,6 @@ void navigator_t::report_data( output_data_t &d)
     d.HeadingDifferenceAhrsDgnss = ahrs.getHeadingDifferenceAhrsDgnss();
     d.QFF			= atmosphere.get_QFF();
     d.air_density		= atmosphere.get_density();
+    d.satfix			= (float)(d.c.sat_fix_type);
 }
 
