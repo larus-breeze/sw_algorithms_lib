@@ -43,9 +43,6 @@ enum { NORTH, EAST, DOWN};
 
 typedef enum  { STRAIGHT_FLIGHT, TRANSITION, CIRCLING} circle_state_t;
 
-#define ANGLE_F_BY_FS  ( 1.0f / 0.5f / 100.0f) // 0.5s
-#define G_LOAD_F_BY_FS ( 1.0f / 0.25f / 100.0f) // 0.25s
-
 typedef integrator<float, float3vector> vector3integrator;
 
 //! Attitude and heading reference system class

@@ -35,4 +35,20 @@
 #define VARIO_USE_SQUARED_VELOCITY 1 // use squared absolute air velocity for speed-compensation
 #define VERTICAL_ENERGY_TUNING_FACTOR 0.75f
 
+// filters for CAN information (turn-coordinator, G-load ...)
+#define ANGLE_F_BY_FS  ( 1.0f / 0.5f / 100.0f) // 0.5s
+#define G_LOAD_F_BY_FS ( 1.0f / 0.25f / 100.0f) // 0.25s
+
+// AHRS tuning parameters:
+// These parameters have been tuned for the flight-dynamics of gliders
+// and the MTI high-precision IMU
+#define P_GAIN 0.03f			//!< Attitude controller: proportional gain
+#define I_GAIN 0.00006f 		//!< Attitude controller: integral gain
+#define H_GAIN 38.0f			//!< Attitude controller: horizontal gain
+#define M_H_GAIN 10.0f			//!< Attitude controller: horizontal gain magnetic
+#define CROSS_GAIN 0.05f		//!< Attitude controller: cross-product gain
+
+#define HIGH_TURN_RATE 0.15f 		//!< turn rate high limit
+#define LOW_TURN_RATE  0.0707f 		//!< turn rate low limit
+
 #endif /* NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_ */

@@ -32,16 +32,6 @@
 #include "EEPROM_emulation.h"
 #endif
 
-// these parameters have been tuned for the flight-dynamics of gliders
-#define P_GAIN 0.03f			//!< Attitude controller: proportional gain
-#define I_GAIN 0.00006f 		//!< Attitude controller: integral gain
-#define H_GAIN 38.0f			//!< Attitude controller: horizontal gain
-#define M_H_GAIN 10.0f			//!< Attitude controller: horizontal gain magnetic
-#define CROSS_GAIN 0.05f		//!< Attitude controller: cross-product gain
-
-#define HIGH_TURN_RATE 0.15 		//!< turn rate high limit
-#define LOW_TURN_RATE  0.0707 		//!< turn rate low limit
-
 /**
  * @brief initial attitude setup from observables
  */
