@@ -99,7 +99,7 @@ public:
     // rotate sensor coordinates into airframe coordinates
     acc  = sensor_mapping * output_data.m.acc;
     mag  = sensor_mapping * output_data.m.mag;
-    gyro = sensor_mapping * output_data.m.gyro;
+    gyro = sensor_mapping * output_data.m.lowcost_gyro; // todo patch
 
     // copy data for our logger
     output_data.body_acc  = acc;
