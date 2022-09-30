@@ -28,7 +28,13 @@
 air_data_result air_density_observer::feed_metering( float pressure, float MSL_altitude)
 {
   air_data_result air_data;
+
+#if DENSITY_MEASURMENT_COLLECTS_INTEGER
   density_QFF_calculator.add_value( MSL_altitude * 100.0f, pressure);
+#else
+  // use values normalized around 1.0
+  density_QFF_calculator.add_value( MSL_altitude * 1e-3, pressure * 1e-5);
+#endif
 
   if( MSL_altitude > max_altitude)
     max_altitude = MSL_altitude;
@@ -51,17 +57,26 @@ air_data_result air_density_observer::feed_metering( float pressure, float MSL_a
       return air_data;
     }
 
-  linear_least_square_result<evaluation_float_type> result;
+  linear_least_square_result<evaluation_type> result;
   density_QFF_calculator.evaluate(result);
 
-  assert( result.variance_slope > 0);
-  assert( result.variance_offset > 0);
+//  Due to numeric effects, when using float the
+//  variance has been observed to be negative in some cases !
+//  Therefore using float this test can not be used.
+ assert( result.variance_slope > 0);
+ assert( result.variance_offset > 0);
 
-  if( result.variance_slope < MAX_ALLOWED_VARIANCE)
+ if( result.variance_slope < MAX_ALLOWED_VARIANCE)
     {
       air_data.QFF = result.y_offset;
-      float density = result.slope * 100.0f * -0.10194f; // div by -9.81f;
+      float density = 100.0f * result.slope * -0.10194f; // div by -9.81f;
+
+#if DENSITY_MEASURMENT_COLLECTS_INTEGER
       float pressure = density_QFF_calculator.get_mean_y();
+#else
+      float pressure = 1e5 * density_QFF_calculator.get_mean_y();
+#endif
+
       float std_density = 1.0496346613e-5f * pressure + 0.1671546011f;
       air_data.density_correction = density / std_density;
       air_data.valid = true;
