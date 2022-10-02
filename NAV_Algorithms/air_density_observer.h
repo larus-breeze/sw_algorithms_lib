@@ -28,7 +28,10 @@
 #include "Linear_Least_Square_Fit.h"
 #include "trigger.h"
 
-typedef double evaluation_float_type;
+#define DENSITY_MEASURMENT_COLLECTS_INTEGER 1
+typedef double evaluation_type;
+typedef uint64_t measurement_type;
+
 #define MAX_ALLOWED_VARIANCE	1e-9
 #define MINIMUM_ALTITUDE_RANGE	300.0f
 #define ALTITUDE_TRIGGER_HYSTERESIS 50.0f
@@ -63,7 +66,8 @@ public:
   }
 private:
 
-    linear_least_square_fit<int64_t,evaluation_float_type> density_QFF_calculator;
+  //    linear_least_square_fit<int64_t,evaluation_float_type> density_QFF_calculator;
+    linear_least_square_fit< measurement_type, evaluation_type> density_QFF_calculator;
     float min_altitude;
     float max_altitude;
     trigger altitude_trigger;

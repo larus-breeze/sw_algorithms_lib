@@ -1,5 +1,9 @@
 # Sensor algorithms
-- A module which contains the algorithms. It is intended to be imported into another repository via a .gitmodules file
+- This module contains the algorithms for the larus soaring flight sensor
+
+It is intended to be imported into another project via a .gitmodules file.
+
+Presently this is used for the larus sensor software or the larus flight computer Software-In-The-Loop simulator.
     
 # Add as submodule to repository:
 - git submodule add git@github.com:larus-breeze/sw_sensor_algorithms.git lib
