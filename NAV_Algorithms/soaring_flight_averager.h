@@ -45,8 +45,7 @@ template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false>
       fill_recordings_with_old_average ();
     };
 
-    value_t
-    get_value (void) const
+    const value_t & get_value (void) const
     {
       return present_output;
     }

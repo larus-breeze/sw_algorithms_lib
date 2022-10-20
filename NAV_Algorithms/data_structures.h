@@ -100,6 +100,8 @@ typedef struct
   float QFF;
   float air_density;
   float satfix;
+  float headwind;
+  float crosswind;
 } output_data_t;
 
 #pragma pack(pop)

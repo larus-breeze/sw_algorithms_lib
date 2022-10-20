@@ -152,5 +152,7 @@ void navigator_t::report_data( output_data_t &d)
     d.QFF			= atmosphere.get_QFF();
     d.air_density		= atmosphere.get_density();
     d.satfix			= (float)(d.c.sat_fix_type);
+    d.headwind	 		= get_relative_wind().e[FRONT];
+    d.crosswind	 		= get_relative_wind().e[RIGHT];
 }
 
