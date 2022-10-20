@@ -104,7 +104,7 @@ public:
 		return vario_averager_GNSS.get_output();
 	}
 
-	const float3vector & get_instant_wind( void ) const
+	float3vector get_instant_wind( void ) const
 	{
 		return windspeed_instant_observer.get_output();
 	}
@@ -117,7 +117,7 @@ public:
 private:
 	pt2<float,float> vario_averager_pressure;
 	pt2<float,float> vario_averager_GNSS;
-	wind_observer_t windspeed_instant_observer;
+	pt2<float3vector,float> windspeed_instant_observer;
 
 	// filter systems for variometer
 	differentiator<float,float>kinetic_energy_differentiator;

@@ -57,7 +57,7 @@ void flight_observer_t::update_every_10ms (
   else
     {
       float3vector air_velocity = heading_vector * TAS;
-      windspeed_instant_observer.update( gnss_velocity - air_velocity, heading_vector, circle_state);
+      windspeed_instant_observer.respond( gnss_velocity - air_velocity);
 
       // non TEC compensated vario in NED-system, reports negative if *climbing* !
       vario_uncompensated_GNSS = - KalmanVario_GNSS.update ( GNSS_negative_altitude, gnss_velocity.e[DOWN], ahrs_acceleration.e[DOWN]);
