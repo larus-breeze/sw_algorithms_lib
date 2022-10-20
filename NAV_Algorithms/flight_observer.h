@@ -50,7 +50,7 @@ public:
   :
   vario_averager_pressure( configuration( VARIO_TC)),
   vario_averager_GNSS( configuration( VARIO_TC)),
-  windspeed_instant_observer( configuration( WIND_TC)),
+  windspeed_decimator_100Hz_10Hz( 1.0f / 100.0f),
   kinetic_energy_differentiator( 1.0f, 1.0f / 100.0f),
   speed_compensation_TAS( ZERO),
   vario_uncompensated_GNSS( ZERO),
@@ -106,7 +106,7 @@ public:
 
 	float3vector get_instant_wind( void ) const
 	{
-		return windspeed_instant_observer.get_output();
+		return windspeed_decimator_100Hz_10Hz.get_output();
 	}
 
 	float get_effective_vertical_acceleration( void) const
@@ -117,7 +117,7 @@ public:
 private:
 	pt2<float,float> vario_averager_pressure;
 	pt2<float,float> vario_averager_GNSS;
-	pt2<float3vector,float> windspeed_instant_observer;
+	pt2<float3vector,float> windspeed_decimator_100Hz_10Hz;
 
 	// filter systems for variometer
 	differentiator<float,float>kinetic_energy_differentiator;

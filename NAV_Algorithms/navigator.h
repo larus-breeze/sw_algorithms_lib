@@ -47,7 +47,8 @@ public:
 	 vario_integrator( configuration( VARIO_INT_TC)),
 	 wind_average_observer( configuration( MEAN_WIND_TC)),
 	 relative_wind_observer( configuration( MEAN_WIND_TC)),
-	 corrected_wind_averager( 1.0f / 15.0f / 10.0f), 	// 15s @ 10Hz
+	 corrected_wind_averager( configuration( WIND_TC) * 10.0f),
+	 // WIND_TC designed for 100Hz but now used at 10 Hz
 	 GNSS_speed( ZERO),
 	 GNSS_negative_altitude( ZERO),
 	 TAS_averager(1.0f / 1.0f / 100.0f),
