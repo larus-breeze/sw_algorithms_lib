@@ -147,7 +147,7 @@ public:
 
   float get_turn_rate( void ) const
   {
-    return turn_rate;
+    return turn_rate_averager.get_output();
   }
   float get_G_load( void ) const
   {
@@ -176,7 +176,6 @@ public:
 
 private:
   quaternion<ftype>attitude;
-  float turn_rate;
   float declination;
   void feed_compass_calibration(const float3vector &mag);
   circle_state_t circle_state;
@@ -202,6 +201,7 @@ private:
   unsigned circling_counter;
   pt2<float,float> slip_angle_averager;
   pt2<float,float> nick_angle_averager;
+  pt2<float,float> turn_rate_averager;
   pt2<float,float> G_load_averager;
   linear_least_square_fit<float> mag_calibrator[3];
   compass_calibration_t compass_calibration;

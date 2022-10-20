@@ -82,7 +82,7 @@ AHRS_type::update_circling_state ()
 #if DISABLE_CIRCLING_STATE == 1
   return STRAIGHT_FLIGHT;
 #else
-  float turn_rate_abs = abs (turn_rate);
+  float turn_rate_abs = abs (turn_rate_averager.get_output());
 
   if (circling_counter < CIRCLE_LIMIT)
     if (turn_rate_abs > HIGH_TURN_RATE)
@@ -120,11 +120,11 @@ AHRS_type::AHRS_type (float sampling_time)
   circling_counter(0),
   slip_angle_averager( ANGLE_F_BY_FS),
   nick_angle_averager( ANGLE_F_BY_FS),
+  turn_rate_averager( ANGLE_F_BY_FS),
   G_load_averager(     G_LOAD_F_BY_FS),
   antenna_DOWN_correction(  configuration( ANT_SLAVE_DOWN)  / configuration( ANT_BASELENGTH)),
   antenna_RIGHT_correction( configuration( ANT_SLAVE_RIGHT) / configuration( ANT_BASELENGTH)),
-  circle_state( STRAIGHT_FLIGHT),
-  turn_rate( ZERO)
+  circle_state( STRAIGHT_FLIGHT)
 {
   float inclination=configuration(INCLINATION);
   declination=configuration(DECLINATION);
@@ -174,7 +174,7 @@ AHRS_type::update_attitude ( const float3vector &acc,
 
   float3vector nav_rotation;
   nav_rotation = body2nav * gyro;
-  turn_rate = nav_rotation[DOWN];
+  turn_rate_averager.respond( nav_rotation[DOWN]);
 
   slip_angle_averager.respond( ATAN2( -acc.e[RIGHT], -acc.e[DOWN]));
   nick_angle_averager.respond( ATAN2( +acc.e[FRONT], -acc.e[DOWN]));
@@ -245,7 +245,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 
   if( ( old_circle_state == CIRCLING) && (circle_state == TRANSITION))
     {
-    compass_calibration.set_calibration( mag_calibrator, 'S', (turn_rate > 0.0f), true);
+    compass_calibration.set_calibration( mag_calibrator, 'S', (turn_rate_averager.get_output() > 0.0f), true);
     handle_magnetic_calibration();
     }
 }
@@ -338,7 +338,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 
   if( ( old_circle_state == CIRCLING) && (circle_state == TRANSITION))
     {
-    compass_calibration.set_calibration( mag_calibrator, 'M', (turn_rate > 0.0f), true);
+    compass_calibration.set_calibration( mag_calibrator, 'M', (turn_rate_averager.get_output() > 0.0f), true);
     handle_magnetic_calibration();
     }
 }
