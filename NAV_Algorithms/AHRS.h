@@ -159,7 +159,7 @@ public:
 		  const float3vector &gyro, const float3vector &acc, const float3vector &mag,
 		  const float3vector &GNSS_acceleration); //!< rotate quaternion taking angular rate readings
 #if 1 // SOFT_IRON_TEST
-  void update_special(
+  void update_ACC_only(
 		  const float3vector &gyro, const float3vector &acc, const float3vector &mag,
 		  const float3vector &GNSS_acceleration); //!< rotate quaternion taking angular rate readings
 #endif

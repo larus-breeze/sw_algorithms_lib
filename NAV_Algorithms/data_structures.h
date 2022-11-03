@@ -102,6 +102,8 @@ typedef struct
   float satfix;
   float headwind;
   float crosswind;
+  float inst_wind_N;
+  float inst_wind_E;
 } output_data_t;
 
 #pragma pack(pop)

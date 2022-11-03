@@ -37,7 +37,7 @@ void navigator_t::update_every_10ms (
 
 #if PARALLEL_MAGNETIC_AHRS
 #if 1
-  ahrs_magnetic.update_special(
+  ahrs_magnetic.update_ACC_only(
 	  gyro, acc, mag,
 	  GNSS_acceleration);
 #else
@@ -154,5 +154,7 @@ void navigator_t::report_data( output_data_t &d)
     d.satfix			= (float)(d.c.sat_fix_type);
     d.headwind	 		= get_relative_wind().e[FRONT];
     d.crosswind	 		= get_relative_wind().e[RIGHT];
+    d.inst_wind_N		= flight_observer.get_instant_wind().e[NORTH];
+    d.inst_wind_E		= flight_observer.get_instant_wind().e[EAST];
 }
 
