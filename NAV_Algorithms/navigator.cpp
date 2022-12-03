@@ -36,7 +36,7 @@ void navigator_t::update_every_10ms (
 	    GNSS_fix_type == (SAT_FIX | SAT_HEADING));
 
 #if PARALLEL_MAGNETIC_AHRS
-#if 1
+#if 0
   ahrs_magnetic.update_ACC_only(
 	  gyro, acc, mag,
 	  GNSS_acceleration);

@@ -59,17 +59,24 @@ void flight_observer_t::update_every_10ms (
       float3vector air_velocity = heading_vector * TAS;
       windspeed_decimator_100Hz_10Hz.respond( gnss_velocity - air_velocity);
 
-      // non TEC compensated vario in NED-system, reports negative if *climbing* !
+      // The Kalman-filter-based uncompensated vario in NED-system reports negative if *climbing* !
       vario_uncompensated_GNSS = - KalmanVario_GNSS.update ( GNSS_negative_altitude, gnss_velocity.e[DOWN], ahrs_acceleration.e[DOWN]);
 
+#if 0 // experimental INS-acceleration * GNSS-velocity speed compensation
+      air_velocity = gnss_velocity - wind_average;
+      air_velocity.e[DOWN] = KalmanVario_GNSS.get_x( KalmanVario_PVA_t::VARIO);
+      float3vector acceleration = ahrs_acceleration;
+      acceleration.e[DOWN] = KalmanVario_GNSS.get_x( KalmanVario_PVA_t::ACCELERATION_OBSERVED);
+      speed_compensation_GNSS = air_velocity * acceleration / 9.81;
+#else
       specific_energy = specific_energy * 0.9f + 0.1f *  // primitive PT1 smoothing for upsampling
 	  (
-	  SQR( gnss_velocity.e[NORTH] - wind_average.e[NORTH]) +
-	  SQR( gnss_velocity.e[EAST]  - wind_average.e[EAST])  +
-	  SQR( gnss_velocity.e[DOWN]) * VERTICAL_ENERGY_TUNING_FACTOR
-	       );
-
+	      SQR( gnss_velocity.e[NORTH] - wind_average.e[NORTH]) +
+	      SQR( gnss_velocity.e[EAST]  - wind_average.e[EAST])  +
+	      SQR( gnss_velocity.e[DOWN]) * VERTICAL_ENERGY_TUNING_FACTOR
+	   );
       speed_compensation_GNSS = specific_energy_differentiator.respond(specific_energy) * ONE_DIV_BY_GRAVITY_TIMES_2;
+#endif
       vario_averager_GNSS.respond( vario_uncompensated_GNSS + speed_compensation_GNSS);
     }
 }

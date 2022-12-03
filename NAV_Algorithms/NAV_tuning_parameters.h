@@ -32,8 +32,9 @@
 #define CIRCLE_LIMIT (10 * 100) //!< 10 * 1/100 s delay into / out of circling state
 
 #define VARIO_USE_SQUARED_VELOCITY 1 // use squared absolute air velocity for speed-compensation
-// *EMPIRIC* tuning parameter for best vario performance when pulling up
-#define VERTICAL_ENERGY_TUNING_FACTOR 0.75f
+
+// *EMPIRIC* tuning parameter for best vario performance
+#define VERTICAL_ENERGY_TUNING_FACTOR 1.0 // theoretically 1.0, observed optimum around 0.75
 
 // filters for CAN information (turn-coordinator, G-load ...)
 #define ANGLE_F_BY_FS  ( 1.0f / 0.5f / 100.0f) // 0.5s
