@@ -2,7 +2,7 @@
 This module contains the algorithms for the Larus soaring flight sensor.
 
 The algorithms are used as submodules for the Larus ARM Cortex M4 data acquisition system 
-and for the [LARUS Software-In-The-Loop simualtor](https://github.com/larus-breeze/SIL_flight_sensor_emulator)
+and for the [LARUS Software-In-The-Loop simulator](https://github.com/larus-breeze/SIL_flight_sensor_emulator)
 
 The algorithms include:
 
@@ -18,8 +18,6 @@ The algorithms include:
 
 This library is designed to be imported into another project via a .gitmodules file.
 
-Presently this is used for the larus sensor software or the larus flight computer Software-In-The-Loop simulator.
-    
 # Add as submodule to repository:
      git submodule add git@github.com:larus-breeze/sw_sensor_algorithms.git lib
 
