@@ -8,7 +8,7 @@ The algorithms include:
 
 - A quaternion-based Attitude and Heading Reference System (**AHRS**)
 - **Real-time wind-measurement** with 10Hz sampling-rate
-- A **Kalman-filter** for the non speed-uncompensated **delayless variometer**
+- A **Kalman-filter** fusioning altitude, vertical speed and vertical acceleration for an **ultra-fast variometer**
 - A **GNSS / INS-based speed-compensation** for the variometer
 - A **D-GNSS-based satellite-compass** with sub-degree accuracy (optional)
 - A self-calibrating **3d magnetic compass**
