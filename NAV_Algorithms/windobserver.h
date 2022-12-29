@@ -28,7 +28,7 @@
 #include "float3vector.h"
 #include "AHRS.h"
 
-//! specialized filter for 2d wind data
+//! Specialized decimating filter for 3d wind data
 class wind_observer_t
 {
 public:
@@ -49,6 +49,7 @@ public:
   {
     stage_1_N = stage_1_N * beta_max + current_value.e[NORTH] * ( ONE - beta_max);
     stage_1_E = stage_1_E * beta_max + current_value.e[EAST]  * ( ONE - beta_max);
+    stage_1_D = stage_1_D * beta_max + current_value.e[DOWN]  * ( ONE - beta_max);
 
     --decimating_counter;
     if( decimating_counter == 0)
@@ -57,8 +58,7 @@ public:
 
 	float alpha_N, beta_N, alpha_E, beta_E;
 
-//	if( true) // todo smart filtering shortcut !
-	if( state == STRAIGHT_FLIGHT) // todo patch
+	if( state == STRAIGHT_FLIGHT)
 	  {
 	    beta_N = beta_E = beta_max;
 	    alpha_N = alpha_E = ONE - beta_max;
@@ -70,24 +70,23 @@ public:
 	    beta_N = ONE - alpha_N;
 	    beta_E = ONE - alpha_E;
 	  }
-#if 0 // todo remove test
-	probe[0] = alpha_N;
-	probe[1] = alpha_E;
-#endif
 	present_output.e[NORTH] = present_output.e[NORTH] * alpha_N + stage_1_N * beta_N;
 	present_output.e[EAST]  = present_output.e[EAST]  * alpha_E + stage_1_E * beta_E;
+	present_output.e[DOWN]  = present_output.e[DOWN]  * (ONE - beta_max) + stage_1_D * beta_max;
       }
 
-    if( !isnormal( present_output.e[EAST]) || !isnormal( present_output.e[NORTH]))
-      present_output.e[NORTH] = present_output.e[EAST] = ZERO;
+    // catch denormalized data
+    if( !isnormal( present_output.e[EAST]) || !isnormal( present_output.e[NORTH]) || !isnormal( present_output.e[DOWN]))
+      present_output.e[NORTH] = present_output.e[EAST] = present_output.e[DOWN] = ZERO;
   }
 
  private:
   enum { DECIMATION = 55}; // two stages -> decimation 1/100s -> 30 s; 55 = sqrt(3000)
-  float stage_1_N;
-  float stage_1_E;
+  float stage_1_N; //!< North component filter feedback
+  float stage_1_E; //!< East component filter feedback
+  float stage_1_D; //!< Down component filter feedback
   uint32_t decimating_counter;
-  float beta_max; // nominator coefficient configured
+  float beta_max; //!< nominator coefficient as configured
 
   float3vector present_output; // maintained to save computing time
 };
