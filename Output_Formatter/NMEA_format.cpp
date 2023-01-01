@@ -65,6 +65,21 @@ char * integer_to_ascii_2_decimals( int32_t number, char *s)
   return s+2;
 }
 
+//! format an integer into ASCII with one decimal
+char * integer_to_ascii_1_decimal( int32_t number, char *s)
+{
+  if( number < 0)
+    {
+      *s++ = '-';
+      number = -number;
+    }
+  s = format_integer( number / 10, s);
+  *s++='.';
+  s[0]=HEX[number % 10];
+  s[1]=0;
+  return s+1;
+}
+
 //! basically: kind of strcat returning the pointer to the string-end
 inline char *append_string( char *target, const char *source)
 {
@@ -145,15 +160,7 @@ char *format_RMC (const coordinates_t &coordinates, char *p)
   p = angle_format (coordinates.longitude, p, 'E', 'W');
   *p++ = ',';
 
-#if 0
-  float value = VSQRTF
-      (
-	  sqr( gnss.coordinates.velocity.e[NORTH]) +
-	  sqr( gnss.coordinates.velocity.e[EAST])
-      ) * MPS_TO_NMPH;
-#else
   float value = coordinates.speed_motion * MPS_TO_NMPH;
-#endif
 
   unsigned knots = (unsigned)(value * 10.0f + 0.5f);
   *p++ = knots / 1000 + '0';
@@ -165,15 +172,10 @@ char *format_RMC (const coordinates_t &coordinates, char *p)
   *p++ = knots % 10 + '0';
   *p++ = ',';
 
-#if 0
-  float true_track =
-      ATAN2( gnss.coordinates.velocity.e[EAST], gnss.coordinates.velocity.e[NORTH]);
-#else
   float true_track = coordinates.heading_motion;
-#endif
+  if( true_track < 0.0f)
+    true_track += 6.2832f;
   int angle_10 = true_track * 10.0 + 0.5;
-  if( angle_10 < 0)
-    angle_10 += 3600;
 
   *p++ = angle_10 / 1000 + '0';
   angle_10 %= 1000;
@@ -373,12 +375,13 @@ char *format_PTAS1 ( float vario, float avg_vario, float altitude, float TAS, ch
 }
 #endif // USE_PTAS
 
-ROM char POV[]="$POV,S,";
+ROM char POV[]="$POV";
 
 //! format the OpenVario sequence TAS, pressures and TEK variometer
-char *format_POV( float TAS, float pabs, float pitot, float TEK_vario, float voltage, char *p)
+void format_POV_SPQEV( float TAS, float pabs, float pitot, float TEK_vario, float voltage, char *p)
 {
   p = append_string( p, POV);
+  p = append_string( p, ",S,");
   p = integer_to_ascii_2_decimals( (int)(TAS * 360.0f), p); // m/s -> 1/100 km/h
 
   p = append_string( p, ",P,");
@@ -395,29 +398,44 @@ char *format_POV( float TAS, float pabs, float pitot, float TEK_vario, float vol
   p = append_string( p, ",V,");
   p = integer_to_ascii_2_decimals( (int)(TEK_vario * 100.0f), p);
 
-  *p++ = 0;
-
-  return p;
+  *p = 0;
 }
 
 //! add the elements reporting outside humidity and temperature to POV
-char *append_POV( float humidity, float temperature, char *p)
+void format_POV_HT( float humidity, float temperature, char *p)
 {
+  p = append_string( p, POV);
   p = append_string( p, ",H,");
   p = integer_to_ascii_2_decimals( (int)(humidity * 100.0f), p);
 
   p = append_string( p, ",T,");
   p = integer_to_ascii_2_decimals( (int)(temperature * 100.0f), p);
 
-  *p++ = 0;
+  *p = 0;
+}
 
-  return p;
+//! add the elements reporting outside humidity and temperature to POV
+void format_POV_RNY( float roll, float nick, float yaw, char *p)
+{
+  p = append_string( p, POV);
+  p = append_string( p, ",R,");
+  p = integer_to_ascii_1_decimal( (int)(roll * RAD_TO_DEGREE_10 + 0.5), p);
+
+  p = append_string( p, ",N,");
+  p = integer_to_ascii_1_decimal( (int)(nick * RAD_TO_DEGREE_10 + 0.5), p);
+
+  if( yaw < 0.0f)
+    yaw += 6.2832f;
+  p = append_string( p, ",Y,");
+  p = integer_to_ascii_1_decimal( (int)(yaw * RAD_TO_DEGREE_10 + 0.5), p);
+
+  *p = 0;
 }
 
 ROM char HCHDM[]="$HCHDM,";
 
 //! create HCHDM sentence to report magnetic heading
-char *append_HCHDM( float magnetic_heading, char *p) // report magnetic heading
+void format_HCHDM( float magnetic_heading, char *p) // report magnetic heading
 {
   int heading = (int)(magnetic_heading * 573.0f); // -> 1/10 degree
   if( heading < 0)
@@ -436,8 +454,7 @@ char *append_HCHDM( float magnetic_heading, char *p) // report magnetic heading
   *p++ = ',';
   *p++ = 'M';
 
-  *p++ = 0;
-  return p;
+  *p = 0;
 }
 
 inline char hex4( uint8_t data)
@@ -497,19 +514,22 @@ void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA
 		    next);
   next = NMEA_append_tail (next);
 #endif
-  format_POV( output_data.TAS, output_data.m.static_pressure,
+  format_POV_SPQEV( output_data.TAS, output_data.m.static_pressure,
 			 output_data.m.pitot_pressure, output_data.m.supply_voltage, output_data.vario, next);
   next = NMEA_append_tail (next);
 
 #if WITH_DENSITY_DATA
   if( output_data.m.outside_air_humidity > 0.0f) // report AIR data if available
     {
-    append_POV( output_data.m.outside_air_humidity*100.0f, output_data.m.outside_air_temperature, next);
+    format_POV_HT( output_data.m.outside_air_humidity*100.0f, output_data.m.outside_air_temperature, next);
     next = NMEA_append_tail (next);
     }
 #endif
 
-  append_HCHDM( output_data.euler.y - declination, next); // report magnetic heading
+  format_POV_RNY( output_data.euler.r, output_data.euler.n, output_data.euler.y, next);
+  next = NMEA_append_tail (next);
+
+  format_HCHDM( output_data.euler.y - declination, next); // report magnetic heading
   next = NMEA_append_tail (next);
 
   NMEA_buf.length = next - NMEA_buf.string;
