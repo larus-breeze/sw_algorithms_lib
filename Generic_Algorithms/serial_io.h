@@ -38,7 +38,10 @@ public:
 	}
 	virtual char get( void)
 	{
-	  asm("bkpt 0"); // doesn't make sense
+#ifndef _WIN32  // on Windows no asm()  
+	  asm("bkpt 0");
+#endif
+	  return 0;   // another stub, function should have a return value
 	}
 	virtual char get_blocking( void)
 	{

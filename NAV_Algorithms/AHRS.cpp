@@ -28,6 +28,10 @@
 #include "embedded_memory.h"
 #include "HP_LP_fusion.h"
 
+#ifdef _WIN32
+# include <cmath>  // needed for inline abs
+#endif
+
 #if USE_HARDWARE_EEPROM	== 0
 #include "EEPROM_emulation.h"
 #endif
