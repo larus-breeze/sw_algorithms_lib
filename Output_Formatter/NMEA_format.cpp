@@ -414,11 +414,11 @@ void format_POV_HT( float humidity, float temperature, char *p)
   *p = 0;
 }
 
-//! add the elements reporting outside humidity and temperature to POV
+//! add the elements reporting attitude (roll nick yaw angles)
 void format_POV_RNY( float roll, float nick, float yaw, char *p)
 {
   p = append_string( p, POV);
-  p = append_string( p, ",R,");
+  p = append_string( p, ",B,"); // bank instead of roll, as "R" is already in use
   p = integer_to_ascii_1_decimal( (int)(roll * RAD_TO_DEGREE_10 + 0.5), p);
 
   p = append_string( p, ",N,");
