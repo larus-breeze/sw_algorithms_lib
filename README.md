@@ -16,7 +16,7 @@ The algorithms include:
 - **NMEA-stream output** for flight-management systems like [XCsoar](https://github.com/XCSoar/)
 - Output of application-specific data to a **CAN-bus** to feed cockpit-instruments
 
-# Output: The following NMEA sentences are reported
+# The following NMEA sentences are reported over the UARTs
 
 **NMEA Standard sequences**:
 - $GPRMC time, position, groundspeed, track over ground
