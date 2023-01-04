@@ -39,7 +39,7 @@ The algorithms include:
 - $POV,N nick angle, positive if nose is up
 - $POV,Y yaw angle = true heading (redundant, see $HCHDT, under discussion)
 
-#This library is designed to be imported into another project via a .gitmodules file.
+# This library is designed to be imported into another project via a .gitmodules file.
 
 Add as submodule to repository:
 
