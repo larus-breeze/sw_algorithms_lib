@@ -16,9 +16,7 @@ The algorithms include:
 - **NMEA-stream output** for flight-management systems like [XCsoar](https://github.com/XCSoar/)
 - Output of application-specific data to a **CAN-bus** to feed cockpit-instruments
 
-This library is designed to be imported into another project via a .gitmodules file.
-
-# The following NMEA interface are reported
+# Output: The following NMEA sentences are reported
 
 **NMEA Standard sequences**:
 - $GPRMC time, position, groundspeed, track over ground
@@ -41,17 +39,23 @@ This library is designed to be imported into another project via a .gitmodules f
 - $POV,N nick angle, positive if nose is up
 - $POV,Y yaw angle = true heading (redundant, see $HCHDT, under discussion)
 
-# Add as submodule to repository:
+#This library is designed to be imported into another project via a .gitmodules file.
+
+Add as submodule to repository:
+
      git submodule add git@github.com:larus-breeze/sw_sensor_algorithms.git lib
 
-# Init and Update submodule
+Init and Update submodule
+
      git submodule init 
      git submodule update
 
 Open submodule folder "lib" and run "git pull" to update the submodule to the latest commit.
 
-# Clone repository including the submodules: 
-     git clone --recursive URL git://github.com/foo/example.git
+Clone repository including the submodules: 
 
-# Update submodule from using repository
+      git clone --recursive URL git://github.com/foo/example.git
+
+Update submodule from using repository
+
 Just cd into the submodules folder and use git commit, push etc.
