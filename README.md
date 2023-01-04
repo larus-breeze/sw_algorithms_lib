@@ -22,7 +22,7 @@ The algorithms include:
 - $GPRMC time, position, groundspeed, track over ground
 - $GPGGA position (again), sat number and GEO separation = WGS84 altitude - MSL altitude
 - $GPMWV wind direction and speed
-- $HCHDT true heading (redundant, see $POV,Y) 
+- $HCHDT true heading
 
 **OpenVario proprietary sequences**:
 - $POV,S true airspeed
@@ -32,7 +32,6 @@ The algorithms include:
 - $POV,V total energy compensated variometer
 - $POV,H relative humidity (if available)
 - $POV,T outside air temperature (if available)
-- $PTAS1 vario, vario-avg, altitude, TAS (weird formatting definition)
 
 **OpenVario extensions** as proposed by this project:
 - $POV,B bank angle = roll angle, positive on right turns

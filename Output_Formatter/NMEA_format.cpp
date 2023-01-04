@@ -326,89 +326,39 @@ char *format_MWV ( float wind_north, float wind_east, char *p)
   return p;
 }
 
-#if USE_PTAS
-ROM char PTAS1[]="$PTAS1,";
-
-char *format_PTAS1 ( float vario, float avg_vario, float altitude, float TAS, char *p)
-{
-  vario=CLIP(vario, -10.0f, 10.0f);
-  avg_vario=CLIP(avg_vario, -10.0f, 10.0f);
-
-  uint16_t i_vario     = vario * MPS_TO_NMPH * 10 + 200.5;
-  uint16_t i_avg_vario = avg_vario * MPS_TO_NMPH * 10 + 200.5;
-  uint16_t i_altitude  = altitude * METER_TO_FEET + 2000.5;
-  uint16_t i_TAS       = TAS * MPS_TO_NMPH + 0.5;
-
-  p = append_string( p, PTAS1);
-
-  *p++ = i_vario / 100 + '0';
-  i_vario %= 100;
-  *p++ = i_vario / 10 + '0';
-  *p++ = i_vario % 10 + '0';
-  *p++ = ',';
-
-  *p++ = i_avg_vario / 100 + '0';
-  i_avg_vario %= 100;
-  *p++ = i_avg_vario / 10 + '0';
-  *p++ = i_avg_vario % 10 + '0';
-  *p++ = ',';
-
-  *p++ = i_altitude / 10000 + '0';
-  i_altitude %= 10000;
-  *p++ = i_altitude / 1000 + '0';
-  i_altitude %= 1000;
-  *p++ = i_altitude / 100 + '0';
-  i_altitude %= 100;
-  *p++ = i_altitude / 10 + '0';
-  *p++ = i_altitude % 10 + '0';
-  *p++ = ',';
-
-  *p++ = i_TAS / 100 + '0';
-  i_TAS %= 100;
-  *p++ = i_TAS / 10 + '0';
-  *p++ = i_TAS % 10 + '0';
-
-  *p++ = 0;
-
-  return p;
-}
-#endif // USE_PTAS
-
 ROM char POV[]="$POV";
 
 //! format the OpenVario sequence TAS, pressures and TEK variometer
-void format_POV_SPQEV( float TAS, float pabs, float pitot, float TEK_vario, float voltage, char *p)
+void format_POV( float TAS, float pabs, float pitot, float TEK_vario, float voltage,
+		 bool airdata_available, float humidity, float temperature, char *p)
 {
   p = append_string( p, POV);
-  p = append_string( p, ",S,");
-  p = integer_to_ascii_2_decimals( (int)(TAS * 360.0f), p); // m/s -> 1/100 km/h
+
+  p = append_string( p, ",E,");
+  p = integer_to_ascii_2_decimals( (int)(TEK_vario * 100.0f), p);
 
   p = append_string( p, ",P,");
-  p = integer_to_ascii_2_decimals( (int)pabs, p); // pressure already in Pa = 100 hPa
+  p = integer_to_ascii_2_decimals( (int)pabs, p); // static pressure, already in Pa = 100 hPa
 
   if( pitot < 0.0f)
     pitot = 0.0f;
-  p = append_string( p, ",Q,");
-  p = integer_to_ascii_2_decimals( (int)pitot, p); // dynamic pressure / Pa
+  p = append_string( p, ",R,");
+  p = integer_to_ascii_2_decimals( (int)pitot, p); // pitot pressure (difference) / Pa
 
-  p = append_string( p, ",E,");
-  p = integer_to_ascii_2_decimals( (int)(voltage * 100.0f), p);
+  p = append_string( p, ",S,");
+  p = integer_to_ascii_2_decimals( (int)(TAS * 360.0f), p); // m/s -> 1/100 km/h
 
   p = append_string( p, ",V,");
-  p = integer_to_ascii_2_decimals( (int)(TEK_vario * 100.0f), p);
+  p = integer_to_ascii_1_decimal( (int)(voltage * 10.0f), p);
 
-  *p = 0;
-}
+  if( airdata_available)
+    {
+      p = append_string( p, ",H,");
+      p = integer_to_ascii_2_decimals( (int)(humidity * 100.0f), p);
 
-//! add the elements reporting outside humidity and temperature to POV
-void format_POV_HT( float humidity, float temperature, char *p)
-{
-  p = append_string( p, POV);
-  p = append_string( p, ",H,");
-  p = integer_to_ascii_2_decimals( (int)(humidity * 100.0f), p);
-
-  p = append_string( p, ",T,");
-  p = integer_to_ascii_2_decimals( (int)(temperature * 100.0f), p);
+      p = append_string( p, ",T,");
+      p = integer_to_ascii_2_decimals( (int)(temperature * 100.0f), p);
+    }
 
   *p = 0;
 }
@@ -433,7 +383,7 @@ void format_POV_RNY( float roll, float nick, float yaw, char *p)
 
 ROM char HCHDT[]="$HCHDT,";
 
-//! create HCHDM sentence to report magnetic heading
+//! create HCHDM sentence to report true heading
 void format_HCHDT( float true_heading, char *p) // report magnetic heading
 {
   int heading = (int)(true_heading * 573.0f); // -> 1/10 degree
@@ -496,26 +446,10 @@ void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA
   format_MWV (output_data.wind_average.e[NORTH], output_data.wind_average.e[EAST], next);
   next = NMEA_append_tail (next);
 
-#if USE_PTAS
-
-  format_PTAS1 (output_data.vario,
-		    output_data.integrator_vario,
-		    output_data.c.position.e[DOWN] * -1.0,   //TODO: PTAS shall report pure barometric altitude, based on static_pressure. As there can be a QNH applied to in XCSOAR.
-		    output_data.TAS,
-		    next);
+  format_POV( output_data.TAS, output_data.m.static_pressure, output_data.m.pitot_pressure, output_data.vario, output_data.m.supply_voltage,
+	      (output_data.m.outside_air_humidity > 0.0f), // true if outside air data are available
+	      output_data.m.outside_air_humidity*100.0f, output_data.m.outside_air_temperature, next);
   next = NMEA_append_tail (next);
-#endif
-  format_POV_SPQEV( output_data.TAS, output_data.m.static_pressure,
-			 output_data.m.pitot_pressure, output_data.m.supply_voltage, output_data.vario, next);
-  next = NMEA_append_tail (next);
-
-#if WITH_DENSITY_DATA
-  if( output_data.m.outside_air_humidity > 0.0f) // report AIR data if available
-    {
-    format_POV_HT( output_data.m.outside_air_humidity*100.0f, output_data.m.outside_air_temperature, next);
-    next = NMEA_append_tail (next);
-    }
-#endif
 
   format_POV_RNY( output_data.euler.r, output_data.euler.n, output_data.euler.y, next);
   next = NMEA_append_tail (next);
