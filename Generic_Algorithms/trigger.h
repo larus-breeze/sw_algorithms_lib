@@ -35,6 +35,7 @@ public:
   bool initialize( float value, bool _going_up=true)
   {
     minimax = value;
+    return true;
   }
   bool process( float value)
   {

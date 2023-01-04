@@ -26,6 +26,9 @@
 #define ASCII_SUPPORT_H_
 
 #include <stdint.h>
+#ifdef _WIN32
+# include <stdlib.h>
+#endif
 
 char * my_itoa( char * target, int value);
 char * my_ftoa( char * target, float value);
@@ -41,7 +44,9 @@ extern "C"
 
 float string2float(char *input);
 char* ftoa(float Value, char* Buffer);
+#ifndef _WIN32
 char* itoa(int value, char* result, int base=10);
+#endif
 
 inline char * format_2_digits( char * target, uint32_t data)
 {
