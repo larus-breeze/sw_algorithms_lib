@@ -28,8 +28,8 @@ The algorithms include:
 - $POV,S true airspeed
 - $POV,P absolue pressure
 - $POV,Q dynnamic pressure = pitot pressure
-- $POV,E battery voltage
-- $POV,V total energy compensated variometer
+- $POV,V battery voltage
+- $POV,E total energy compensated variometer
 - $POV,H relative humidity (if available)
 - $POV,T outside air temperature (if available)
 
