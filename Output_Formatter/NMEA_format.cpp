@@ -141,8 +141,8 @@ char *format_RMC (const coordinates_t &coordinates, char *p)
 {
   p = append_string( p, GPRMC);
 
-  *p++ = (coordinates.hour) / 10 + '0';
-  *p++ = (coordinates.hour) % 10 + '0';
+  *p++ = (coordinates.hour)   / 10 + '0';
+  *p++ = (coordinates.hour)   % 10 + '0';
   *p++ = (coordinates.minute) / 10 + '0';
   *p++ = (coordinates.minute) % 10 + '0';
   *p++ = (coordinates.second) / 10 + '0';
@@ -289,8 +289,7 @@ char *format_MWV ( float wind_north, float wind_east, char *p)
   while (*p)
     ++p;
 
-  float direction =
-      ATAN2( -wind_east, -wind_north);
+  float direction = ATAN2( -wind_east, -wind_north);
 
   int angle_10 = direction * RAD_TO_DEGREE_10 + 0.5;
   if( angle_10 < 0)
@@ -332,13 +331,13 @@ ROM char PTAS1[]="$PTAS1,";
 
 char *format_PTAS1 ( float vario, float avg_vario, float altitude, float TAS, char *p)
 {
-  vario=clip(vario, -10.0f, 10.0f);
-  avg_vario=clip(avg_vario, -10.0f, 10.0f);
+  vario=CLIP(vario, -10.0f, 10.0f);
+  avg_vario=CLIP(avg_vario, -10.0f, 10.0f);
 
-  uint16_t i_vario = vario * MPS_TO_NMPH * 10 + 200.5;
+  uint16_t i_vario     = vario * MPS_TO_NMPH * 10 + 200.5;
   uint16_t i_avg_vario = avg_vario * MPS_TO_NMPH * 10 + 200.5;
-  uint16_t i_altitude = altitude * METER_TO_FEET + 2000.5;
-  uint16_t i_TAS = TAS * MPS_TO_NMPH + 0.5;
+  uint16_t i_altitude  = altitude * METER_TO_FEET + 2000.5;
+  uint16_t i_TAS       = TAS * MPS_TO_NMPH + 0.5;
 
   p = append_string( p, PTAS1);
 
@@ -432,27 +431,19 @@ void format_POV_RNY( float roll, float nick, float yaw, char *p)
   *p = 0;
 }
 
-ROM char HCHDM[]="$HCHDM,";
+ROM char HCHDT[]="$HCHDT,";
 
 //! create HCHDM sentence to report magnetic heading
-void format_HCHDM( float magnetic_heading, char *p) // report magnetic heading
+void format_HCHDT( float true_heading, char *p) // report magnetic heading
 {
-  int heading = (int)(magnetic_heading * 573.0f); // -> 1/10 degree
+  int heading = (int)(true_heading * 573.0f); // -> 1/10 degree
   if( heading < 0)
     heading += 3600;
 
-  p = append_string( p, HCHDM);
-
-  *p++ = (char)(heading / 1000 + '0');
-  heading %= 1000;
-  *p++ = heading / 100 + '0';
-  heading %= 100;
-  *p++ = heading / 10 + '0';
-  heading %= 10;
-  *p++ = '.';
-  *p++ = heading + '0';
+  p = append_string( p, HCHDT);
+  p = integer_to_ascii_1_decimal( heading, p);
   *p++ = ',';
-  *p++ = 'M';
+  *p++ = 'T';
 
   *p = 0;
 }
@@ -529,7 +520,7 @@ void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA
   format_POV_RNY( output_data.euler.r, output_data.euler.n, output_data.euler.y, next);
   next = NMEA_append_tail (next);
 
-  format_HCHDM( output_data.euler.y - declination, next); // report magnetic heading
+  format_HCHDT( output_data.euler.y, next); // report magnetic heading
   next = NMEA_append_tail (next);
 
   NMEA_buf.length = next - NMEA_buf.string;

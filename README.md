@@ -18,6 +18,29 @@ The algorithms include:
 
 This library is designed to be imported into another project via a .gitmodules file.
 
+# The following NMEA interface are reported
+
+**NMEA Standard sequences**:
+- $GPRMC time, position, groundspeed, track over ground
+- $GPGGA position (again), sat number and GEO separation = WGS84 altitude - MSL altitude
+- $GPMWV wind direction and speed
+- $HCHDT true heading (redundant, see $POV,Y) 
+
+**OpenVario proprietary sequences**:
+- $POV,S true airspeed
+- $POV,P absolue pressure
+- $POV,Q dynnamic pressure = pitot pressure
+- $POV,E battery voltage
+- $POV,V total energy compensated variometer
+- $POV,H relative humidity (if available)
+- $POV,T outside air temperature (if available)
+- $PTAS1 vario, vario-avg, altitude, TAS (weird formatting definition)
+
+**OpenVario extensions** as proposed by this project:
+- $POV,B bank angle = roll angle, positive on right turns
+- $POV,N nick angle, positive if nose is up
+- $POV,Y yaw angle = true heading (redundant, see $HCHDT, under discussion)
+
 # Add as submodule to repository:
      git submodule add git@github.com:larus-breeze/sw_sensor_algorithms.git lib
 
