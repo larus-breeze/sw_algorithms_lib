@@ -146,17 +146,15 @@ char * angle_format ( double angle, char * p, char posc, char negc)
   return p;
 }
 
-inline float
-sqr (float a)
+char * format_GNSS_timestamp(const coordinates_t &coordinates, char *p)
 {
-  return a * a;
-}
-ROM char GPRMC[]="$GPRMC,";
+  unsigned hundredth_seconds;
+  if( coordinates.nano < 0)
+      hundredth_seconds=0; // just ignore any (small) negative idfference
+  else
+      hundredth_seconds=coordinates.nano / 10000000;
 
-//! NMEA-format time, position, groundspeed, track data
-void format_RMC (const coordinates_t &coordinates, char *p)
-{
-  p = append_string( p, GPRMC);
+//  assert( hundredth_seconds < 100);
 
   *p++ = (coordinates.hour)   / 10 + '0';
   *p++ = (coordinates.hour)   % 10 + '0';
@@ -165,11 +163,22 @@ void format_RMC (const coordinates_t &coordinates, char *p)
   *p++ = (coordinates.second) / 10 + '0';
   *p++ = (coordinates.second) % 10 + '0';
   *p++ = '.';
-  *p++ = '0'; // todo add fractional seconds here
-  *p++ = '0';
+  *p++ = hundredth_seconds / 10 +'0';
+  *p++ = hundredth_seconds % 10 +'0';
   *p++ = ',';
   *p++ = coordinates.sat_fix_type != 0 ? 'A' : 'V';
   *p++ = ',';
+
+  return p;
+}
+
+ROM char GPRMC[]="$GPRMC,";
+
+//! NMEA-format time, position, groundspeed, track data
+void format_RMC (const coordinates_t &coordinates, char *p)
+{
+  p = append_string( p, GPRMC);
+  p = format_GNSS_timestamp( coordinates, p);
 
   p = angle_format (coordinates.latitude, p, 'N', 'S');
   *p++ = ',';
@@ -221,17 +230,7 @@ ROM char GPGGA[]="$GPGGA,";
 char *format_GGA( const coordinates_t &coordinates, char *p)
 {
   p = append_string( p, GPGGA);
-
-  *p++ = (coordinates.hour)   / 10 + '0';
-  *p++ = (coordinates.hour)   % 10 + '0';
-  *p++ = (coordinates.minute) / 10 + '0';
-  *p++ = (coordinates.minute) % 10 + '0';
-  *p++ = (coordinates.second) / 10 + '0';
-  *p++ = (coordinates.second) % 10 + '0';
-  *p++ = '.';
-  *p++ = '0';
-  *p++ = '0';
-  *p++ = ',';
+  p = format_GNSS_timestamp( coordinates, p);
 
   p = angle_format (coordinates.latitude, p, 'N', 'S');
   *p++ = ',';
