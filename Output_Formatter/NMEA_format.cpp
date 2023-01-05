@@ -25,59 +25,76 @@
 #include "NMEA_format.h"
 #include "embedded_math.h"
 
-#define ANGLE_SCALE 1e-7
-#define MPS_TO_NMPH 1.944 // 90 * 60 NM / 10000km * 3600 s/h
-#define RAD_TO_DEGREE_10 572.958
-#define METER_TO_FEET 3.2808
+#define ANGLE_SCALE 1e-7f
+#define MPS_TO_NMPH 1.944f // 90 * 60 NM / 10000km * 3600 s/h
+#define RAD_TO_DEGREE_10 572.958f
+#define RAD_TO_DEGREE 57.2958f
+#define METER_TO_FEET 3.2808f
+#define MPS_TO_KMPH 3.6f
 
 ROM char HEX[]="0123456789ABCDEF";
 
-//! integer to ASCII returning the string end
-char * format_integer( uint32_t value, char *s)
+//! signed integer to ASCII returning the string end
+char * format_integer( int32_t value, char *s)
 {
-  if( value < 10)
+  if( value < 0)
     {
-    *s++ = value + '0';
-    return s;
+      *s++='-';
+      return format_integer( -value, s);
     }
+  if( value < 10)
+      *s++ = value + '0';
     else
     {
       s = format_integer( value / 10, s);
-      s = format_integer( value % 10, s);
+      *s++ = value % 10 + '0';
     }
+  *s=0;
   return s;
 }
 
 //! format an integer into ASCII with exactly two digits after the decimal point
+//! @param number value * 100
 char * integer_to_ascii_2_decimals( int32_t number, char *s)
 {
   if( number < 0)
     {
-      *s++ = '-';
+      *s++='-';
       number = -number;
     }
-  s = format_integer( number / 100, s);
+  if( number >= 1000)
+    {
+      s = format_integer( number / 1000, s);
+      number %= 1000;
+    }
+  *s++=HEX[number / 100]; // format 1 digit plus exactly 2 decimals
   *s++='.';
-  s[1]=HEX[number % 10]; // format exact 2 decimals
-  number /= 10;
-  s[0]=HEX[number % 10];
-  s[2]=0;
-  return s+2;
+  number %= 100;
+  *s++=HEX[number / 10];
+  *s++=HEX[number % 10];
+  *s=0;
+  return s;
 }
 
 //! format an integer into ASCII with one decimal
+//! @param number value * 10
 char * integer_to_ascii_1_decimal( int32_t number, char *s)
 {
   if( number < 0)
     {
-      *s++ = '-';
+      *s++='-';
       number = -number;
     }
-  s = format_integer( number / 10, s);
+  if( number >= 100)
+    {
+      s = format_integer( number / 100, s);
+      number %= 100;
+    }
+  *s++=HEX[number / 10]; // format exactly 1 decimal
   *s++='.';
-  s[0]=HEX[number % 10];
-  s[1]=0;
-  return s+1;
+  *s++=HEX[number % 10];
+  *s=0;
+  return s;
 }
 
 //! basically: kind of strcat returning the pointer to the string-end
@@ -137,7 +154,7 @@ sqr (float a)
 ROM char GPRMC[]="$GPRMC,";
 
 //! NMEA-format time, position, groundspeed, track data
-char *format_RMC (const coordinates_t &coordinates, char *p)
+void format_RMC (const coordinates_t &coordinates, char *p)
 {
   p = append_string( p, GPRMC);
 
@@ -148,7 +165,7 @@ char *format_RMC (const coordinates_t &coordinates, char *p)
   *p++ = (coordinates.second) / 10 + '0';
   *p++ = (coordinates.second) % 10 + '0';
   *p++ = '.';
-  *p++ = '0';
+  *p++ = '0'; // todo add fractional seconds here
   *p++ = '0';
   *p++ = ',';
   *p++ = coordinates.sat_fix_type != 0 ? 'A' : 'V';
@@ -194,13 +211,8 @@ char *format_RMC (const coordinates_t &coordinates, char *p)
   *p++ = ((coordinates.year)%100) / 10 + '0';
   *p++ = ((coordinates.year)%100) % 10 + '0';
 
-  *p++ = ',';
-  *p++ = ',';
-  *p++ = ',';
-  *p++ = 'A';
-  *p++ = 0;
-
-  return p;
+  p=append_string( p, ",,,A");
+  *p = 0;
 }
 
 ROM char GPGGA[]="$GPGGA,";
@@ -234,41 +246,21 @@ char *format_GGA( const coordinates_t &coordinates, char *p)
   *p++ = (coordinates.SATS_number) % 10 + '0';
   *p++ = ',';
 
-  *p++ = '0'; // fake HDOP
+  *p++ = '1'; // fake HDOP
   *p++ = '.';
   *p++ = '0';
   *p++ = ',';
 
-  uint32_t altitude_msl_dm = coordinates.position.e[DOWN] * -10.0;
-  *p++ = altitude_msl_dm / 10000 + '0';
-  altitude_msl_dm %= 10000;
-  *p++ = altitude_msl_dm / 1000 + '0';
-  altitude_msl_dm %= 1000;
-  *p++ = altitude_msl_dm / 100 + '0';
-  altitude_msl_dm %= 100;
-  *p++ = altitude_msl_dm / 10 + '0';
-  *p++ = '.';
-  *p++ = altitude_msl_dm % 10 + '0';
+  uint32_t altitude_msl_dm = coordinates.position.e[DOWN] * -10.0f;
+  p = integer_to_ascii_1_decimal( altitude_msl_dm, p);
   *p++ = ',';
   *p++ = 'M';
   *p++ = ',';
 
-  int32_t geo_sep = coordinates.geo_sep_dm;
-  if( geo_sep < 0)
-    {
-      geo_sep = -geo_sep;
-      *p++ = '-';
-    }
-  *p++ = geo_sep / 1000 + '0';
-  geo_sep %= 1000;
-  *p++ = geo_sep / 100 + '0';
-  geo_sep %= 100;
-  *p++ = geo_sep / 10 + '0';
-  geo_sep %= 10;
-  *p++ = '.';
-  *p++ = geo_sep + '0';
+  int32_t geo_sep_10 = coordinates.geo_sep_dm;
+  p = integer_to_ascii_1_decimal( geo_sep_10, p);
   *p++ = ',';
-  *p++ = 'm';
+  *p++ = 'M';
   *p++ = ','; // no DGPS
   *p++ = ',';
   *p++ = 0;
@@ -278,7 +270,7 @@ char *format_GGA( const coordinates_t &coordinates, char *p)
 
 ROM char GPMWV[]="$GPMWV,";
 
-//! format wind reporting NMEA sequence
+//! format wind reporting, standard  NMEA sequence
 char *format_MWV ( float wind_north, float wind_east, char *p)
 {
   p = append_string( p, GPMWV);
@@ -290,33 +282,18 @@ char *format_MWV ( float wind_north, float wind_east, char *p)
     ++p;
 
   float direction = ATAN2( -wind_east, -wind_north);
-
-  int angle_10 = direction * RAD_TO_DEGREE_10 + 0.5;
-  if( angle_10 < 0)
-    angle_10 += 3600;
-
-  *p++ = angle_10 / 1000 + '0';
-  angle_10 %= 1000;
-  *p++ = angle_10 / 100 + '0';
-  angle_10 %= 100;
-  *p++ = angle_10 / 10 + '0';
-  *p++ = '.';
-  *p++ = angle_10 % 10 + '0';
+  if( direction < 0.0f)
+    direction += 360.0f;
+  int angle_10 = round( direction * RAD_TO_DEGREE_10);
+  p=integer_to_ascii_1_decimal( angle_10, p);
   *p++ = ',';
   *p++ = 'T'; // true direction
   *p++ = ',';
 
-  float value = SQRT(sqr( wind_north) + sqr( wind_east));
+  float value = SQRT( SQR( wind_north) + SQR( wind_east));
 
-  unsigned wind = value * 10.0f;
-  *p++ = wind / 1000 + '0';
-  wind %= 1000;
-  *p++ = wind / 100 + '0';
-  wind %= 100;
-  *p++ = wind / 10 + '0';
-  *p++ = '.';
-  *p++ = wind % 10 + '0';
-
+  unsigned wind_10 = value * 10.0f;
+  p=integer_to_ascii_1_decimal( wind_10, p);
   *p++ = ',';
   *p++ = 'M'; // m/s
   *p++ = ',';
@@ -335,48 +312,30 @@ void format_POV( float TAS, float pabs, float pitot, float TEK_vario, float volt
   p = append_string( p, POV);
 
   p = append_string( p, ",E,");
-  p = integer_to_ascii_2_decimals( (int)(TEK_vario * 100.0f), p);
+  p = integer_to_ascii_2_decimals( round(TEK_vario * 100.0f), p);
 
   p = append_string( p, ",P,");
-  p = integer_to_ascii_2_decimals( (int)pabs, p); // static pressure, already in Pa = 100 hPa
+  p = integer_to_ascii_2_decimals( round( pabs), p); // static pressure, already in Pa = 100 hPa
 
   if( pitot < 0.0f)
     pitot = 0.0f;
   p = append_string( p, ",R,");
-  p = integer_to_ascii_2_decimals( (int)pitot, p); // pitot pressure (difference) / Pa
+  p = integer_to_ascii_2_decimals( round(pitot), p); // pitot pressure (difference) / Pa = 100hPa
 
   p = append_string( p, ",S,");
-  p = integer_to_ascii_2_decimals( (int)(TAS * 360.0f), p); // m/s -> 1/100 km/h
+  p = integer_to_ascii_1_decimal( round(TAS * 36.0f), p); // m/s -> 1/10 km/h
 
   p = append_string( p, ",V,");
-  p = integer_to_ascii_1_decimal( (int)(voltage * 10.0f), p);
+  p = integer_to_ascii_2_decimals( round(voltage * 100.0f), p);
 
   if( airdata_available)
     {
       p = append_string( p, ",H,");
-      p = integer_to_ascii_2_decimals( (int)(humidity * 100.0f), p);
+      p = integer_to_ascii_2_decimals( round(humidity * 100.0f), p);
 
       p = append_string( p, ",T,");
-      p = integer_to_ascii_2_decimals( (int)(temperature * 100.0f), p);
+      p = integer_to_ascii_2_decimals( round(temperature * 100.0f), p);
     }
-
-  *p = 0;
-}
-
-//! add the elements reporting attitude (roll nick yaw angles)
-void format_POV_RNY( float roll, float nick, float yaw, char *p)
-{
-  p = append_string( p, POV);
-  p = append_string( p, ",B,"); // bank instead of roll, as "R" is already in use
-  p = integer_to_ascii_1_decimal( (int)(roll * RAD_TO_DEGREE_10 + 0.5), p);
-
-  p = append_string( p, ",N,");
-  p = integer_to_ascii_1_decimal( (int)(nick * RAD_TO_DEGREE_10 + 0.5), p);
-
-  if( yaw < 0.0f)
-    yaw += 6.2832f;
-  p = append_string( p, ",Y,");
-  p = integer_to_ascii_1_decimal( (int)(yaw * RAD_TO_DEGREE_10 + 0.5), p);
 
   *p = 0;
 }
@@ -386,7 +345,7 @@ ROM char HCHDT[]="$HCHDT,";
 //! create HCHDM sentence to report true heading
 void format_HCHDT( float true_heading, char *p) // report magnetic heading
 {
-  int heading = (int)(true_heading * 573.0f); // -> 1/10 degree
+  int heading = round(true_heading * 573.0f); // -> 1/10 degree
   if( heading < 0)
     heading += 3600;
 
@@ -398,6 +357,61 @@ void format_HCHDT( float true_heading, char *p) // report magnetic heading
   *p = 0;
 }
 
+// ********* Larus-specific protocols *************************************
+#if USE_LARUS_NMEA_EXTENSIONS
+
+ROM char PLARA[]="$PLARA,";
+
+void format_PLARA ( float roll, float nick, float yaw, char *p)
+{
+    p = append_string( p, PLARA);
+
+    p = integer_to_ascii_1_decimal( round(roll * RAD_TO_DEGREE_10), p);
+
+    p = append_string( p, ",");
+    p = integer_to_ascii_1_decimal( round(nick * RAD_TO_DEGREE_10), p);
+
+    if( yaw < 0.0f)
+        yaw += 6.2832f;
+    p = append_string( p, ",");
+    p = integer_to_ascii_1_decimal( round(yaw * RAD_TO_DEGREE_10), p);
+
+    *p = 0;
+}
+
+ROM char PLARW[]="$PLARW,";
+
+//! format wind reporting NMEA sequence
+void format_PLARW ( float wind_north, float wind_east, char windtype, char *p)
+{
+  p = append_string( p, PLARW);
+
+    //wind_north = 3.0; // this setting reports 18km/h from 53 degrees
+    //wind_east = 4.0;
+
+    // report WHERE the wind the comes from, instead of our wind speed vector, so negative sign
+    float direction = ATAN2( -wind_east, -wind_north);
+
+    // map to 0..359 degrees
+    int angle = round( direction * RAD_TO_DEGREE);
+    if( angle < 0)
+        angle += 360;
+    p=format_integer( angle, p);
+    p = append_string( p, ",T,");
+
+    int speed = round( MPS_TO_KMPH * SQRT( SQR( wind_north) + SQR( wind_east)));
+    p=format_integer( speed, p);
+    p = append_string( p, ",K,");
+
+    *p++ = windtype;
+
+    p = append_string( p, ",A"); // always report "valid" for the moment
+    *p=0;
+}
+
+#endif
+
+// ********* Generic stuff ************************************************
 inline char hex4( uint8_t data)
 {
   return HEX[data];
@@ -435,12 +449,12 @@ char * NMEA_append_tail( char *p)
 //! this procedure formats all our NMEA sequences
 void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA_buf, float declination)
 {
-  char *next;
+  char *next = NMEA_buf.string;
 
-  format_RMC ( output_data.c, NMEA_buf.string);
-  next = NMEA_append_tail (NMEA_buf.string);
+  format_RMC ( output_data.c, next);
+  next = NMEA_append_tail ( next);
 
-  format_GGA ( output_data.c, next);  //TODO: ensure that this reports the altitude in meter above medium sea level and height above wgs84: http://aprs.gids.nl/nmea/#gga
+  format_GGA ( output_data.c, next);
   next = NMEA_append_tail (next);
 
   format_MWV (output_data.wind_average.e[NORTH], output_data.wind_average.e[EAST], next);
@@ -451,12 +465,23 @@ void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA
 	      output_data.m.outside_air_humidity*100.0f, output_data.m.outside_air_temperature, next);
   next = NMEA_append_tail (next);
 
-  format_POV_RNY( output_data.euler.r, output_data.euler.n, output_data.euler.y, next);
+  format_HCHDT( output_data.euler.y, next);
   next = NMEA_append_tail (next);
 
-  format_HCHDT( output_data.euler.y, next); // report magnetic heading
+#if USE_LARUS_NMEA_EXTENSIONS
+
+  format_PLARW (output_data.wind.e[NORTH], output_data.wind.e[EAST], 'I', next);
   next = NMEA_append_tail (next);
 
+  format_PLARW (output_data.wind_average.e[NORTH], output_data.wind_average.e[EAST], 'A', next);
+  next = NMEA_append_tail (next);
+
+  format_PLARA(output_data.euler.r, output_data.euler.n, output_data.euler.y, next);
+  next = NMEA_append_tail(next);
+
+#endif
+
+//  assert(   next - NMEA_buf.string < string_buffer_t::BUFLEN);
   NMEA_buf.length = next - NMEA_buf.string;
 }
 

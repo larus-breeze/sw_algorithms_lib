@@ -11,8 +11,8 @@
 //! contains a string including it's length
 class string_buffer_t
 {
-  enum{ BUFLEN = 300};
 public:
+  enum{ BUFLEN = 500};
   char string[BUFLEN];
   uint32_t length;
 };
