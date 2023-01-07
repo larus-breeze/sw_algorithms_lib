@@ -166,8 +166,6 @@ char * format_GNSS_timestamp(const coordinates_t &coordinates, char *p)
   *p++ = hundredth_seconds / 10 +'0';
   *p++ = hundredth_seconds % 10 +'0';
   *p++ = ',';
-  *p++ = coordinates.sat_fix_type != 0 ? 'A' : 'V';
-  *p++ = ',';
 
   return p;
 }
@@ -179,6 +177,9 @@ void format_RMC (const coordinates_t &coordinates, char *p)
 {
   p = append_string( p, GPRMC);
   p = format_GNSS_timestamp( coordinates, p);
+
+  *p++ = coordinates.sat_fix_type != 0 ? 'A' : 'V';
+  *p++ = ',';
 
   p = angle_format (coordinates.latitude, p, 'N', 'S');
   *p++ = ',';
