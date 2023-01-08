@@ -460,9 +460,14 @@ void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA
   format_MWV (output_data.wind_average.e[NORTH], output_data.wind_average.e[EAST], next);
   next = NMEA_append_tail (next);
 
+#if WITH_DENSITY_DATA
   format_POV( output_data.TAS, output_data.m.static_pressure, output_data.m.pitot_pressure, output_data.vario, output_data.m.supply_voltage,
-	      (output_data.m.outside_air_humidity > 0.0f), // true if outside air data are available
-	      output_data.m.outside_air_humidity*100.0f, output_data.m.outside_air_temperature, next);
+  	      (output_data.m.outside_air_humidity > 0.0f), // true if outside air data are available
+  	      output_data.m.outside_air_humidity*100.0f, output_data.m.outside_air_temperature, next);
+#else
+  format_POV( output_data.TAS, output_data.m.static_pressure, output_data.m.pitot_pressure, output_data.vario, output_data.m.supply_voltage,
+  	      false, 0.0f, 0.0f, next);
+#endif
   next = NMEA_append_tail (next);
 
   format_HCHDT( output_data.euler.y, next);
