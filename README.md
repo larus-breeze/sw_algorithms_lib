@@ -16,27 +16,7 @@ The algorithms include:
 - **NMEA-stream output** for flight-management systems like [XCsoar](https://github.com/XCSoar/)
 - Output of application-specific data to a **CAN-bus** to feed cockpit-instruments
 
-# The following NMEA sentences are reported over the UARTs
-
-**NMEA Standard sequences**:
-- $GPRMC time, position, groundspeed, track over ground
-- $GPGGA position (again), sat number and GEO separation = WGS84 altitude - MSL altitude
-- $GPMWV wind direction and speed
-- $HCHDT true heading
-
-**OpenVario proprietary sequences**:
-- $POV,S true airspeed
-- $POV,P absolue pressure
-- $POV,Q dynnamic pressure = pitot pressure
-- $POV,V battery voltage
-- $POV,E total energy compensated variometer
-- $POV,H relative humidity (if available)
-- $POV,T outside air temperature (if available)
-
-**OpenVario extensions** as proposed by this project:
-- $POV,B bank angle = roll angle, positive on right turns
-- $POV,N nick angle, positive if nose is up
-- $POV,Y yaw angle = true heading (redundant, see $HCHDT, under discussion)
+The sensor output as a set of NMEA sentences ist defined in our subproject [larus-NMEA-protocol](https://github.com/larus-breeze/standards-larus-NMEA-protocol)
 
 # This library is designed to be imported into another project via a .gitmodules file.
 
