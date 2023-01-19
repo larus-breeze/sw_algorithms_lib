@@ -102,6 +102,9 @@ typedef struct
 
   float3vector body_acc;
   float3vector body_gyro;
+  float pressure_altitude;
+
+  // debug / test variables:
   float HeadingDifferenceAhrsDgnss;
   float QFF;
   float air_density;

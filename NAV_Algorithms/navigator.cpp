@@ -148,6 +148,7 @@ void navigator_t::report_data( output_data_t &d)
     d.slip_angle		= ahrs.getSlipAngle();
     d.nick_angle		= ahrs.getNickAngle();
     d.G_load			= ahrs.get_G_load();
+    d.pressure_altitude		= - atmosphere.get_negative_altitude();
     d.HeadingDifferenceAhrsDgnss = ahrs.getHeadingDifferenceAhrsDgnss();
     d.QFF			= atmosphere.get_QFF();
     d.air_density		= atmosphere.get_density();

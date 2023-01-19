@@ -310,7 +310,7 @@ void format_POV( float TAS, float pabs, float pitot, float TEK_vario, float volt
 		 bool airdata_available, float humidity, float temperature, char *p)
 {
   p = append_string( p, POV);
-
+#if 1
   p = append_string( p, ",E,");
   p = integer_to_ascii_2_decimals( round(TEK_vario * 100.0f), p);
 
@@ -324,7 +324,7 @@ void format_POV( float TAS, float pabs, float pitot, float TEK_vario, float volt
 
   p = append_string( p, ",S,");
   p = integer_to_ascii_1_decimal( round(TAS * 36.0f), p); // m/s -> 1/10 km/h
-
+#endif
   p = append_string( p, ",V,");
   p = integer_to_ascii_2_decimals( round(voltage * 100.0f), p);
 
@@ -446,6 +446,33 @@ char * NMEA_append_tail( char *p)
  	return p+5;
  }
 
+#if USE_PTAS
+ROM char PTAS1[]="$PTAS1,";
+
+char *format_PTAS1 ( float vario, float avg_vario, float altitude, float TAS, char *p)
+{
+  vario=CLIP(vario, -10.0f, 10.0f);
+  avg_vario=CLIP(avg_vario, -10.0f, 10.0f);
+
+  p = append_string( p, PTAS1);
+
+  p=format_integer( round( vario * MPS_TO_NMPH * 10.0f + 200.0f), p);
+  *p++ = ',';
+
+  p=format_integer( round( avg_vario * MPS_TO_NMPH * 10.0f + 200.0f), p);
+  *p++ = ',';
+
+  p=format_integer( round( altitude * METER_TO_FEET + 2000.0), p);
+  *p++ = ',';
+
+  p=format_integer( round( TAS * MPS_TO_NMPH), p);
+
+  *p++ = 0;
+  return p;
+}
+#endif // USE_PTAS
+
+
 //! this procedure formats all our NMEA sequences
 void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA_buf, float declination)
 {
@@ -459,6 +486,16 @@ void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA
 
   format_MWV (output_data.wind_average.e[NORTH], output_data.wind_average.e[EAST], next);
   next = NMEA_append_tail (next);
+
+#if USE_PTAS
+
+  format_PTAS1 ( output_data.vario,
+		 output_data.integrator_vario,
+		 output_data.pressure_altitude,
+		 output_data.TAS,
+		 next);
+  next = NMEA_append_tail (next);
+#endif
 
 #if WITH_DENSITY_DATA
   format_POV( output_data.TAS, output_data.m.static_pressure, output_data.m.pitot_pressure, output_data.vario, output_data.m.supply_voltage,
