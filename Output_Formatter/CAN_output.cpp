@@ -26,6 +26,7 @@
 #include "generic_CAN_driver.h"
 #include "CAN_output.h"
 #include "data_structures.h"
+#include "system_state.h"
 
 enum CAN_ID_SENSOR
 {
