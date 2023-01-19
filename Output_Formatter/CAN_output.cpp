@@ -133,27 +133,16 @@ void CAN_output ( const output_data_t &x)
 
   p.id=c_CAN_Id_TurnCoord;				// 0x10c
   p.dlc=6;
-  p.data_sh[0] = (int16_t)(round(x.slip_angle * 1000.0f));	// slipwinkel in rad aus Scheinlot
-  p.data_sh[1] = (int16_t)(round(x.turn_rate  * 1000.0f)); 	// drehrate in rad/s
-  p.data_sh[2] = (int16_t)(round(x.nick_angle * 1000.0f));	// nickwinkel in rad aus Scheinlot
-#ifdef CAN_OUTPUT_ACTIVE
+  p.data_sh[0] = (int16_t)(round(x.slip_angle * 1000.0f));	// slip angle in radiant from body acceleration
+  p.data_sh[1] = (int16_t)(round(x.turn_rate  * 1000.0f)); 	// turn rate rad/s
+  p.data_sh[2] = (int16_t)(round(x.nick_angle * 1000.0f));	// nick angle in radiant from body acceleration
   if( CAN_send(p, 1)) // check CAN for timeout this time
-      system_state |= CAN_OUTPUT_ACTIVE;
+    system_state |= CAN_OUTPUT_ACTIVE;
+  else
+    system_state &= ~CAN_OUTPUT_ACTIVE;
 
   p.id=c_CAN_Id_SystemState;				// 0x10d
   p.dlc=4;
   p.data_w[0] = system_state;
   CAN_send(p, 1);
-#else
-  CAN_send(p, 1);
-
-  p.id=c_CAN_Id_SystemState;				// 0x10d
-  p.dlc=4;
-  p.data_w[0] = 0x00; // dummy
-  CAN_send(p, 1);
-
-  p.id=0x200; // dummy for audio heart beat
-  p.dlc=1;
-  CAN_send(p, 1);
-#endif
 }
