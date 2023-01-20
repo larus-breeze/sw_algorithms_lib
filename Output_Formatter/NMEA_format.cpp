@@ -25,7 +25,9 @@
 #include "NMEA_format.h"
 #include "embedded_math.h"
 
-#define USE_PTAS 1
+#define USE_PTAS1	1
+#define USE_MWV		1
+#define USE_POV		0
 
 #define ANGLE_SCALE 1e-7f
 #define MPS_TO_NMPH 1.944f // 90 * 60 NM / 10000km * 3600 s/h
@@ -362,6 +364,15 @@ void format_HCHDT( float true_heading, char *p) // report magnetic heading
 // ********* Larus-specific protocols *************************************
 #if USE_LARUS_NMEA_EXTENSIONS
 
+ROM char PLARB[]="$PLARB,";
+
+void format_PLARB ( float voltage, char *p)
+{
+    p = append_string( p, PLARB);
+    p = integer_to_ascii_2_decimals( round( voltage * 100.0f), p);
+    *p = 0;
+}
+
 ROM char PLARA[]="$PLARA,";
 
 void format_PLARA ( float roll, float nick, float yaw, char *p)
@@ -448,7 +459,6 @@ char * NMEA_append_tail( char *p)
  	return p+5;
  }
 
-#if USE_PTAS
 ROM char PTAS1[]="$PTAS1,";
 
 char *format_PTAS1 ( float vario, float avg_vario, float altitude, float TAS, char *p)
@@ -472,25 +482,30 @@ char *format_PTAS1 ( float vario, float avg_vario, float altitude, float TAS, ch
   *p++ = 0;
   return p;
 }
-#endif // USE_PTAS
-
 
 //! this procedure formats all our NMEA sequences
 void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA_buf, float declination)
 {
   char *next = NMEA_buf.string;
 
+  // NMEA-format time, position, groundspeed, track data
   format_RMC ( output_data.c, next);
   next = NMEA_append_tail ( next);
 
+  // NMEA-format position report, sat number and GEO separation
   format_GGA ( output_data.c, next);
   next = NMEA_append_tail (next);
 
+#if USE_MWV
+  // report wind, the standard way, redundant to PLARW
   format_MWV (output_data.wind_average.e[NORTH], output_data.wind_average.e[EAST], next);
   next = NMEA_append_tail (next);
 
-#if USE_PTAS
+#endif
 
+#if USE_PTAS1
+
+  // report instant and average total-energy-compensated variometer, pressure altitude, TAS
   format_PTAS1 ( output_data.vario,
 		 output_data.integrator_vario,
 		 output_data.pressure_altitude,
@@ -498,6 +513,8 @@ void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA
 		 next);
   next = NMEA_append_tail (next);
 #endif
+
+#if USE_POV // the OpenVario way to do it ...
 
 #if WITH_DENSITY_DATA
   format_POV( output_data.TAS, output_data.m.static_pressure, output_data.m.pitot_pressure, output_data.vario, output_data.m.supply_voltage,
@@ -509,18 +526,27 @@ void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA
 #endif
   next = NMEA_append_tail (next);
 
+#endif
+
   format_HCHDT( output_data.euler.y, next);
   next = NMEA_append_tail (next);
 
 #if USE_LARUS_NMEA_EXTENSIONS
 
+  // instant wind
   format_PLARW (output_data.wind.e[NORTH], output_data.wind.e[EAST], 'I', next);
   next = NMEA_append_tail (next);
 
+  // average wind
   format_PLARW (output_data.wind_average.e[NORTH], output_data.wind_average.e[EAST], 'A', next);
   next = NMEA_append_tail (next);
 
+  // aircraft attitude
   format_PLARA(output_data.euler.r, output_data.euler.n, output_data.euler.y, next);
+  next = NMEA_append_tail(next);
+
+  // battery_voltage
+  format_PLARB( output_data.m.supply_voltage, next);
   next = NMEA_append_tail(next);
 
 #endif
