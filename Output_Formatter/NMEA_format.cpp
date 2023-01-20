@@ -25,6 +25,8 @@
 #include "NMEA_format.h"
 #include "embedded_math.h"
 
+#define USE_PTAS 1
+
 #define ANGLE_SCALE 1e-7f
 #define MPS_TO_NMPH 1.944f // 90 * 60 NM / 10000km * 3600 s/h
 #define RAD_TO_DEGREE_10 572.958f
