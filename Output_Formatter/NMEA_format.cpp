@@ -459,6 +459,7 @@ char * NMEA_append_tail( char *p)
  	return p+5;
  }
 
+#if USE_PTAS
 ROM char PTAS1[]="$PTAS1,";
 
 char *format_PTAS1 ( float vario, float avg_vario, float altitude, float TAS, char *p)
@@ -482,6 +483,8 @@ char *format_PTAS1 ( float vario, float avg_vario, float altitude, float TAS, ch
   *p++ = 0;
   return p;
 }
+#endif // USE_PTAS
+
 
 //! this procedure formats all our NMEA sequences
 void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA_buf, float declination)
