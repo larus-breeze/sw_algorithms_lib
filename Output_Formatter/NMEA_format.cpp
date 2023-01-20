@@ -459,7 +459,7 @@ char * NMEA_append_tail( char *p)
  	return p+5;
  }
 
-#if USE_PTAS
+#if USE_PTAS1
 ROM char PTAS1[]="$PTAS1,";
 
 char *format_PTAS1 ( float vario, float avg_vario, float altitude, float TAS, char *p)
