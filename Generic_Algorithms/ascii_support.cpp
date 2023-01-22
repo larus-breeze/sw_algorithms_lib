@@ -240,3 +240,22 @@ void portable_ftoa ( float value, char* res, unsigned  no_of_decimals, unsigned 
 
 }
 
+//! signed integer to ASCII returning the string end
+char * format_integer( int32_t value, char *s)
+{
+  if( value < 0)
+    {
+      *s++='-';
+      return format_integer( -value, s);
+    }
+  if( value < 10)
+      *s++ = value + '0';
+    else
+    {
+      s = format_integer( value / 10, s);
+      *s++ = value % 10 + '0';
+    }
+  *s=0;
+  return s;
+}
+

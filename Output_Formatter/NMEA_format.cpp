@@ -23,6 +23,7 @@
  **************************************************************************/
 
 #include "NMEA_format.h"
+#include "ascii_support.h"
 #include "embedded_math.h"
 
 #define USE_PTAS1	1
@@ -37,25 +38,6 @@
 #define MPS_TO_KMPH 3.6f
 
 ROM char HEX[]="0123456789ABCDEF";
-
-//! signed integer to ASCII returning the string end
-char * format_integer( int32_t value, char *s)
-{
-  if( value < 0)
-    {
-      *s++='-';
-      return format_integer( -value, s);
-    }
-  if( value < 10)
-      *s++ = value + '0';
-    else
-    {
-      s = format_integer( value / 10, s);
-      *s++ = value % 10 + '0';
-    }
-  *s=0;
-  return s;
-}
 
 //! format an integer into ASCII with exactly two digits after the decimal point
 //! @param number value * 100
@@ -99,15 +81,6 @@ char * integer_to_ascii_1_decimal( int32_t number, char *s)
   *s++=HEX[number % 10];
   *s=0;
   return s;
-}
-
-//! basically: kind of strcat returning the pointer to the string-end
-inline char *append_string( char *target, const char *source)
-{
-  while( *source)
-      *target++ = *source++;
-  *target = 0; // just to be sure :-)
-  return target;
 }
 
 //! append an angle in ASCII into a NMEA string
@@ -487,7 +460,7 @@ char *format_PTAS1 ( float vario, float avg_vario, float altitude, float TAS, ch
 
 
 //! this procedure formats all our NMEA sequences
-void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA_buf, float declination)
+void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA_buf)
 {
   char *next = NMEA_buf.string;
 

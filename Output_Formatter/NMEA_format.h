@@ -18,6 +18,7 @@ public:
 };
 
 //! combine all data to be output to the NMEA port
-void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA_buf, float declination);
+void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA_buf);
+char * integer_to_ascii_2_decimals( int32_t number, char *s);
 
 #endif /* APPLICATION_NMEA_FORMAT_H_ */
