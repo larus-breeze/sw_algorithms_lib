@@ -26,7 +26,7 @@
 #include "ascii_support.h"
 #include "embedded_math.h"
 
-#define USE_PTAS1	1
+#define USE_PTAS1	0
 #define USE_MWV		1
 #define USE_POV		0
 
@@ -458,6 +458,32 @@ char *format_PTAS1 ( float vario, float avg_vario, float altitude, float TAS, ch
 }
 #endif // USE_PTAS
 
+#if !USE_PTAS && USE_LARUS_NMEA_EXTENSIONS
+ROM char PLARV[] = "$PLARV,";
+
+char *format_PLARV(float vario, float avg_vario, float altitude, float TAS,
+                   char *p) {
+  vario = CLIP(vario, -10.0f, 10.0f);
+  avg_vario = CLIP(avg_vario, -10.0f, 10.0f);
+
+  p = append_string(p, PLARV);
+
+  p = integer_to_ascii_1_decimal(round(vario * 10.0f), p);  // in m/s
+  p = append_string(p, ",M,");
+
+  p = integer_to_ascii_1_decimal(round(avg_vario * 10.0f), p); // in m/s
+  p = append_string(p, ",M,");
+
+  p = format_integer(altitude, p); // in m
+  p = append_string(p, ",M,");
+
+  p = integer_to_ascii_1_decimal(round(TAS * MPS_TO_KMPH * 10.0f), p); // in m/s
+  p = append_string(p, ",K");
+
+  return p;
+}
+#endif
+
 
 //! this procedure formats all our NMEA sequences
 void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA_buf)
@@ -480,7 +506,6 @@ void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA
 #endif
 
 #if USE_PTAS1
-
   // report instant and average total-energy-compensated variometer, pressure altitude, TAS
   format_PTAS1 ( output_data.vario,
 		 output_data.integrator_vario,
@@ -524,6 +549,14 @@ void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA
   // battery_voltage
   format_PLARB( output_data.m.supply_voltage, next);
   next = NMEA_append_tail(next);
+
+#if !USE_PTAS1
+  // report instant and average total-energy-compensated variometer, pressure
+  // altitude, TAS
+  format_PLARV(output_data.vario, output_data.integrator_vario,
+               output_data.pressure_altitude, output_data.TAS, next);
+  next = NMEA_append_tail(next);
+#endif
 
 #endif
 
