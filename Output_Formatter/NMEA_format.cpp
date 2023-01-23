@@ -278,7 +278,8 @@ char *format_MWV ( float wind_north, float wind_east, char *p)
   return p;
 }
 
-ROM char HCHDT[]="$HCHDT,";
+#if USE_MWV
+ROM char HCHDT[] = "$HCHDT,";
 
 //! create HCHDM sentence to report true heading
 void format_HCHDT( float true_heading, char *p) // report magnetic heading
@@ -294,6 +295,7 @@ void format_HCHDT( float true_heading, char *p) // report magnetic heading
 
   *p = 0;
 }
+#endif  // USE_MWV
 
 // ********* Larus-specific protocols *************************************
 #if USE_LARUS_NMEA_EXTENSIONS
@@ -314,14 +316,14 @@ void format_PLARA ( float roll, float nick, float yaw, char *p)
     p = append_string( p, PLARA);
 
     p = integer_to_ascii_1_decimal( round(roll * RAD_TO_DEGREE_10), p);
+    *p++ = ',';
 
-    p = append_string( p, ",");
     p = integer_to_ascii_1_decimal( round(nick * RAD_TO_DEGREE_10), p);
+    *p++ = ',';
 
     if( yaw < 0.0f)
         yaw += 6.2832f;
-    p = append_string( p, ",");
-    p = integer_to_ascii_1_decimal( round(yaw * RAD_TO_DEGREE_10), p);
+    p = integer_to_ascii_1_decimal(round(yaw * RAD_TO_DEGREE_10), p);
 
     *p = 0;
 }
@@ -336,16 +338,16 @@ char *format_PLARV(float vario, float avg_vario, float altitude, float TAS,
   p = append_string(p, PLARV);
 
   p = integer_to_ascii_1_decimal(round(vario * 10.0f), p); // in m/s
-  p = append_string(p, ",M,");
+  *p++ = ',';
 
   p = integer_to_ascii_1_decimal(round(avg_vario * 10.0f), p); // in m/s
-  p = append_string(p, ",M,");
+  *p++ = ',';
 
   p = format_integer(altitude, p); // in m
-  p = append_string(p, ",M,");
+  *p++ = ',';
 
   p = integer_to_ascii_1_decimal(round(TAS * MPS_TO_KMPH * 10.0f), p); // in m/s
-  p = append_string(p, ",K");
+  *p = 0;
 
   return p;
 }
@@ -368,11 +370,11 @@ void format_PLARW ( float wind_north, float wind_east, char windtype, char *p)
     if( angle < 0)
         angle += 360;
     p=format_integer( angle, p);
-    p = append_string( p, ",T,");
+    *p++ = ',';
 
     int speed = round( MPS_TO_KMPH * SQRT( SQR( wind_north) + SQR( wind_east)));
     p=format_integer( speed, p);
-    p = append_string( p, ",K,");
+    *p++ = ',';
 
     *p++ = windtype;
 
@@ -437,10 +439,9 @@ void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA
 #endif
 
   format_HCHDT( output_data.euler.y, next);
-  next = NMEA_append_tail (next);
+  next = NMEA_append_tail(next);
 
 #if USE_LARUS_NMEA_EXTENSIONS
-
   // instant wind
   format_PLARW (output_data.wind.e[NORTH], output_data.wind.e[EAST], 'I', next);
   next = NMEA_append_tail (next);
