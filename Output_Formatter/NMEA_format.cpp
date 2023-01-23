@@ -27,6 +27,7 @@
 #include "embedded_math.h"
 
 #define USE_MWV		1
+#define USE_PLARD	0
 
 #define ANGLE_SCALE 1e-7f
 #define MPS_TO_NMPH 1.944f // 90 * 60 NM / 10000km * 3600 s/h
@@ -328,6 +329,18 @@ void format_PLARA ( float roll, float nick, float yaw, char *p)
     *p = 0;
 }
 
+#if USE_PLARD
+ROM char PLARD[] = "$PLARD,";
+
+void format_PLARD(float air_density, char *p) {
+  p = append_string(p, PLARD);
+  // Instant air density in g/m^3.
+  p = integer_to_ascii_1_decimal(round(air_density * 10000.0f), p);
+  p = append_string(p, ",A"); // always report "valid" for the moment
+  *p = 0;
+}
+#endif  // USE_PLARD
+
 ROM char PLARV[] = "$PLARV,";
 
 char *format_PLARV(float vario, float avg_vario, float altitude, float TAS,
@@ -457,6 +470,12 @@ void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA
   // battery_voltage
   format_PLARB( output_data.m.supply_voltage, next);
   next = NMEA_append_tail(next);
+
+#if USE_PLARD
+  // air_density
+  format_PLARD(output_data.air_density, next);
+  next = NMEA_append_tail(next);
+#endif // USE_PLARD
 
   // report instant and average total-energy-compensated variometer, pressure
   // altitude, TAS
