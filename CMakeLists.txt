@@ -3,6 +3,7 @@ project(sw_sensor_algorithms)
 set(SOURCE_FILES
     Generic_Algorithms/ascii_support.cpp
     Generic_Algorithms/serial_io.cpp
+
     NAV_Algorithms/AHRS.cpp
     NAV_Algorithms/air_density_observer.cpp
     NAV_Algorithms/atmosphere.cpp
@@ -11,8 +12,10 @@ set(SOURCE_FILES
     NAV_Algorithms/KalmanVario_PVA.cpp
     NAV_Algorithms/navigator.cpp
     NAV_Algorithms/persistent_data.cpp
+
     Output_Formatter/CAN_output.cpp
     Output_Formatter/NMEA_format.cpp
+    Output_Formatter/system_state.h
 )
 
 set(HEADER_FILES
@@ -32,6 +35,7 @@ set(HEADER_FILES
     Generic_Algorithms/serial_io.h
     Generic_Algorithms/trigger.h
     Generic_Algorithms/vector.h
+
     NAV_Algorithms/AHRS.h
     NAV_Algorithms/air_density_observer.h
     NAV_Algorithms/atmosphere.h
@@ -47,6 +51,7 @@ set(HEADER_FILES
     NAV_Algorithms/persistent_data.h
     NAV_Algorithms/soaring_flight_averager.h
     NAV_Algorithms/windobserver.h
+
     Output_Formatter/CAN_output.h
     Output_Formatter/generic_CAN_driver.h
     Output_Formatter/NMEA_format.h
