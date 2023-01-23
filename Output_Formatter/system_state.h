@@ -32,12 +32,16 @@ extern uint32_t system_state; //!< bits collected from availability_bits
 
 inline void update_system_state_set( unsigned value)
 {
-	__atomic_or_fetch ( &system_state, value, __ATOMIC_ACQUIRE);
+#ifndef __MSVC__
+  __atomic_or_fetch ( &system_state, value, __ATOMIC_ACQUIRE);
+#endif
 }
 
 inline void update_system_state_clear( unsigned value)
 {
-	__atomic_and_fetch ( &system_state, ~value, __ATOMIC_ACQUIRE);
+#ifndef __MSVC__
+  	__atomic_and_fetch ( &system_state, ~value, __ATOMIC_ACQUIRE);
+#endif
 }
 
 #endif /* INC_SYSTEM_STATE_H_ */

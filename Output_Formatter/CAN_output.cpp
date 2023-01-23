@@ -47,6 +47,7 @@ enum CAN_ID_SENSOR
 
 void CAN_output ( const output_data_t &x)
 {
+#ifndef __MSVC__
   CANpacket p;
 
   p.id=c_CAN_Id_EulerAngles;		// 0x101
@@ -137,7 +138,7 @@ void CAN_output ( const output_data_t &x)
   p.data_sh[0] = (int16_t)(round(x.slip_angle * 1000.0f));	// slip angle in radiant from body acceleration
   p.data_sh[1] = (int16_t)(round(x.turn_rate  * 1000.0f)); 	// turn rate rad/s
   p.data_sh[2] = (int16_t)(round(x.nick_angle * 1000.0f));	// nick angle in radiant from body acceleration
-  if( CAN_send(p, 1)) // check CAN for timeout this time
+  if (CAN_send(p, 1)) // check CAN for timeout this time
     system_state |= CAN_OUTPUT_ACTIVE;
   else
     system_state &= ~CAN_OUTPUT_ACTIVE;
@@ -146,4 +147,5 @@ void CAN_output ( const output_data_t &x)
   p.dlc=4;
   p.data_w[0] = system_state;
   CAN_send(p, 1);
+#endif
 }
