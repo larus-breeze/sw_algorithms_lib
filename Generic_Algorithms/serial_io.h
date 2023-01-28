@@ -26,6 +26,7 @@
 #define SERIAL_IO_H_
 
 #include "ascii_support.h"
+#include "my_assert.h"
 
 //! abstraction for serial input device
 class serial_input
@@ -38,9 +39,6 @@ public:
 	}
 	virtual char get( void)
 	{
-#ifndef _WIN32  // on Windows no asm()  
-	  asm("bkpt 0");
-#endif
 	  return 0;   // another stub, function should have a return value
 	}
 	virtual char get_blocking( void)
