@@ -426,10 +426,7 @@ void format_PLARV ( float variometer, float avg_variometer, float pressure_altit
   p=format_integer( p, round( pressure_altitude));
   p=append_string( p, ",M,");
 
-  p=format_integer( p, round( pressure_altitude));
-  p=append_string( p, ",M,");
-
-  p=format_integer( p, round( TAS));
+  p=format_integer( p, round( TAS * MPS_TO_KMPH));
   p=append_string( p, ",K");
 
   *p++ = 0;
