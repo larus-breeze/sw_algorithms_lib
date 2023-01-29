@@ -77,7 +77,7 @@ float string2float(char *input)
 
 static ROM char ASCIItable[]="zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz";
 
-char* itoa( char* result, int value, int base)
+char* itoa( int value, char* result, int base)
 {
 	// check that the base if valid
 	if (base < 2 || base > 36) { *result = '\0'; return result; }

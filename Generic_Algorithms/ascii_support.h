@@ -45,7 +45,7 @@ extern "C"
 float string2float(char *input);
 char* ftoa( char* Buffer, float Value);
 #ifndef _WIN32
-char* itoa( char* result, int value, int base=10);
+char* itoa( int value, char* result, int base=10);
 #endif
 
 inline char * format_2_digits( char * target, uint32_t data)

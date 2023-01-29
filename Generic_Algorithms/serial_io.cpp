@@ -28,7 +28,7 @@
 void serial_output::puti( int value, int base)
 {
 	char buffer[20];
-	itoa(  buffer, value, base);
+	itoa(  value, buffer, base);
 	puts( buffer);
 }
 void serial_output::putx( int32_t value, uint8_t digits)
