@@ -26,7 +26,6 @@
 #define SERIAL_IO_H_
 
 #include "ascii_support.h"
-#include "my_assert.h"
 
 //! abstraction for serial input device
 class serial_input
