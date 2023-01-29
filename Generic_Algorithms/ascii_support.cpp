@@ -77,7 +77,7 @@ float string2float(char *input)
 
 static ROM char ASCIItable[]="zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz";
 
-char* itoa(int value, char* result, int base)
+char* itoa( char* result, int value, int base)
 {
 	// check that the base if valid
 	if (base < 2 || base > 36) { *result = '\0'; return result; }
@@ -104,7 +104,7 @@ char* itoa(int value, char* result, int base)
 
 static ROM char hexdigits[] = "0123456789abcdef";
 
-char * utox(uint32_t value, char* result, uint8_t nibbles)
+char * utox( char* result, uint32_t value, uint8_t nibbles)
 {
 	for( int i=0; i < nibbles; ++i)
 	{
@@ -116,10 +116,10 @@ char * utox(uint32_t value, char* result, uint8_t nibbles)
 	return result;
 }
 
-char * lutox(uint64_t value, char* result)
+char * lutox( char* result, uint64_t value)
 {
-  utox( (uint32_t)(value >> 32), result, 8);
-  utox( value & 0xffffffff, result+8, 8);
+  utox(  result, (uint32_t)(value >> 32), 8);
+  utox( result+8, value & 0xffffffff, 8);
   result[16]=0;
   return result+16;
 }
@@ -191,7 +191,7 @@ char * my_ftoa( char * target, float value)
  	return( my_itoa( target, (int)exponent));
  }
 
-void portable_ftoa ( float value, char* res, unsigned  no_of_decimals, unsigned res_len )
+void portable_ftoa ( char* res, float value, unsigned  no_of_decimals, unsigned res_len )
 {
 //	ASSERT( no_of_decimals <= res_len-2);
 
@@ -241,18 +241,18 @@ void portable_ftoa ( float value, char* res, unsigned  no_of_decimals, unsigned 
 }
 
 //! signed integer to ASCII returning the string end
-char * format_integer( int32_t value, char *s)
+char * format_integer( char *s, int32_t value)
 {
   if( value < 0)
     {
       *s++='-';
-      return format_integer( -value, s);
+      return format_integer( s, -value);
     }
   if( value < 10)
       *s++ = value + '0';
     else
     {
-      s = format_integer( value / 10, s);
+      s = format_integer( s, value / 10);
       *s++ = value % 10 + '0';
     }
   *s=0;

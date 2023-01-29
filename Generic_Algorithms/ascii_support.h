@@ -35,17 +35,17 @@ char * my_ftoa( char * target, float value);
 
 #ifdef __cplusplus
 
-char * utox(uint32_t value, char* result, uint8_t nibbles = 8);
-char * lutox(uint64_t value, char* result);
+char * utox( char* result, uint32_t value, uint8_t nibbles = 8);
+char * lutox( char* result, uint64_t value);
 
 extern "C"
  {
 #endif /* __cplusplus */
 
 float string2float(char *input);
-char* ftoa(float Value, char* Buffer);
+char* ftoa( char* Buffer, float Value);
 #ifndef _WIN32
-char* itoa(int value, char* result, int base=10);
+char* itoa( char* result, int value, int base=10);
 #endif
 
 inline char * format_2_digits( char * target, uint32_t data)
@@ -66,7 +66,7 @@ inline char *append_string( char *target, const char *source)
   return target;
 }
 
-char * format_integer( int32_t value, char *s);
+char * format_integer( char *target, int32_t value);
 
 #ifdef __cplusplus
  }

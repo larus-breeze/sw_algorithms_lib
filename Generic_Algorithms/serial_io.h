@@ -92,7 +92,7 @@ public:
   {
     if( (buf+size-p) <10)
       return;
-    ftoa( value, p);
+    ftoa( p, value);
     while( *p)
       ++p;
   }

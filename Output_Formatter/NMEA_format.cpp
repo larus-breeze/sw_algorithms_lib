@@ -26,8 +26,8 @@
 #include "ascii_support.h"
 #include "embedded_math.h"
 
-#define USE_PTAS1	1
-#define USE_MWV		1
+#define USE_PTAS1	0
+#define USE_MWV		0
 #define USE_POV		0
 
 #define ANGLE_SCALE 1e-7f
@@ -50,7 +50,7 @@ char * integer_to_ascii_2_decimals( int32_t number, char *s)
     }
   if( number >= 1000)
     {
-      s = format_integer( number / 1000, s);
+      s = format_integer( s, number / 1000);
       number %= 1000;
     }
   *s++=HEX[number / 100]; // format 1 digit plus exactly 2 decimals
@@ -73,7 +73,7 @@ char * integer_to_ascii_1_decimal( int32_t number, char *s)
     }
   if( number >= 100)
     {
-      s = format_integer( number / 100, s);
+      s = format_integer( s, number / 100);
       number %= 100;
     }
   *s++=HEX[number / 10]; // format exactly 1 decimal
@@ -280,6 +280,8 @@ char *format_MWV ( float wind_north, float wind_east, char *p)
   return p;
 }
 
+#if USE_POV // the OpenVario way to do it ...
+
 ROM char POV[]="$POV";
 
 //! format the OpenVario sequence TAS, pressures and TEK variometer
@@ -317,6 +319,8 @@ void format_POV( float TAS, float pabs, float pitot, float TEK_vario, float volt
   *p = 0;
 }
 
+#endif
+
 ROM char HCHDT[]="$HCHDT,";
 
 //! create HCHDM sentence to report true heading
@@ -336,6 +340,17 @@ void format_HCHDT( float true_heading, char *p) // report magnetic heading
 
 // ********* Larus-specific protocols *************************************
 #if USE_LARUS_NMEA_EXTENSIONS
+
+ROM char PLARD[]="$PLARD,";
+
+void format_PLARD ( float density, char type, char *p)
+{
+    p = append_string( p, PLARD);
+    p = integer_to_ascii_2_decimals( round( density * 1e5f), p); // units = g / m^3, * 100 to get 2 decimals
+    *p++ = ',';
+    *p++ = type;
+    *p = 0;
+}
 
 ROM char PLARB[]="$PLARB,";
 
@@ -382,17 +397,42 @@ void format_PLARW ( float wind_north, float wind_east, char windtype, char *p)
     int angle = round( direction * RAD_TO_DEGREE);
     if( angle < 0)
         angle += 360;
-    p=format_integer( angle, p);
+    p=format_integer( p, angle);
     p = append_string( p, ",T,");
 
     int speed = round( MPS_TO_KMPH * SQRT( SQR( wind_north) + SQR( wind_east)));
-    p=format_integer( speed, p);
+    p=format_integer( p, speed);
     p = append_string( p, ",K,");
 
     *p++ = windtype;
 
     p = append_string( p, ",A"); // always report "valid" for the moment
     *p=0;
+}
+
+ROM char PLARV[]="$PLARV,";
+
+//! TEK vario, average vario, pressure altitude and speed (TAS)
+void format_PLARV ( float variometer, float avg_variometer, float pressure_altitude, float TAS, char *p)
+{
+  p = append_string( p, PLARV);
+
+  p=integer_to_ascii_2_decimals( round( variometer * 100.0f), p);
+  p=append_string( p, ",M,");
+
+  p=integer_to_ascii_2_decimals( round( avg_variometer * 100.0f), p);
+  p=append_string( p, ",M,");
+
+  p=format_integer( p, round( pressure_altitude));
+  p=append_string( p, ",M,");
+
+  p=format_integer( p, round( pressure_altitude));
+  p=append_string( p, ",M,");
+
+  p=format_integer( p, round( TAS));
+  p=append_string( p, ",K");
+
+  *p++ = 0;
 }
 
 #endif
@@ -509,14 +549,6 @@ void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA
 
 #if USE_LARUS_NMEA_EXTENSIONS
 
-  // instant wind
-  format_PLARW (output_data.wind.e[NORTH], output_data.wind.e[EAST], 'I', next);
-  next = NMEA_append_tail (next);
-
-  // average wind
-  format_PLARW (output_data.wind_average.e[NORTH], output_data.wind_average.e[EAST], 'A', next);
-  next = NMEA_append_tail (next);
-
   // aircraft attitude
   format_PLARA(output_data.euler.r, output_data.euler.n, output_data.euler.y, next);
   next = NMEA_append_tail(next);
@@ -524,6 +556,26 @@ void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA
   // battery_voltage
   format_PLARB( output_data.m.supply_voltage, next);
   next = NMEA_append_tail(next);
+
+  // air density
+  format_PLARD( output_data.air_density, 'M', next); // todo: type presently a dummy
+  next = NMEA_append_tail(next);
+
+  // report instant and average total-energy-compensated variometer, pressure altitude, TAS
+  format_PLARV ( output_data.vario,
+		 output_data.integrator_vario,
+		 output_data.pressure_altitude,
+		 output_data.TAS,
+		 next);
+  next = NMEA_append_tail (next);
+
+  // instant wind
+  format_PLARW (output_data.wind.e[NORTH], output_data.wind.e[EAST], 'I', next);
+  next = NMEA_append_tail (next);
+
+  // average wind
+  format_PLARW (output_data.wind_average.e[NORTH], output_data.wind_average.e[EAST], 'A', next);
+  next = NMEA_append_tail (next);
 
 #endif
 
