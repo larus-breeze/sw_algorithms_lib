@@ -41,16 +41,12 @@ air_data_result air_density_observer::feed_metering( float pressure, float MSL_a
 
   if( MSL_altitude < min_altitude)
     min_altitude = MSL_altitude;
-#if 0
-  if( density_QFF_calculator.get_count() <= 3000) // measure 5 minutes
-    return air_data;
-#else
+
   if( false == altitude_trigger.process(MSL_altitude))
     return air_data;
 
-#endif
-
-  if( (max_altitude - min_altitude) < MINIMUM_ALTITUDE_RANGE) // ... forget this measurement
+  if( ((max_altitude - min_altitude) < MINIMUM_ALTITUDE_RANGE) // ... forget this measurement
+    || (density_QFF_calculator.get_count() < 3000))
     {
       max_altitude = min_altitude = MSL_altitude;
       density_QFF_calculator.reset();
