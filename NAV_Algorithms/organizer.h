@@ -41,7 +41,7 @@ public:
   void initialize_before_measurement( void)
   {
     declination = navigator.get_declination();
-    pitot_offset= configuration (PITOT_OFFSET) - 1000.0f; // todo patch speed offset for static measurement
+    pitot_offset= configuration (PITOT_OFFSET);
     pitot_span 	= configuration (PITOT_SPAN);
     QNH_offset	= configuration (QNH_OFFSET);
 
