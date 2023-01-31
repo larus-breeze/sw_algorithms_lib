@@ -398,11 +398,11 @@ void format_PLARW ( float wind_north, float wind_east, char windtype, char *p)
     if( angle < 0)
         angle += 360;
     p=format_integer( p, angle);
-    p = append_string( p, ",T,");
+    *p++ = ',';
 
     int speed = round( MPS_TO_KMPH * SQRT( SQR( wind_north) + SQR( wind_east)));
     p=format_integer( p, speed);
-    p = append_string( p, ",K,");
+    *p++ = ',';
 
     *p++ = windtype;
 
@@ -418,16 +418,15 @@ void format_PLARV ( float variometer, float avg_variometer, float pressure_altit
   p = append_string( p, PLARV);
 
   p=integer_to_ascii_2_decimals( round( variometer * 100.0f), p);
-  p=append_string( p, ",M,");
+  *p++ = ',';
 
   p=integer_to_ascii_2_decimals( round( avg_variometer * 100.0f), p);
-  p=append_string( p, ",M,");
+  *p++ = ',';
 
   p=format_integer( p, round( pressure_altitude));
-  p=append_string( p, ",M,");
+  *p++ = ',';
 
   p=format_integer( p, round( TAS * MPS_TO_KMPH));
-  p=append_string( p, ",K");
 
   *p++ = 0;
 }
