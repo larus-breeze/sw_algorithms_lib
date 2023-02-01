@@ -8,8 +8,6 @@
 #ifndef OLD_DATA_STRUCTURES_H_
 #define OLD_DATA_STRUCTURES_H_
 
-#define WITH_DENSITY_DATA 1
-
 #include "system_configuration.h"
 #include "quaternion.h"
 #include "GNSS.h"
