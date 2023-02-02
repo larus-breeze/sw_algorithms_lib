@@ -86,6 +86,7 @@ public:
       out.e[i]=calibration[i].calibrate( in.e[i]);
     return out;
   }
+  bool set_default (void);
   void set_calibration( linear_least_square_fit<float> mag_calibrator[3], char id, bool turning_right, bool check_samples=true)
   {
     if( turning_right)
@@ -185,6 +186,21 @@ inline bool compass_calibration_t::read_from_EEPROM (void)
 	    return true; // error
 
       calibration[i].variance = variance;
+    }
+
+  calibration_done = true;
+  return false; // no error;
+}
+
+inline bool compass_calibration_t::set_default (void)
+{
+  float variance;
+  calibration_done = true;
+  for( unsigned i=0; i<3; ++i)
+    {
+      calibration[i].offset = 0.0f;
+      calibration[i].scale = 1.0f;
+      calibration[i].variance = 0.1f;
     }
 
   calibration_done = true;
