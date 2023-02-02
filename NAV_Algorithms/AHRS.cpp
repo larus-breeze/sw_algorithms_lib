@@ -282,6 +282,20 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   circle_state_t old_circle_state = circle_state;
   update_circling_state ();
 
+  // todo hier fehlt magnet-modell erde
+  float mag_correction =
+	+ nav_induction[NORTH] * expected_nav_induction[EAST]
+	- nav_induction[EAST]  * expected_nav_induction[NORTH];
+#if 0 // thsi calculation is way too complicated
+	    mag_correction /= SQRT(
+		(SQR( nav_induction[NORTH]) + SQR(nav_induction[EAST])) *
+		(SQR( expected_nav_induction[NORTH])+SQR( expected_nav_induction[EAST]))
+		);
+#endif
+	    // todo needs to be uptdated if inclination is changed !
+	    mag_correction *= 4.0f; // normalize by vector projection magnitude
+
+
   if (isnan( GNSS_acceleration.e[NORTH])) // no GNSS fix, fixme todo remove this section
 
     // just keep gyro offsets but do not calculate correction
@@ -294,20 +308,6 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 	case STRAIGHT_FLIGHT:
 	case TRANSITION:
 	  {
-	    // todo hier fehlt magnet-modell erde
-	    float mag_correction =
-		+ nav_induction[NORTH] * expected_nav_induction[EAST]
-		- nav_induction[EAST]  * expected_nav_induction[NORTH];
-
-#if 0 // thsi calculation is way too complicated
-	    mag_correction /= SQRT(
-		(SQR( nav_induction[NORTH]) + SQR(nav_induction[EAST])) *
-		(SQR( expected_nav_induction[NORTH])+SQR( expected_nav_induction[EAST]))
-		);
-#endif
-	    // todo needs to be uptdated if inclination is changed !
-	    mag_correction *= 4.0f; // normalize by vector projection magnitude
-
 	    nav_correction[DOWN] = mag_correction * M_H_GAIN;
 	    gyro_correction = body2nav.reverse_map(nav_correction);
 	    gyro_correction *= P_GAIN;
@@ -321,7 +321,8 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 		+ nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
 		- nav_acceleration.e[EAST]  * GNSS_acceleration.e[NORTH];
 
-	    nav_correction[DOWN] = cross_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
+//	    nav_correction[DOWN] = cross_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
+	    nav_correction[DOWN] = cross_correction * CROSS_GAIN + mag_correction * M_H_GAIN; // use X-ACC and MAG: better !
 	    gyro_correction = body2nav.reverse_map(nav_correction);
 	    gyro_correction *= P_GAIN;
 	    feed_compass_calibration (mag_sensor);
