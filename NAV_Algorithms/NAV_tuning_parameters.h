@@ -48,7 +48,7 @@
 #define H_GAIN 38.0f			//!< Attitude controller: horizontal gain
 #define M_H_GAIN 10.0f			//!< Attitude controller: horizontal gain magnetic
 #define CROSS_GAIN 0.05f		//!< Attitude controller: cross-product gain
-
+#define NAV_CORRECTION_LIMIT 5.0f	//!< limit for "low AHRS correcting variable"
 #define HIGH_TURN_RATE 0.15f 		//!< turn rate high limit
 #define LOW_TURN_RATE  0.0707f 		//!< turn rate low limit
 
