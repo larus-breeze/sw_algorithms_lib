@@ -40,7 +40,7 @@ public:
 	  calibration_3d[axis].offset = (max[axis] + min[axis]) / 2.0f;
 	  calibration_3d[axis].variance = 0.1f; // a dummy, we don't know it here!
 	}
-    }
+}
 private:
   float max[3];
   float min[3];

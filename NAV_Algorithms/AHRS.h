@@ -174,6 +174,11 @@ public:
     return heading_difference_AHRS_DGNSS;
   }
 
+  float getMagneticDisturbance () const
+  {
+    return magnetic_disturbance;
+  }
+
 private:
   quaternion<ftype>attitude;
   float declination;
@@ -208,6 +213,7 @@ private:
   float antenna_DOWN_correction;  //!< slave antenna lower / DGNSS base length
   float antenna_RIGHT_correction; //!< slave antenna more right / DGNSS base length
   float heading_difference_AHRS_DGNSS;
+  float magnetic_disturbance; //!< abs( observed_induction - expected_induction)
 };
 
 #endif /* AHRS_H_ */

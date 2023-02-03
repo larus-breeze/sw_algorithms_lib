@@ -113,6 +113,7 @@ typedef struct
   float crosswind;
   float inst_wind_N;
   float inst_wind_E;
+  float magnetic_disturbance;
 } output_data_t;
 
 #pragma pack(pop)
