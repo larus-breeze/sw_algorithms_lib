@@ -88,6 +88,8 @@ void navigator_t::update_every_100ms (const coordinates_t &coordinates)
 				ahrs.get_circling_state ());
 
   float3vector relative_wind_NAV  = flight_observer.get_instant_wind() - wind_average_observer.get_value();
+
+#if ROTATING_WIND_QUENCHER
   float3vector relative_wind_BODY =  ahrs.get_body2nav().reverse_map(relative_wind_NAV);
   relative_wind_observer.update(relative_wind_BODY,
 				ahrs.get_euler ().y,
@@ -101,6 +103,9 @@ void navigator_t::update_every_100ms (const coordinates_t &coordinates)
     corrected_wind_averager.respond( instant_wind_corrected);
   else
     corrected_wind_averager.respond( flight_observer.get_instant_wind()); // todo bad: cascaded lowpass filters !
+#endif
+
+  corrected_wind_averager.respond( flight_observer.get_instant_wind()); // todo bad: cascaded lowpass filters !
 
   vario_integrator.update (flight_observer.get_vario_GNSS(), // here because of the update rate 10Hz
 			   ahrs.get_euler ().y,

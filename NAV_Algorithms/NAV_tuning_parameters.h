@@ -52,4 +52,7 @@
 #define HIGH_TURN_RATE 0.15f 		//!< turn rate high limit
 #define LOW_TURN_RATE  0.0707f 		//!< turn rate low limit
 
+// shall we cancel out any wind components while circling ?
+#define ROTATING_WIND_QUENCHER	1
+
 #endif /* NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_ */
