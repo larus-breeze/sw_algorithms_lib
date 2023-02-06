@@ -40,7 +40,6 @@ public:
 
   void initialize_before_measurement( void)
   {
-    declination = navigator.get_declination();
     pitot_offset= configuration (PITOT_OFFSET);
     pitot_span 	= configuration (PITOT_SPAN);
     QNH_offset	= configuration (QNH_OFFSET);
@@ -128,18 +127,12 @@ public:
     navigator.disregard_density_data();
   }
 
-  float getDeclination () const
-  {
-    return declination;
-  }
-
 private:
   navigator_t navigator;
   float3vector acc; //!< acceleration in airframe system
   float3vector mag; //!< normalized magnetic induction in airframe system
   float3vector gyro; //!< rotation-rates in airframe system
   float3matrix sensor_mapping; //!< sensor -> airframe rotation matrix
-  float declination;  //!< magnetic declination / rad
   float pitot_offset; //!< pitot pressure sensor offset
   float pitot_span;   //!< pitot pressure sensor span factor
   float QNH_offset;   //!< static pressure sensor offset
