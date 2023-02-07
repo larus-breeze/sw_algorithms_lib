@@ -11,10 +11,10 @@ The algorithms include:
 - A **Kalman-filter** fusioning altitude, vertical speed and vertical acceleration for an **ultra-fast variometer**
 - A **GNSS / INS-based speed-compensation** for the variometer
 - A **D-GNSS-based satellite-compass** with sub-degree accuracy (optional)
-- A self-calibrating **3d magnetic compass**
+- A self-calibrating **3d magnetic compass** with automatic detection of magnetic inclination and declination.
 - **Air-density measurement** by observing pressure over GNSS-altitude 
 - **NMEA-stream output** for flight-management systems like [XCsoar](https://github.com/XCSoar/)
-- Output of application-specific data to a **CAN-bus** to feed cockpit-instruments
+- Output of application-specific data to a **CAN-bus** to feed cockpit-instruments 
 
 The sensor output as a set of NMEA sentences ist defined in our subproject [larus-NMEA-protocol](https://github.com/larus-breeze/standards-larus-NMEA-protocol)
 
