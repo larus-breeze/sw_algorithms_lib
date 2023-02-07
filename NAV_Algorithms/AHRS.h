@@ -32,6 +32,7 @@
 #include "integrator.h"
 #include "compass_calibration.h"
 #include "HP_LP_fusion.h"
+#include "induction_observer.h"
 
 #include "pt2.h"
 
@@ -163,11 +164,6 @@ public:
 		  const float3vector &gyro, const float3vector &acc, const float3vector &mag,
 		  const float3vector &GNSS_acceleration); //!< rotate quaternion taking angular rate readings
 #endif
-  float get_declination( void) const
-  {
-    return declination;
-  }
-
   float
   getHeadingDifferenceAhrsDgnss () const
   {
@@ -180,9 +176,12 @@ public:
   }
 
 private:
+  void update_magnetic_loop_gain( void)
+  {
+    magnetic_control_gain = M_H_GAIN / SQRT( SQR(expected_nav_induction[EAST])+SQR(expected_nav_induction[NORTH]));
+  }
   quaternion<ftype>attitude;
-  float declination;
-  void feed_compass_calibration(const float3vector &mag);
+  void feed_magnetic_induction_observer(const float3vector &mag_sensor);
   circle_state_t circle_state;
   circle_state_t update_circling_state( void);
 
@@ -210,10 +209,12 @@ private:
   pt2<float,float> G_load_averager;
   linear_least_square_fit<float> mag_calibrator[3];
   compass_calibration_t compass_calibration;
+  induction_observer_t induction_observer;
   float antenna_DOWN_correction;  //!< slave antenna lower / DGNSS base length
   float antenna_RIGHT_correction; //!< slave antenna more right / DGNSS base length
   float heading_difference_AHRS_DGNSS;
   float magnetic_disturbance; //!< abs( observed_induction - expected_induction)
+  float magnetic_control_gain; //!< declination-dependent magnetic control loop gain
 };
 
 #endif /* AHRS_H_ */

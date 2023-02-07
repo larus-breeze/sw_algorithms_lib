@@ -160,11 +160,6 @@ public:
     return IAS;
   }
 
-  float get_declination( void) const
-  {
-    return ahrs.get_declination();
-  }
-
   const float3vector & get_relative_wind( void) const
   {
     return relative_wind_observer.get_value();
