@@ -52,7 +52,9 @@
 #define HIGH_TURN_RATE 0.15f 		//!< turn rate high limit
 #define LOW_TURN_RATE  0.0707f 		//!< turn rate low limit
 
-// shall we cancel out any wind components while circling ?
-#define ROTATING_WIND_QUENCHER	1
+#define UPDATE_MAGNETIC_CALIB	1	//!< if 1: update magnetic calibraion when new data have been collected
+#define CROSS_GAIN_ONLY		1 	//!< if 1: do not use induction to control attitude while circling
+#define MODIFY_EXPECTED_INDUCTION	1 //!< set to 1 to update inclination and declination automatically
+#define MAGNETIC_CALIB_FROM_EEPROM	1 //!< initially read data from EEPROM, may be set to 0 for tests
 
 #endif /* NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_ */
