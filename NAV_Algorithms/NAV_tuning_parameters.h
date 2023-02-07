@@ -46,15 +46,17 @@
 #define P_GAIN 0.03f			//!< Attitude controller: proportional gain
 #define I_GAIN 0.00006f 		//!< Attitude controller: integral gain
 #define H_GAIN 38.0f			//!< Attitude controller: horizontal gain
-#define M_H_GAIN 10.0f			//!< Attitude controller: horizontal gain magnetic
+#define M_H_GAIN 6.0f			//!< Attitude controller: horizontal gain magnetic
 #define CROSS_GAIN 0.05f		//!< Attitude controller: cross-product gain
+#define INDUCTION_ERROR	0.03		//!< Maximum std deviation to update earth induction parameters
 #define NAV_CORRECTION_LIMIT 5.0f	//!< limit for "low AHRS correcting variable"
 #define HIGH_TURN_RATE 0.15f 		//!< turn rate high limit
 #define LOW_TURN_RATE  0.0707f 		//!< turn rate low limit
 
-#define UPDATE_MAGNETIC_CALIB	1	//!< if 1: update magnetic calibraion when new data have been collected
-#define CROSS_GAIN_ONLY		1 	//!< if 1: do not use induction to control attitude while circling
-#define MODIFY_EXPECTED_INDUCTION	1 //!< set to 1 to update inclination and declination automatically
-#define MAGNETIC_CALIB_FROM_EEPROM	1 //!< initially read data from EEPROM, may be set to 0 for tests
+#define UPDATE_MAGNETIC_CALIB		1	//!< if 1: update magnetic calibration when new data are available
+#define MODIFY_EXPECTED_INDUCTION	1 	//!< set to 1 to update inclination and declination automatically
+#define CROSS_GAIN_ONLY			0 	//!< if 1: do not use induction to control attitude while circling
+#define MAGNETIC_CALIB_FROM_EEPROM	0 	//!< initially read data from EEPROM, may be set to 0 for tests
+#define DISABLE_CIRCLING_STATE		0	//!< for tests only: never use circling AHRS algorithm
 
 #endif /* NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_ */

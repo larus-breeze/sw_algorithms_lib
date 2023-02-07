@@ -110,6 +110,12 @@ template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false>
 	  + current_value * 0.25f;
     }
 
+    void reset( void)
+    {
+      present_output={0};
+      fill_recordings_with_old_average();
+    }
+
   private:
     void
     fill_recordings_with_old_average (void)

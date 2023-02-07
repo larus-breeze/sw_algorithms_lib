@@ -176,6 +176,10 @@ public:
   }
 
 private:
+  void update_magnetic_loop_gain( void)
+  {
+    magnetic_control_gain = M_H_GAIN / SQRT( SQR(expected_nav_induction[EAST])+SQR(expected_nav_induction[NORTH]));
+  }
   quaternion<ftype>attitude;
   void feed_magnetic_induction_observer(const float3vector &mag_sensor);
   circle_state_t circle_state;
@@ -210,6 +214,7 @@ private:
   float antenna_RIGHT_correction; //!< slave antenna more right / DGNSS base length
   float heading_difference_AHRS_DGNSS;
   float magnetic_disturbance; //!< abs( observed_induction - expected_induction)
+  float magnetic_control_gain; //!< declination-dependent magnetic control loop gain
 };
 
 #endif /* AHRS_H_ */
