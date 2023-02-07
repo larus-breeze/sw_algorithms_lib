@@ -66,6 +66,14 @@ inline char *append_string( char *target, const char *source)
   return target;
 }
 
+//!< append carriage return and newline and advance pointer
+inline void newline( char * &next)
+{
+  *next++ = '\r';
+  *next++ = '\n';
+  *next = 0;
+}
+
 char * format_integer( char *target, int32_t value);
 
 #ifdef __cplusplus
