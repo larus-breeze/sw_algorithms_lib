@@ -37,8 +37,14 @@
 #define VERTICAL_ENERGY_TUNING_FACTOR 1.0 // theoretically 1.0, observed optimum around 0.75
 
 // filters for CAN information (turn-coordinator, G-load ...)
-#define ANGLE_F_BY_FS  ( 1.0f / 0.5f / 100.0f) // 0.5s
-#define G_LOAD_F_BY_FS ( 1.0f / 0.25f / 100.0f) // 0.25s
+#define ANGLE_F_BY_FS  ( 1.0f / 0.5f / 100.0f) 			// 0.5s
+#define G_LOAD_F_BY_FS ( 1.0f / 0.25f / 100.0f) 		// 0.25s
+
+// variometer tuning parameters
+#define AVG_VARIO_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
+#define WIND_AVG_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
+#define WIND_SHORTTERM_F_BY_FS 	( 1.0f / 5.0f / 100.0f) 	// 5s @ 100Hz
+#define VARIO_F_BY_FS          	( 1.0f / 2.0f / 100.0f)      	// 2s @ 100Hz
 
 // AHRS tuning parameters:
 // These parameters have been tuned for the flight-dynamics of gliders
