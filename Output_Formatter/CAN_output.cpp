@@ -42,7 +42,8 @@ enum CAN_ID_SENSOR
   c_CAN_Id_GPS_Sats	= 0x10a,	//!< uin8_t No of Sats, Fix-Type NO=0 2D=1 3D=2 RTK=3
   c_CAN_Id_Acceleration = 0x10b,	//!< int16_t G-force mm / s^2
   c_CAN_Id_TurnCoord	= 0x10c,	//!< slip angle int16_t 1/1000 rad, turn rate int16_t 1/1000 rad/s
-  c_CAN_Id_SystemState	= 0x10d		//!< slip angle int16_t 1/1000 rad, turn rate int16_t 1/1000 rad/s
+  c_CAN_Id_SystemState	= 0x10d,	//!< slip angle int16_t 1/1000 rad, turn rate int16_t 1/1000 rad/s
+  c_CID_KSB_Vdd         = 0x112,    	//!< unit16_t as float voltage * 10
 };
 
 void CAN_output ( const output_data_t &x)
@@ -130,6 +131,11 @@ void CAN_output ( const output_data_t &x)
   p.data_sh[1] = (int16_t)(round(x.effective_vertical_acceleration * -1000.0f)); // mm/s^2
   p.data_sh[2] = (int16_t)(round(x.vario_uncompensated * -1000.0f)); // mm/s
   p.data_sb[6] = (int8_t)(x.circle_mode);
+  CAN_send(p, 1);
+
+  p.id=c_CID_KSB_Vdd;			// 0x112
+  p.dlc=2;
+  p.data_h[0] = (uint16_t)(round(x.m.supply_voltage * 10.0f)); 	// 1/10 V
   CAN_send(p, 1);
 
   p.id=c_CAN_Id_TurnCoord;				// 0x10c
