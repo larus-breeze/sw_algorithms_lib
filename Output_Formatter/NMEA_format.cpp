@@ -178,7 +178,7 @@ void format_RMC (const coordinates_t &coordinates, char *p)
 
   float true_track = coordinates.heading_motion;
   if( true_track < 0.0f)
-    true_track += 6.2832f;
+    true_track += 360.0f;
   int angle_10 = true_track * 10.0 + 0.5;
 
   *p++ = angle_10 / 1000 + '0';
