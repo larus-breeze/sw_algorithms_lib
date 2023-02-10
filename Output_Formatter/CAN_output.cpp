@@ -87,7 +87,8 @@ void CAN_output ( const output_data_t &x)
 
   p.id=c_CAN_Id_GPS_Alt;		// 0x106
   p.dlc=8;
-  p.data_l = (int64_t)(x.c.position.e[DOWN] * -1e3f);// in mm
+  p.data_sw[0] = (int32_t)(x.c.position.e[DOWN] * -1e3f);// in mm
+  p.data_sw[1] = x.c.geo_sep_dm; // geo separation in 1/10 m
   CAN_send(p, 1);
 
   p.id=c_CAN_Id_GPS_Trk_Spd;		// 0x107
