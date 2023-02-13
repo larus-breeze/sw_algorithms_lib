@@ -30,9 +30,11 @@
 #include <differentiator.h>
 #include "KalmanVario.h"
 #include "KalmanVario_PVA.h"
+#include "Kalman_V_A_observer.h"
 #include "embedded_math.h"
 #include "windobserver.h"
 #include "NAV_tuning_parameters.h"
+#include "HP_LP_fusion.h"
 
 #if USE_HARDWARE_EEPROM	== 0
 #include "EEPROM_emulation.h"
@@ -49,7 +51,7 @@ public:
   flight_observer_t( void)
   :
   vario_averager_pressure( configuration( VARIO_TC)),
-  vario_averager_GNSS( configuration( VARIO_TC)),
+  vario_averager_GNSS( 0.015f /* configuration( VARIO_TC) */), // todo remove patch
   windspeed_decimator_100Hz_10Hz( 1.0f / 100.0f),
   kinetic_energy_differentiator( 1.0f, 1.0f / 100.0f),
   speed_compensation_TAS( ZERO),
@@ -58,7 +60,9 @@ public:
   KalmanVario_GNSS( 0.0f, 0.0f, 0.0f, -9.81f),
   KalmanVario_pressure( 0.0f, 0.0f, 0.0f, -9.81f),
   specific_energy_differentiator( 1.0f, 1.0f / 100.0f),
-  specific_energy(0.0f)
+  specific_energy(0.0f),
+  speed_compensation_GNSS(0.0f),
+  GNSS_INS_speedcomp_fusioner(SPEED_COMPENSATION_FUSIONER_FEEDBACK)
   {
   };
 	void update_every_10ms
@@ -115,21 +119,24 @@ public:
 	}
 
 private:
-	pt2<float,float> vario_averager_pressure;
-	pt2<float,float> vario_averager_GNSS;
 	pt2<float3vector,float> windspeed_decimator_100Hz_10Hz;
 
 	// filter systems for variometer
+	pt2<float,float> vario_averager_pressure;
+	pt2<float,float> vario_averager_GNSS;
 	differentiator<float,float>kinetic_energy_differentiator;
 	KalmanVario_PVA_t KalmanVario_GNSS;
 	KalmanVario_t KalmanVario_pressure;
 	differentiator<float,float>specific_energy_differentiator;
+	Kalman_V_A_observer_t Kalman_v_a_observer_N;
+	Kalman_V_A_observer_t Kalman_v_a_observer_E;
+	HP_LP_fusion <float, float> GNSS_INS_speedcomp_fusioner;
 
-	// variometer-relevant signals
+	// variometer-related signals
+	float vario_uncompensated_pressure;
 	float speed_compensation_TAS;
 	float speed_compensation_GNSS;
 	float vario_uncompensated_GNSS;
-	float vario_uncompensated_pressure;
 	float specific_energy;
 };
 

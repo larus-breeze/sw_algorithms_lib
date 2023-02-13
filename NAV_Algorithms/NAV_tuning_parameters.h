@@ -58,6 +58,7 @@
 #define NAV_CORRECTION_LIMIT 5.0f	//!< limit for "low AHRS correcting variable"
 #define HIGH_TURN_RATE 0.15f 		//!< turn rate high limit
 #define LOW_TURN_RATE  0.0707f 		//!< turn rate low limit
+#define SPEED_COMPENSATION_FUSIONER_FEEDBACK 0.96f
 
 #define UPDATE_MAGNETIC_CALIB		1	//!< if 1: update magnetic calibration when new data are available
 #define MODIFY_EXPECTED_INDUCTION	1 	//!< set to 1 to update inclination and declination automatically
