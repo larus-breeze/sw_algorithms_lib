@@ -2,7 +2,7 @@ constant_energy = 1;
 acceleration_based_speed_compensation = 1;
 samplerate=100; % Hz
 
-tau = 0.1; % s
+tau = 0.66; % varionmeter smoothing filter time  constant 
 [B,A]=butter( 2, 1 / samplerate / tau, 'low'); % Vario Lowpass-Filter
 
 acceleration = 10; 

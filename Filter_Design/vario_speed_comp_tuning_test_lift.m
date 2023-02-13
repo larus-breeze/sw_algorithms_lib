@@ -1,6 +1,6 @@
 samplerate=100; % Hz
 
-tau = 0.1;
+tau = 0.66; % varionmeter smoothing filter time  constant 
 [B,A]=butter( 2, 1 / samplerate / tau, 'low');
 
 acceleration = 10; 
@@ -8,7 +8,7 @@ g = 9.81;
 acc_offset = - g;
 
 header_length = 100;
-acc = [ zeros(1,header_length) acceleration * ones(1,100) zeros(1,300) -acceleration * ones(1,100) zeros(1,header_length)];
+acc = [ zeros(1,header_length) acceleration * ones(1,100) zeros(1,300) -acceleration * ones(1,100) zeros(1,header_length * 2)];
 acc = filter( B,A,acc);
 %acc = [ acc -acc];
 vel = cumtrapz( acc) / samplerate;
