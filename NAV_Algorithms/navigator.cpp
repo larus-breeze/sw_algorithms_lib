@@ -164,5 +164,5 @@ void navigator_t::report_data( output_data_t &d)
     d.crosswind	 		= get_relative_wind().e[RIGHT];
     d.inst_wind_N		= flight_observer.get_instant_wind().e[NORTH];
     d.inst_wind_E		= flight_observer.get_instant_wind().e[EAST];
-    d.magnetic_disturbance		= ahrs.getMagneticDisturbance();
+    d.magnetic_disturbance	= ahrs.getMagneticDisturbance();
 }

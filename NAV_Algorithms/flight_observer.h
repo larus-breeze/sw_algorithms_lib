@@ -51,7 +51,7 @@ public:
   flight_observer_t( void)
   :
   vario_averager_pressure( configuration( VARIO_TC)),
-  vario_averager_GNSS( 0.015f /* configuration( VARIO_TC) */), // todo remove patch
+  vario_averager_GNSS( 0.01f /* configuration( VARIO_TC) */), // todo remove patch
   windspeed_decimator_100Hz_10Hz( 1.0f / 100.0f),
   kinetic_energy_differentiator( 1.0f, 1.0f / 100.0f),
   speed_compensation_TAS( ZERO),

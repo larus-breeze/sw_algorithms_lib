@@ -62,30 +62,32 @@ void flight_observer_t::update_every_10ms (
       // The Kalman-filter-based uncompensated vario in NED-system reports negative if *climbing* !
       vario_uncompensated_GNSS = - KalmanVario_GNSS.update ( GNSS_negative_altitude, gnss_velocity.e[DOWN], ahrs_acceleration.e[DOWN]);
 
-#if 0 // experimental: (INS-acceleration vector* GNSS-velocity) speed compensation
+#if 1 // experimental: (INS-acceleration vector* GNSS-velocity) speed compensation
       air_velocity = gnss_velocity - wind_average;
       air_velocity.e[DOWN] = KalmanVario_GNSS.get_x( KalmanVario_PVA_t::VARIO);
       float3vector acceleration = ahrs_acceleration;
       acceleration.e[DOWN] = KalmanVario_GNSS.get_x( KalmanVario_PVA_t::ACCELERATION_OBSERVED);
-      speed_compensation_GNSS = air_velocity * acceleration / 9.81;
+      //      speed_compensation_GNSS = air_velocity * acceleration * RECIP_GRAVITY;
+      float speed_compensation_INS_GNSS = air_velocity * acceleration * RECIP_GRAVITY;
 #endif
 #if 1 // horizontal kalman filter for velocity and acceleration
       Kalman_v_a_observer_N.update(gnss_velocity.e[NORTH] - wind_average.e[NORTH], ahrs_acceleration.e[NORTH]);
       Kalman_v_a_observer_E.update(gnss_velocity.e[EAST]  - wind_average.e[EAST],  ahrs_acceleration.e[EAST]);
+
       float speed_compensation_kalman = (
 		Kalman_v_a_observer_N.get_x(Kalman_V_A_observer_t::VELOCITY) * Kalman_v_a_observer_N.get_x(Kalman_V_A_observer_t::ACCELERATION) +
-		Kalman_v_a_observer_E.get_x(Kalman_V_A_observer_t::VELOCITY) * Kalman_v_a_observer_E.get_x(Kalman_V_A_observer_t::ACCELERATION)
+		Kalman_v_a_observer_E.get_x(Kalman_V_A_observer_t::VELOCITY) * Kalman_v_a_observer_E.get_x(Kalman_V_A_observer_t::ACCELERATION) +
+		KalmanVario_GNSS.get_x( KalmanVario_PVA_t::VARIO)            * KalmanVario_GNSS.get_x( KalmanVario_PVA_t::ACCELERATION_OBSERVED)
 	  ) * RECIP_GRAVITY;
 
-      specific_energy = specific_energy * 0.9f + 0.1f *  // primitive PT1 smoothing for upsampling
+      specific_energy =
 	  (
 	      SQR( gnss_velocity.e[NORTH] - wind_average.e[NORTH]) +
 	      SQR( gnss_velocity.e[EAST]  - wind_average.e[EAST])  +
 	      SQR( gnss_velocity.e[DOWN]) * VERTICAL_ENERGY_TUNING_FACTOR
-	   );
+	   )  * ONE_DIV_BY_GRAVITY_TIMES_2;
 
-      speed_compensation_GNSS =
-	  GNSS_INS_speedcomp_fusioner.respond( speed_compensation_kalman, specific_energy_differentiator.respond(specific_energy) * ONE_DIV_BY_GRAVITY_TIMES_2);
+      speed_compensation_GNSS = GNSS_INS_speedcomp_fusioner.respond( 0.5 * (speed_compensation_kalman + speed_compensation_INS_GNSS), specific_energy_differentiator.respond(specific_energy));
 #endif
 #if 0 // speed-compensation using differentiation of kinetic energy in air-system
       specific_energy = specific_energy * 0.9f + 0.1f *  // primitive PT1 smoothing for upsampling
