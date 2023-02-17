@@ -129,9 +129,9 @@ public:
 	{
 	  return gyro_correction;
 	}
-	circle_state_t get_circling_state(void) const
+	circle_state_t get_flight_state(void) const
 	{
-	  return circle_state;
+	  return flight_state;
 	}
 
   float
@@ -182,8 +182,8 @@ private:
   }
   quaternion<ftype>attitude;
   void feed_magnetic_induction_observer(const float3vector &mag_sensor);
-  circle_state_t circle_state;
-  circle_state_t update_circling_state( void);
+  circle_state_t flight_state;
+  circle_state_t update_flight_state( void);
 
   void update_diff_GNSS( const float3vector &gyro, const float3vector &acc, const float3vector &mag,
 	  const float3vector &GNSS_acceleration,

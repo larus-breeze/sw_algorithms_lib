@@ -25,27 +25,24 @@
 #ifndef SMART_AVERAGER_H_
 #define SMART_AVERAGER_H_
 
-#include <AHRS.h>
-#define SQR(x) ((x)*(x))
 #include "pt2.h"
 
 #define ONE_DIV_2PI 0.159155f
 #define PI_TIMES_2 6.2832f
 
 //! template for an average filter for circling and straight flight
-template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false>
+template<class value_t>
   class soaring_flight_averager
   {
   public:
     soaring_flight_averager (float cutoff_div_fsample) :
-	active_state (STRAIGHT_FLIGHT),
-	averager (cutoff_div_fsample),
-	present_output(0)
+	active_state (STRAIGHT_FLIGHT), averager (cutoff_div_fsample), present_output (
+	    0), used_sectors (0)
     {
-      fill_recordings_with_old_average ();
-    };
+    }
 
-    const value_t & get_value (void) const
+    const value_t&
+    get_value (void) const
     {
       return present_output;
     }
@@ -59,6 +56,9 @@ template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false>
 
       switch (active_state)
 	{
+	case TRANSITION: // impossible, just to keep the compiler calm
+	default:
+	  break;
 	case STRAIGHT_FLIGHT:
 	  if (new_state == CIRCLING)
 	    {
@@ -81,21 +81,23 @@ template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false>
 	  else
 	    record_input (current_value, heading);
 
-	  if (!(CLAMP_OUTPUT_FIRST_CIRCLE && (used_sectors < N_SECTORS)))
+	  // prepare new output here @ input sample rate for performance reasons
+
+	  value_t average =
+	    { 0 };
+	  unsigned used_sectors_count = 0;
+
+	  for (unsigned i = 0; i < N_SECTORS; ++i)
 	    {
-	      // prepare new output here @ input sample rate for performance reasons
-	      value_t average = { 0 };
-
-	      for (unsigned i = 0; i < N_SECTORS; ++i)
-		average = average + sector_averages[i];
-
-	      present_output = average * (1.0f / (float) N_SECTORS); // as division may not be implemented
+	      if (used_sectors & (1 << i)) // if this sector is in use
+		{
+		  average = average + sector_averages[i];
+		  ++used_sectors_count;
+		}
 	    }
-	  // else just keep old present_output
 
-	  break;
-	case TRANSITION: // impossible, just to keep the compiler calm
-	default:
+	  present_output = average * (1.0f / (float) used_sectors_count); // as division may not be implemented
+
 	  break;
 	}
     }
@@ -108,15 +110,24 @@ template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false>
 
       sector_averages[index] = sector_averages[index] * 0.75f
 	  + current_value * 0.25f;
+
+      used_sectors |= (1 << index); // set the used bit
     }
 
-    void reset( void)
+    void
+    reset (void)
     {
-      present_output={0};
-      fill_recordings_with_old_average();
+      present_output =
+	{ 0 };
+      fill_recordings_with_old_average ();
     }
 
-  private:
+    bool
+    circle_completed (void) const
+    {
+      return used_sectors == (1 << N_SECTORS) - 1;
+    }
+
     void
     fill_recordings_with_old_average (void)
     {
@@ -127,19 +138,18 @@ template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false>
 	}
     }
 
+private:
+
     enum
     {
       N_SECTORS = 16
     };
 
     circle_state_t active_state;
+    pt2<value_t, float> averager; // IIR-averager for straight flight
     value_t present_output; // maintained to save computing time
     value_t sector_averages[N_SECTORS]; // boxcar averager for circling flight
     uint32_t used_sectors; // bitfield
-    pt2<value_t, float> averager; // IIR-averager for straight flight
   };
-
-
-
 
 #endif /* SMART_AVERAGER_H_ */

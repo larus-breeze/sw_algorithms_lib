@@ -113,6 +113,12 @@ public:
 		return windspeed_decimator_100Hz_10Hz.get_output();
 	}
 
+	float get_filtered_GNSS_altitude( void) const
+	{
+	  // the Kalman filter operates on *negative* altitude
+		return - KalmanVario_GNSS.get_x( KalmanVario_PVA_t::ALTITUDE);
+	}
+
 	float get_effective_vertical_acceleration( void) const
 	{
 		return KalmanVario_GNSS.get_x( KalmanVario_PVA_t::ACCELERATION_OBSERVED);

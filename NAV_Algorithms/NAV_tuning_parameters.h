@@ -56,8 +56,8 @@
 #define CROSS_GAIN 0.05f		//!< Attitude controller: cross-product gain
 #define INDUCTION_ERROR	0.03		//!< Maximum std deviation to update earth induction parameters
 #define NAV_CORRECTION_LIMIT 5.0f	//!< limit for "low AHRS correcting variable"
-#define HIGH_TURN_RATE 0.15f 		//!< turn rate high limit
-#define LOW_TURN_RATE  0.0707f 		//!< turn rate low limit
+#define HIGH_TURN_RATE 8.0*M_PI/180.0f	//!< turn rate high limit
+#define LOW_TURN_RATE  4.0*M_PI/180.0f	//!< turn rate low limit
 #define SPEED_COMPENSATION_FUSIONER_FEEDBACK 0.99f
 
 #define UPDATE_MAGNETIC_CALIB		1	//!< if 1: update magnetic calibration when new data are available

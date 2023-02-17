@@ -87,6 +87,7 @@ void flight_observer_t::update_every_10ms (
 	      SQR( gnss_velocity.e[DOWN]) * VERTICAL_ENERGY_TUNING_FACTOR
 	   )  * ONE_DIV_BY_GRAVITY_TIMES_2;
 
+      // blending of three mechanisms for speed-compensation
       speed_compensation_GNSS = GNSS_INS_speedcomp_fusioner.respond( 0.5 * (speed_compensation_kalman + speed_compensation_INS_GNSS), specific_energy_differentiator.respond(specific_energy));
 #endif
 #if 0 // speed-compensation using differentiation of kinetic energy in air-system

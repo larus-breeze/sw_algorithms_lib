@@ -81,7 +81,6 @@ public:
   void update_every_100ms( output_data_t & output_data)
   {
     navigator.update_every_100ms ( output_data.c);
-    navigator.feed_QFF_density_metering( output_data.m.static_pressure - QNH_offset, -output_data.c.position[DOWN]);
   }
 
   void set_attitude ( float roll, float nick, float present_heading)

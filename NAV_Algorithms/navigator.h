@@ -32,6 +32,7 @@
 #include "differentiator.h"
 #include "atmosphere.h"
 #include "flight_observer.h"
+#include "accumulating_averager.h"
 #include "data_structures.h"
 
 //! organizes horizontal navigation, wind observation and variometer
@@ -46,13 +47,16 @@ public:
 	 atmosphere (101325.0f),
 	 vario_integrator( configuration( VARIO_INT_TC)),
 	 wind_average_observer( configuration( MEAN_WIND_TC)),
-	 relative_wind_observer( configuration( MEAN_WIND_TC)),
-	 corrected_wind_averager( configuration( WIND_TC) * 10.0f),
+	 instant_wind_averager( configuration( WIND_TC) * 10.0f),
 	 // WIND_TC designed for 100Hz but now used at 10 Hz
-	 GNSS_speed( ZERO),
+	 relative_wind_observer( configuration( MEAN_WIND_TC) * 10.0f),
+	 air_pressure_resampler_100Hz_10Hz(0.04f), // 80% * 0.5 * 0.1
 	 GNSS_negative_altitude( ZERO),
 	 TAS_averager(1.0f / 1.0f / 100.0f),
-	 IAS_averager(1.0f / 1.0f / 100.0f)
+	 IAS_averager(1.0f / 1.0f / 100.0f),
+	 pitot_pressure(0.0f),
+	 GNSS_fix_type( 0),
+	 GNSS_speed( 0.0f)
   {};
 
   void set_density_data( float temperature, float humidity)
@@ -67,9 +71,11 @@ public:
     atmosphere.initialize( MSL_altitude);
   }
 
-  void feed_QFF_density_metering( float pressure, float MSL_altitude)
+  void feed_QFF_density_metering(void)
   {
-    atmosphere.feed_QFF_density_metering( pressure, MSL_altitude);
+    atmosphere.feed_QFF_density_metering(
+	air_pressure_resampler_100Hz_10Hz.get_output(),
+	flight_observer.get_filtered_GNSS_altitude());
   }
 
   void disregard_density_data( void)
@@ -94,6 +100,7 @@ public:
   void update_pressure( float pressure)
   {
     atmosphere.set_pressure(pressure);
+    air_pressure_resampler_100Hz_10Hz.respond(pressure);
   }
 
   void reset_altitude( void)
@@ -147,6 +154,28 @@ public:
 //    return flight_observer;
 //    }
 
+  float3vector report_instant_wind( void) const
+  {
+    if( ahrs.get_flight_state() == CIRCLING)
+      return wind_average_observer.get_value(); // report last circle mean
+    else
+      return instant_wind_averager.get_output(); // report short-term average
+  }
+
+  float3vector report_average_wind( void) const
+  {
+    if( ahrs.get_flight_state() == CIRCLING)
+      {
+	if( wind_average_observer.circle_completed())
+	  return circling_wind_averager.get_average();
+	else // otherwise return lowpass-average
+	  return wind_average_observer.get_value();
+      }
+    else
+      // otherwise return lowpass-average
+      return wind_average_observer.get_value();
+  }
+
   void set_attitude( float roll, float nick, float yaw)
   {
     ahrs.set_from_euler(roll, nick, yaw);
@@ -174,6 +203,7 @@ private:
   AHRS_type	ahrs_magnetic;
 #endif
 
+  pt2<float,float> air_pressure_resampler_100Hz_10Hz;
   float 	pitot_pressure;
   float 	TAS;
   float 	IAS;
@@ -186,11 +216,13 @@ private:
   unsigned	GNSS_fix_type;
 
   soaring_flight_averager< float> 	vario_integrator;
-  soaring_flight_averager< float3vector, true> wind_average_observer; // configure wind average clamping on first circle
+  soaring_flight_averager< float3vector> wind_average_observer;
+  pt2<float3vector,float> instant_wind_averager;
   soaring_flight_averager< float3vector> relative_wind_observer;
-  pt2<float3vector,float> corrected_wind_averager;
   pt2<float,float> TAS_averager;
   pt2<float,float> IAS_averager;
+  circle_state_t old_circle_state;
+  accumulating_averager < float3vector> circling_wind_averager;
 };
 
 #endif /* NAVIGATORT_H_ */
