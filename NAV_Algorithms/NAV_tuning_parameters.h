@@ -65,4 +65,11 @@
 #define MAGNETIC_CALIB_FROM_EEPROM	0 	//!< initially read data from EEPROM, may be set to 0 for tests
 #define DISABLE_CIRCLING_STATE		0	//!< for tests only: never use circling AHRS algorithm
 
+#define FAST_SAMPLING_REQUENCY 		100.0f
+#define FAST_SAMPLING_TIME 		0.01f
+#define SLOW_SAMPLING_REQUENCY 		10.0f
+#define SLOW_SAMPLING_TIME 		0.1f
+
+#define GRAVITY				9.81f
+
 #endif /* NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_ */

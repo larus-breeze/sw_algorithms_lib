@@ -48,16 +48,18 @@ class flight_observer_t
 public:
   flight_observer_t( void)
   :
-  vario_averager_pressure( configuration( VARIO_TC)),
+  vario_averager_pressure( (configuration( VARIO_TC) < 0.1f)
+   ? configuration( VARIO_TC) // normalized stop frequency given, old version
+   : (FAST_SAMPLING_TIME / configuration( VARIO_TC) ) ), // time-constant given, new version
   vario_averager_GNSS( configuration( VARIO_TC)),
-  windspeed_decimator_100Hz_10Hz( 1.0f / 100.0f),
-  kinetic_energy_differentiator( 1.0f, 1.0f / 100.0f),
+  windspeed_decimator_100Hz_10Hz( FAST_SAMPLING_TIME),
+  kinetic_energy_differentiator( 1.0f, FAST_SAMPLING_TIME),
   speed_compensation_TAS( ZERO),
   vario_uncompensated_GNSS( ZERO),
   vario_uncompensated_pressure( ZERO),
-  KalmanVario_GNSS( 0.0f, 0.0f, 0.0f, -9.81f),
-  KalmanVario_pressure( 0.0f, 0.0f, 0.0f, -9.81f),
-  specific_energy_differentiator( 1.0f, 1.0f / 100.0f),
+  KalmanVario_GNSS( 0.0f, 0.0f, 0.0f, - GRAVITY),
+  KalmanVario_pressure( 0.0f, 0.0f, 0.0f, - GRAVITY),
+  specific_energy_differentiator( 1.0f, FAST_SAMPLING_TIME),
   specific_energy(0.0f)
   {
   };
