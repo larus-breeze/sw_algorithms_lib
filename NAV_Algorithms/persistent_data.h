@@ -96,6 +96,7 @@ bool write_EEPROM_value( EEPROM_PARAMETER_ID id, float value);
 bool read_EEPROM_value( EEPROM_PARAMETER_ID id, float &value);
 bool lock_EEPROM( bool lockit);
 bool EEPROM_initialize( void);
+bool all_EEPROM_parameters_existing( void);
 
 extern const persistent_data_t PERSISTENT_DATA[];
 extern const unsigned PERSISTENT_DATA_ENTRIES;

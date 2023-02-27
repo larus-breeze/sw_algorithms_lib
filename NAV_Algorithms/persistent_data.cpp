@@ -63,6 +63,19 @@ ROM persistent_data_t PERSISTENT_DATA[]=
 
 ROM unsigned PERSISTENT_DATA_ENTRIES = sizeof(PERSISTENT_DATA) / sizeof(persistent_data_t);
 
+bool all_EEPROM_parameters_existing( void)
+{
+  float dummy;
+  const persistent_data_t * parameter = PERSISTENT_DATA + 1; // skip BOARD_ID
+  while( parameter < PERSISTENT_DATA + PERSISTENT_DATA_ENTRIES)
+    {
+      if( true == read_EEPROM_value( parameter->id, dummy))
+	return false; // read error
+      ++parameter;
+    }
+  return true;
+}
+
 const persistent_data_t * find_parameter_from_ID( EEPROM_PARAMETER_ID id)
 {
   for( const persistent_data_t *parameter = PERSISTENT_DATA; parameter < (PERSISTENT_DATA+PERSISTENT_DATA_ENTRIES); ++parameter )
