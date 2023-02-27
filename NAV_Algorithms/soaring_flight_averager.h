@@ -116,6 +116,11 @@ template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false>
       fill_recordings_with_old_average();
     }
 
+    bool circle_completed (void) const
+    {
+      return used_sectors == (1 << N_SECTORS) - 1;
+    }
+
   private:
     void
     fill_recordings_with_old_average (void)

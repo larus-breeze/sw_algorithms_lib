@@ -92,13 +92,13 @@ AHRS_type::update_circling_state ()
       --circling_counter;
 
   if (circling_counter == 0)
-    circle_state = STRAIGHT_FLIGHT;
+    circling_state = STRAIGHT_FLIGHT;
   else if (circling_counter == CIRCLE_LIMIT)
-    circle_state = CIRCLING;
+    circling_state = CIRCLING;
   else
-    circle_state = TRANSITION;
+    circling_state = TRANSITION;
 
-  return circle_state;
+  return circling_state;
 #endif
 }
 
@@ -126,7 +126,7 @@ AHRS_type::AHRS_type (float sampling_time)
   G_load_averager(     G_LOAD_F_BY_FS),
   antenna_DOWN_correction(  configuration( ANT_SLAVE_DOWN)  / configuration( ANT_BASELENGTH)),
   antenna_RIGHT_correction( configuration( ANT_SLAVE_RIGHT) / configuration( ANT_BASELENGTH)),
-  circle_state( STRAIGHT_FLIGHT),
+  circling_state( STRAIGHT_FLIGHT),
   heading_difference_AHRS_DGNSS(0.0f),
   magnetic_disturbance(0.0f)
 {
@@ -201,7 +201,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 			     const float3vector &GNSS_acceleration,
 			     float GNSS_heading)
 {
-  circle_state_t old_circle_state = circle_state;
+  circle_state_t old_circle_state = circling_state;
   update_circling_state ();
 
   float3vector mag;
@@ -229,7 +229,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   nav_correction[NORTH] = - nav_acceleration.e[EAST]  + GNSS_acceleration.e[EAST];
   nav_correction[EAST]  = + nav_acceleration.e[NORTH] - GNSS_acceleration.e[NORTH];
 
-  if( circle_state == CIRCLING) // heading correction using acceleration cross product GNSS * INS
+  if( circling_state == CIRCLING) // heading correction using acceleration cross product GNSS * INS
     {
       float cross_correction = // vector cross product GNSS-acc und INS-acc -> heading error
 	   + nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
@@ -250,7 +250,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   gyro_correction = body2nav.reverse_map(nav_correction);
   gyro_correction *= P_GAIN;
 
-  if (circle_state == STRAIGHT_FLIGHT)
+  if (circling_state == STRAIGHT_FLIGHT)
       gyro_integrator += gyro_correction; // update integrator
 
   gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
@@ -258,11 +258,11 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 
   // only here we get fresh magnetic entropy
   // and: wait for low control loop error
-  if ( (circle_state == CIRCLING) && ( nav_correction.abs() < NAV_CORRECTION_LIMIT))
+  if ( (circling_state == CIRCLING) && ( nav_correction.abs() < NAV_CORRECTION_LIMIT))
 	feed_magnetic_induction_observer (mag_sensor);
 
   // when circling is finished eventually update the magnetic calibration
-  if ((old_circle_state == CIRCLING) && (circle_state == TRANSITION))
+  if ((old_circle_state == CIRCLING) && (circling_state == TRANSITION))
     {
       handle_magnetic_calibration ();
 #if UPDATE_MAGNETIC_CALIB
@@ -315,7 +315,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   // calculate heading error depending on the present circling state
   // on state changes handle MAG auto calibration
 
-  circle_state_t old_circle_state = circle_state;
+  circle_state_t old_circle_state = circling_state;
   update_circling_state ();
 
   float mag_correction = +nav_induction[NORTH] * expected_nav_induction[EAST]
@@ -328,7 +328,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 
   else
     {
-      switch (circle_state)
+      switch (circling_state)
 	{
 	case STRAIGHT_FLIGHT:
 	case TRANSITION:
@@ -366,12 +366,12 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 
   // only here we get fresh magnetic entropy
   // and: wait for low control loop error
-  if ((circle_state == CIRCLING)
+  if ((circling_state == CIRCLING)
       && (nav_correction.abs () < NAV_CORRECTION_LIMIT))
     feed_magnetic_induction_observer (mag_sensor);
 
   // when circling is finished eventually update the magnetic calibration
-  if ((old_circle_state == CIRCLING) && (circle_state == TRANSITION))
+  if ((old_circle_state == CIRCLING) && (circling_state == TRANSITION))
     {
       handle_magnetic_calibration ();
 #if UPDATE_MAGNETIC_CALIB
@@ -419,7 +419,7 @@ void AHRS_type::update_ACC_only (const float3vector &gyro, const float3vector &a
       +nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
 	  - nav_acceleration.e[EAST] * GNSS_acceleration.e[NORTH];
 
-  if( circle_state == STRAIGHT_FLIGHT)
+  if( circling_state == STRAIGHT_FLIGHT)
     cross_correction *= 40; // empirically tuned OM flight 2022 7 24
 
   nav_correction[DOWN] = cross_correction * CROSS_GAIN; // no MAG or D-GNSS use here !

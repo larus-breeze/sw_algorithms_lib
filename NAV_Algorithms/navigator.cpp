@@ -81,18 +81,26 @@ void navigator_t::update_GNSS_data( const coordinates_t &coordinates)
 // to be called at 10 Hz
 void navigator_t::update_every_100ms (const coordinates_t &coordinates)
 {
+  atmosphere.feed_QFF_density_metering(
+	air_pressure_resampler_100Hz_10Hz.get_output(),
+	flight_observer.get_filtered_GNSS_altitude());
+
   atmosphere.update_density_correction(); // here because of the 10 Hz call frequency
+
+  instant_wind_averager.respond( flight_observer.get_instant_wind());
 
   wind_average_observer.update( flight_observer.get_instant_wind(), // do this here because of the update rate 10Hz
 				ahrs.get_euler ().y,
 				ahrs.get_circling_state ());
 
-  float3vector instant_wind_corrected;
-
-  if( ahrs.get_circling_state () == STRAIGHT_FLIGHT)
-    relative_wind_observer.reset();
-  else // relative wind calculation done when CIRCLING OR in TRANSITION
+  if(( ahrs.get_circling_state () == CIRCLING))
     {
+      if(old_circling_state == TRANSITION) // when starting to circle
+	{
+	  circling_wind_averager.reset(wind_average_observer.get_value(), 100);
+	  relative_wind_observer.reset();
+	}
+
       float3vector relative_wind_NAV  = flight_observer.get_instant_wind() - wind_average_observer.get_value();
       float3vector relative_wind_BODY =  ahrs.get_body2nav().reverse_map(relative_wind_NAV); // todo remove superfluous calc here !
       relative_wind_observer.update(relative_wind_BODY,
@@ -100,18 +108,19 @@ void navigator_t::update_every_100ms (const coordinates_t &coordinates)
     				ahrs.get_circling_state ());
 
       float3vector wind_correction_nav    = ahrs.get_body2nav() * relative_wind_observer.get_value();
-      wind_correction_nav.e[DOWN]=0.0f; // ignore vertical component as this van cause an underflow error
-      instant_wind_corrected = flight_observer.get_instant_wind() - wind_correction_nav;
+      wind_correction_nav.e[DOWN]=0.0f;
+
+      circling_wind_averager.update( instant_wind_averager.get_output() - wind_correction_nav);
     }
 
-  if( ahrs.get_circling_state () == CIRCLING) // relative wind correction used when CIRCLING
-    corrected_wind_averager.respond( instant_wind_corrected);
-  else
-    corrected_wind_averager.respond( flight_observer.get_instant_wind()); // todo: may be bad: cascaded lowpass filters !
+  if(( ahrs.get_circling_state () == STRAIGHT_FLIGHT) && (old_circling_state == TRANSITION))
+	relative_wind_observer.reset();
 
   vario_integrator.update (flight_observer.get_vario_GNSS(), // here because of the update rate 10Hz
 			   ahrs.get_euler ().y,
 			   ahrs.get_circling_state ());
+
+  old_circling_state = ahrs.get_circling_state ();
 }
 
 //! copy all navigator data into output_data structure
@@ -132,8 +141,8 @@ void navigator_t::report_data( output_data_t &d)
     d.integrator_vario		= vario_integrator.get_value();
     d.vario_uncompensated 	= flight_observer.get_vario_uncompensated_GNSS();
 
-    d.wind			= corrected_wind_averager.get_output(); // short-term avg
-    d.wind_average		= wind_average_observer.get_value();  // smart long-term avg
+    d.wind			= report_instant_wind();
+    d.wind_average		= report_average_wind();
 
     d.speed_compensation_TAS 	= flight_observer.get_speed_compensation_TAS();
     d.speed_compensation_GNSS 	= flight_observer.get_speed_compensation_GNSS();
