@@ -63,7 +63,7 @@
 #define UPDATE_MAGNETIC_CALIB		1	//!< if 1: update magnetic calibration when new data are available
 #define MODIFY_EXPECTED_INDUCTION	1 	//!< set to 1 to update inclination and declination automatically
 #define CROSS_GAIN_ONLY			0 	//!< if 1: do not use induction to control attitude while circling
-#define MAGNETIC_CALIB_FROM_EEPROM	0 	//!< initially read data from EEPROM, may be set to 0 for tests
+#define MAGNETIC_CALIB_FROM_EEPROM	1 	//!< initially read data from EEPROM, may be set to 0 for tests
 #define DISABLE_CIRCLING_STATE		0	//!< for tests only: never use circling AHRS algorithm
 
 #define FAST_SAMPLING_REQUENCY 		100.0f
