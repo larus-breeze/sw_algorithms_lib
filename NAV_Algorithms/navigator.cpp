@@ -67,15 +67,24 @@ void navigator_t::update_every_10ms (
 
 void navigator_t::update_GNSS_data( const coordinates_t &coordinates)
 {
-  if( coordinates.sat_fix_type == SAT_FIX_NONE) // presently no GNSS fix
-      return; // todo needs to be improved, what can we do ?
+  GNSS_fix_type = coordinates.sat_fix_type;
 
-  GNSS_fix_type		= coordinates.sat_fix_type;
-  GNSS_velocity 	= coordinates.velocity;
-  GNSS_acceleration	= coordinates.acceleration;
-  GNSS_heading 		= coordinates.relPosHeading;
-  GNSS_negative_altitude= coordinates.position.e[DOWN];
-  GNSS_speed 		= coordinates.speed_motion;
+  if (coordinates.sat_fix_type == SAT_FIX_NONE) // presently no GNSS fix
+    {
+      GNSS_velocity = 	{ 0 };
+      GNSS_acceleration = { 0 };
+      GNSS_heading = 0.0f;
+      GNSS_negative_altitude = 0.0f;
+      GNSS_speed = 0.0f;
+    }
+  else
+    {
+      GNSS_velocity = coordinates.velocity;
+      GNSS_acceleration = coordinates.acceleration;
+      GNSS_heading = coordinates.relPosHeading;
+      GNSS_negative_altitude = coordinates.position.e[DOWN];
+      GNSS_speed = coordinates.speed_motion;
+    }
 }
 
 // to be called at 10 Hz
