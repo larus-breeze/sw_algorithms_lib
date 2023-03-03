@@ -39,6 +39,7 @@
 
 ROM char HEX[]="0123456789ABCDEF";
 
+
 //! format an integer into ASCII with exactly two digits after the decimal point
 //! @param number value * 100
 char * integer_to_ascii_2_decimals( int32_t number, char *s)
@@ -166,6 +167,9 @@ void format_RMC (const coordinates_t &coordinates, char *p)
 
   float value = coordinates.speed_motion * MPS_TO_NMPH;
 
+  //Clipping to realistic values for a glider. Some ASCII functions crash if given to high values. TODO: fix
+  value = CLIP<float>(value, 0, (100.0 * MPS_TO_NMPH));
+
   unsigned knots = (unsigned)(value * 10.0f + 0.5f);
   *p++ = knots / 1000 + '0';
   knots %= 1000;
@@ -251,6 +255,10 @@ ROM char GPMWV[]="$GPMWV,";
 char *format_MWV ( float wind_north, float wind_east, char *p)
 {
   p = append_string( p, GPMWV);
+
+  //Clipping to realistic values for a glider. Some ASCII functions crash if given to high values. TODO: fix
+  wind_north = CLIP<float>(wind_north, -50.0, 50.0);
+  wind_east = CLIP<float>(wind_east, -50.0, 50.0);
 
 //  wind_north = 3.0; // this setting reports 18km/h from 53 degrees
 //  wind_east = 4.0;
@@ -385,8 +393,11 @@ ROM char PLARW[]="$PLARW,";
 //! format wind reporting NMEA sequence
 void format_PLARW ( float wind_north, float wind_east, char windtype, char *p)
 {
-  p = append_string( p, PLARW);
+    p = append_string( p, PLARW);
 
+    //Clipping to realistic values for a glider. Some ASCII functions crash if given to high values. TODO: fix
+    wind_north = CLIP<float>(wind_north, -50.0, 50.0);
+    wind_east = CLIP<float>(wind_east, -50.0, 50.0);
     //wind_north = 3.0; // this setting reports 18km/h from 53 degrees
     //wind_east = 4.0;
 
@@ -416,6 +427,11 @@ ROM char PLARV[]="$PLARV,";
 void format_PLARV ( float variometer, float avg_variometer, float pressure_altitude, float TAS, char *p)
 {
   p = append_string( p, PLARV);
+
+  //Clipping to realistic values for a glider. Some ASCII functions crash if given to high values. TODO: fix
+  variometer = CLIP<float>(variometer, -50.0, 50.0);
+  avg_variometer = CLIP<float>(avg_variometer, -50.0, 50.0);
+  TAS = CLIP<float>(TAS, 0, 100);
 
   p=integer_to_ascii_2_decimals( round( variometer * 100.0f), p);
   *p++ = ',';
