@@ -56,7 +56,7 @@ public:
   vario_averager_GNSS( configuration( VARIO_TC)),
   windspeed_decimator_100Hz_10Hz( FAST_SAMPLING_TIME),
   kinetic_energy_differentiator( 1.0f, FAST_SAMPLING_TIME),
-  speed_compensation_TAS( ZERO),
+  speed_compensation_IAS( ZERO),
   vario_uncompensated_GNSS( ZERO),
   vario_uncompensated_pressure( ZERO),
   KalmanVario_GNSS( 0.0f, 0.0f, 0.0f, - GRAVITY),
@@ -77,16 +77,17 @@ public:
 	    float TAS,
 	    float IAS,
 	    circle_state_t circle_state,
-	    const float3vector &wind_average
+	    const float3vector &wind_average,
+	    bool GNSS_fix_avaliable
 	);
 
 	void reset(float pressure_altitude, float GNSS_altitude);
 
 	float get_pressure_altitude( void) const;
 
-	float get_speed_compensation_TAS( void ) const
+	float get_speed_compensation_IAS( void ) const
 	{
-		return speed_compensation_TAS;
+		return speed_compensation_IAS;
 	}
 
 	float get_speed_compensation_GNSS( void ) const
@@ -141,7 +142,7 @@ private:
 
 	// variometer-related signals
 	float vario_uncompensated_pressure;
-	float speed_compensation_TAS;
+	float speed_compensation_IAS;
 	float speed_compensation_GNSS;
 	float vario_uncompensated_GNSS;
 	float specific_energy;

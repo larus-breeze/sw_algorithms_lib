@@ -61,7 +61,8 @@ void navigator_t::update_every_10ms (
       TAS,
       IAS,
       ahrs.get_circling_state(),
-      wind_average_observer.get_value()
+      wind_average_observer.get_value(),
+      (GNSS_fix_type != 0)
       );
 }
 
@@ -153,7 +154,7 @@ void navigator_t::report_data( output_data_t &d)
     d.wind			= report_instant_wind();
     d.wind_average		= report_average_wind();
 
-    d.speed_compensation_TAS 	= flight_observer.get_speed_compensation_TAS();
+    d.speed_compensation_TAS 	= flight_observer.get_speed_compensation_IAS();
     d.speed_compensation_GNSS 	= flight_observer.get_speed_compensation_GNSS();
     d.effective_vertical_acceleration
 				= flight_observer.get_effective_vertical_acceleration();

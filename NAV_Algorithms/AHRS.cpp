@@ -321,45 +321,37 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   float mag_correction = +nav_induction[NORTH] * expected_nav_induction[EAST]
       - nav_induction[EAST] * expected_nav_induction[NORTH];
 
-  if (isnan (GNSS_acceleration.e[NORTH])) // no GNSS fix, fixme todo remove this section
-
-    // just keep gyro offsets but do not calculate correction
-    gyro_correction = gyro_integrator * I_GAIN;
-
-  else
+  switch (circling_state)
     {
-      switch (circling_state)
-	{
-	case STRAIGHT_FLIGHT:
-	case TRANSITION:
-	  {
-	    nav_correction[DOWN] = magnetic_control_gain * mag_correction;
-	    gyro_correction = body2nav.reverse_map (nav_correction);
-	    gyro_correction *= P_GAIN;
-	    gyro_integrator += gyro_correction; // update integrator
-	  }
-	  break;
-	  // *******************************************************************************************************
-	case CIRCLING:
-	  {
-	    float cross_correction = // vector cross product GNSS-acc und INS-acc -> heading error
-		+nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
-		    - nav_acceleration.e[EAST] * GNSS_acceleration.e[NORTH];
+    case STRAIGHT_FLIGHT:
+    case TRANSITION:
+      {
+	nav_correction[DOWN] = magnetic_control_gain * mag_correction;
+	gyro_correction = body2nav.reverse_map (nav_correction);
+	gyro_correction *= P_GAIN;
+	gyro_integrator += gyro_correction; // update integrator
+      }
+      break;
+      // *******************************************************************************************************
+    case CIRCLING:
+      {
+	float cross_correction = // vector cross product GNSS-acc und INS-acc -> heading error
+	    +nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
+		- nav_acceleration.e[EAST] * GNSS_acceleration.e[NORTH];
 
 #if CROSS_GAIN_ONLY
 	    nav_correction[DOWN] = cross_correction * CROSS_GAIN; // no MAG or D-GNSS use here ! (old version)
 #else
-	    nav_correction[DOWN] = cross_correction * CROSS_GAIN
-		+ mag_correction * M_H_GAIN; // use cross-acceleration and induction: better !
+	nav_correction[DOWN] = cross_correction * CROSS_GAIN
+	    + mag_correction * M_H_GAIN; // use cross-acceleration and induction: better !
 #endif
-	    gyro_correction = body2nav.reverse_map (nav_correction);
-	    gyro_correction *= P_GAIN;
-	  }
-	  break;
-	}
-
-      gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
+	gyro_correction = body2nav.reverse_map (nav_correction);
+	gyro_correction *= P_GAIN;
+      }
+      break;
     }
+
+  gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
 
   // feed quaternion update with corrected sensor readings
   update_attitude (acc, gyro + gyro_correction, mag);
@@ -375,8 +367,8 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
     {
       handle_magnetic_calibration ();
 #if UPDATE_MAGNETIC_CALIB
-          compass_calibration.set_calibration (
-    	  mag_calibrator, 'M', (turn_rate_averager.get_output () > 0.0f), true);
+      compass_calibration.set_calibration (
+	  mag_calibrator, 'M', (turn_rate_averager.get_output () > 0.0f), true);
 #endif
 
       if (induction_observer.data_valid ())
@@ -390,7 +382,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 #if MODIFY_EXPECTED_INDUCTION
 	      expected_nav_induction[EAST] = east_induction;
 	      expected_nav_induction[NORTH] = north_induction;
-	      update_magnetic_loop_gain(); // adapt to magnetic inclination
+	      update_magnetic_loop_gain (); // adapt to magnetic inclination
 #endif
 	    }
 	  induction_observer.reset ();
