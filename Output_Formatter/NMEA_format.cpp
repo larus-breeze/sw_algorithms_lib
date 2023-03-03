@@ -228,7 +228,7 @@ char *format_GGA( const coordinates_t &coordinates, char *p)
   *p++ = '0';
   *p++ = ',';
 
-  uint32_t altitude_msl_dm = coordinates.position.e[DOWN] * -10.0f;
+  int32_t altitude_msl_dm = coordinates.position.e[DOWN] * -10.0f;
   p = integer_to_ascii_1_decimal( altitude_msl_dm, p);
   *p++ = ',';
   *p++ = 'M';
