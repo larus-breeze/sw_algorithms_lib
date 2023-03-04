@@ -115,10 +115,17 @@ public:
    */
   void update_pitot( float pressure)
   {
-    pitot_pressure=pressure;
+    pitot_pressure = pressure < 0.0f ? 0.0f : pressure;
+    ASSERT( pitot_pressure < 4500.0f);
+
     TAS = atmosphere.get_TAS_from_dynamic_pressure ( pitot_pressure);
+    ASSERT( TAS >= 0.0f);
+    ASSERT( TAS < 100.0f);
     TAS_averager.respond(TAS);
+
     IAS = atmosphere.get_IAS_from_dynamic_pressure ( pitot_pressure);
+    ASSERT( IAS >= 0.0f);
+    ASSERT( IAS < 100.0f);
     IAS_averager.respond(IAS);
   }
 
