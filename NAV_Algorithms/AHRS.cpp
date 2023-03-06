@@ -111,7 +111,7 @@ void AHRS_type::feed_magnetic_induction_observer(const float3vector &mag_sensor)
     mag_calibrator[i].add_value (expected_induction.e[i], mag_sensor.e[i]);
 
   // measurement of earth induction to find declination and inclination
-  induction_observer.feed(induction_nav_frame[NORTH],induction_nav_frame[EAST], turn_rate_averager.get_output() > 0.0f);
+  induction_observer.feed( induction_nav_frame[NORTH], induction_nav_frame[EAST],induction_nav_frame[DOWN], turn_rate_averager.get_output() > 0.0f);
 }
 
 AHRS_type::AHRS_type (float sampling_time)
@@ -375,13 +375,16 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 	{
 	  float north_induction = induction_observer.get_north_induction ();
 	  float east_induction = induction_observer.get_east_induction ();
+	  float down_induction = induction_observer.get_down_induction ();
 	  float std = SQRT(induction_observer.get_variance ());
 
 	  if (std < 0.03)
 	    {
 #if MODIFY_EXPECTED_INDUCTION
-	      expected_nav_induction[EAST] = east_induction;
+	      expected_nav_induction[EAST] =  east_induction;
 	      expected_nav_induction[NORTH] = north_induction;
+	      expected_nav_induction[DOWN] =  down_induction;
+	      expected_nav_induction.normalize(); // avoid runaway of induction observer against sensor calibration
 	      update_magnetic_loop_gain (); // adapt to magnetic inclination
 #endif
 	    }

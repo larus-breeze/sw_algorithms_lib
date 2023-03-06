@@ -13,17 +13,19 @@ class induction_observer_t
 {
 public:
   void
-  feed (float induction_north, float induction_east, bool right_turn)
+  feed (float induction_north, float induction_east, float induction_down, bool right_turn)
   {
     if (right_turn)
       {
 	north_induction_observer_right.feed (induction_north);
 	east_induction_observer_right.feed (induction_east);
+	down_induction_observer_right.feed (induction_down);
       }
     else
       {
 	north_induction_observer_left.feed (induction_north);
 	east_induction_observer_left.feed (induction_east);
+	down_induction_observer_left.feed (induction_down);
       }
   }
   void
@@ -31,9 +33,11 @@ public:
   {
     north_induction_observer_right.reset ();
     east_induction_observer_right.reset ();
+    down_induction_observer_right.reset ();
     north_induction_observer_left.reset ();
     east_induction_observer_left.reset ();
-  }
+    down_induction_observer_left.reset ();
+}
   bool data_valid( void) const
   {
     return (
@@ -48,21 +52,29 @@ public:
   {
     return (east_induction_observer_right.get_mean() + east_induction_observer_left.get_mean()) * 0.5f;
   }
+  float get_down_induction( void) const
+  {
+    return ( down_induction_observer_right.get_mean() + down_induction_observer_left.get_mean()) * 0.5f;
+  }
   float get_variance( void ) const
   {
     float sum =
 	north_induction_observer_right.get_variance() +
 	east_induction_observer_right.get_variance() +
+	down_induction_observer_right.get_variance() +
 	north_induction_observer_left.get_variance() +
-	east_induction_observer_left.get_variance();
-    return sum * 0.25f;
+	east_induction_observer_left.get_variance() +
+	down_induction_observer_left.get_variance();
+    return sum * 0.1666666666f;
   }
 private:
   enum{ MINIMUM_SAMPLES = 10000};
   mean_and_variance_finder_t north_induction_observer_right;
   mean_and_variance_finder_t east_induction_observer_right;
+  mean_and_variance_finder_t down_induction_observer_right;
   mean_and_variance_finder_t north_induction_observer_left;
   mean_and_variance_finder_t east_induction_observer_left;
+  mean_and_variance_finder_t down_induction_observer_left;
 };
 
 #endif /* NAV_ALGORITHMS_INDUCTION_OBSERVER_H_ */
