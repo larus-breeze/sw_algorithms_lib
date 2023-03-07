@@ -116,16 +116,20 @@ public:
   void update_pitot( float pressure)
   {
     pitot_pressure = pressure < 0.0f ? 0.0f : pressure;
-    ASSERT( pitot_pressure < 4500.0f);
+    assert( pitot_pressure < 4500.0f);
 
     TAS = atmosphere.get_TAS_from_dynamic_pressure ( pitot_pressure);
-    ASSERT( TAS >= 0.0f);
-    ASSERT( TAS < 100.0f);
+    assert( TAS >= 0.0f);
+    assert( TAS < 100.0f);
+    if( TAS > 0)
+      assert( isnormal(TAS));
     TAS_averager.respond(TAS);
 
     IAS = atmosphere.get_IAS_from_dynamic_pressure ( pitot_pressure);
-    ASSERT( IAS >= 0.0f);
-    ASSERT( IAS < 100.0f);
+    assert( IAS >= 0.0f);
+    assert( IAS < 100.0f);
+    if( IAS > 0)
+      assert(isnormal(IAS));
     IAS_averager.respond(IAS);
   }
 
@@ -181,7 +185,7 @@ public:
 
   float3vector report_instant_wind( void) const
   {
-    if( ahrs.get_circling_state() == CIRCLING)
+    if( ahrs.get_circling_state() != STRAIGHT_FLIGHT)
       return wind_average_observer.get_value(); // report last circle mean
     else
       return instant_wind_averager.get_output(); // report short-term average
@@ -189,7 +193,7 @@ public:
 
   float3vector report_average_wind( void) const
   {
-    if( ahrs.get_circling_state() == CIRCLING)
+    if( ahrs.get_circling_state() != STRAIGHT_FLIGHT)
       {
 	if( wind_average_observer.circle_completed())
 	  return circling_wind_averager.get_average();

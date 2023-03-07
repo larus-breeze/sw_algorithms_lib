@@ -36,15 +36,9 @@ void navigator_t::update_every_10ms (
 	    GNSS_fix_type == (SAT_FIX | SAT_HEADING));
 
 #if PARALLEL_MAGNETIC_AHRS
-#if 0
-  ahrs_magnetic.update_ACC_only(
-	  gyro, acc, mag,
-	  GNSS_acceleration);
-#else
   ahrs_magnetic.update_compass(
 	  gyro, acc, mag,
 	  GNSS_acceleration);
-#endif
 #endif
   float3vector heading_vector;
   heading_vector[NORTH] = ahrs.get_north ();
@@ -122,9 +116,6 @@ void navigator_t::update_every_100ms (const coordinates_t &coordinates)
 
       circling_wind_averager.update( instant_wind_averager.get_output() - wind_correction_nav);
     }
-
-  if(( ahrs.get_circling_state () == STRAIGHT_FLIGHT) && (old_circling_state == TRANSITION))
-	relative_wind_observer.reset();
 
   vario_integrator.update (flight_observer.get_vario_GNSS(), // here because of the update rate 10Hz
 			   ahrs.get_euler ().y,
