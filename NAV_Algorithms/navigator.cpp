@@ -102,20 +102,22 @@ void navigator_t::update_every_100ms (const coordinates_t &coordinates)
       if(old_circling_state == TRANSITION) // when starting to circle
 	{
 	  circling_wind_averager.reset(wind_average_observer.get_value(), 100);
-	  relative_wind_observer.reset();
+	  relative_wind_observer.reset({0});
 	}
 
       float3vector relative_wind_NAV  = flight_observer.get_instant_wind() - wind_average_observer.get_value();
       float3vector relative_wind_BODY =  ahrs.get_body2nav().reverse_map(relative_wind_NAV); // todo remove superfluous calc here !
-      relative_wind_observer.update(relative_wind_BODY,
-    				ahrs.get_euler ().y,
-    				ahrs.get_circling_state ());
+      relative_wind_observer.update(relative_wind_BODY, ahrs.get_euler ().y, ahrs.get_circling_state ());
 
-      float3vector wind_correction_nav    = ahrs.get_body2nav() * relative_wind_observer.get_value();
+      float3vector wind_correction_nav = ahrs.get_body2nav() * relative_wind_observer.get_value();
       wind_correction_nav.e[DOWN]=0.0f;
 
-      circling_wind_averager.update( instant_wind_averager.get_output() - wind_correction_nav);
+      circling_wind_averager.update( flight_observer.get_instant_wind() - wind_correction_nav);
+      corrected_wind_averager.respond( flight_observer.get_instant_wind() - wind_correction_nav);
     }
+
+  if( ahrs.get_circling_state () == STRAIGHT_FLIGHT && old_circling_state == TRANSITION)
+    relative_wind_observer.reset({0});
 
   vario_integrator.update (flight_observer.get_vario_GNSS(), // here because of the update rate 10Hz
 			   ahrs.get_euler ().y,

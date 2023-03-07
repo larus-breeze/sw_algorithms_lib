@@ -193,15 +193,9 @@ public:
 
   float3vector report_average_wind( void) const
   {
-    if( ahrs.get_circling_state() != STRAIGHT_FLIGHT)
-      {
-	if( wind_average_observer.circle_completed())
-	  return circling_wind_averager.get_average();
-	else // otherwise return lowpass-average
-	  return wind_average_observer.get_value();
-      }
+    if( ahrs.get_circling_state() == CIRCLING)
+      return circling_wind_averager.get_average();
     else
-      // otherwise return lowpass-average
       return wind_average_observer.get_value();
   }
 
@@ -229,7 +223,7 @@ private:
   soaring_flight_averager< float> 	vario_integrator;
   pt2<float3vector,float> instant_wind_averager;
   soaring_flight_averager< float3vector, true> wind_average_observer; // configure wind average clamping on first circle
-  soaring_flight_averager< float3vector> relative_wind_observer;
+  soaring_flight_averager< float3vector, false, false> relative_wind_observer;
   pt2<float3vector,float> corrected_wind_averager;
   accumulating_averager < float3vector> circling_wind_averager;
   pt2<float,float> TAS_averager;
