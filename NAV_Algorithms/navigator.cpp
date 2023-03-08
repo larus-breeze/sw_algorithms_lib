@@ -153,19 +153,22 @@ void navigator_t::report_data( output_data_t &d)
 	// reported wind smoothening to avoid hard changes during transitions
 	    last_wind = d.wind			= last_wind * 0.95f + report_instant_wind() * 0.05f;
 	    last_wind_average = d.wind_average	= last_wind_average * 0.95f + report_average_wind() * 0.05f;
+
+#if DEVELOPMENT_ADDITIONS
 	    last_headwind = d.headwind 		= get_relative_wind().e[FRONT];
 	    last_crosswind = d.crosswind	= get_relative_wind().e[RIGHT];
+#endif
       }
     else // wind has not recently been updated
       {
 	d.wind 		= last_wind;
 	d.wind_average	= last_wind_average;
+
+#if DEVELOPMENT_ADDITIONS
 	d.headwind 	= last_headwind;
 	d.crosswind	= last_crosswind;
+#endif
       }
-
-    d.inst_wind_N		= flight_observer.get_instant_wind().e[NORTH];
-    d.inst_wind_E		= flight_observer.get_instant_wind().e[EAST];
 
     d.speed_compensation_TAS 	= flight_observer.get_speed_compensation_IAS();
     d.speed_compensation_GNSS 	= flight_observer.get_speed_compensation_GNSS();
@@ -188,11 +191,17 @@ void navigator_t::report_data( output_data_t &d)
     d.nick_angle		= ahrs.getNickAngle();
     d.G_load			= ahrs.get_G_load();
     d.pressure_altitude		= - atmosphere.get_negative_altitude();
+    d.magnetic_disturbance	= ahrs.getMagneticDisturbance();
+
+#if DEVELOPMENT_ADDITIONS
+
     d.HeadingDifferenceAhrsDgnss = ahrs.getHeadingDifferenceAhrsDgnss();
     d.QFF			= atmosphere.get_QFF();
     d.air_density		= atmosphere.get_density();
     d.satfix			= (float)(d.c.sat_fix_type);
-    d.magnetic_disturbance	= ahrs.getMagneticDisturbance();
+    d.inst_wind_N		= flight_observer.get_instant_wind().e[NORTH];
+    d.inst_wind_E		= flight_observer.get_instant_wind().e[EAST];
     d.inst_wind_corrected_N	= report_corrected_wind().e[NORTH];
     d.inst_wind_corrected_E	= report_corrected_wind().e[EAST];
+#endif
 }

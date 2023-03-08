@@ -100,22 +100,25 @@ typedef struct
   quaternion<float> q_magnetic;
 #endif
 
+  float pressure_altitude;
+  float air_density;
+  float magnetic_disturbance;
+
+#if DEVELOPMENT_ADDITIONS
+
   float3vector body_acc;
   float3vector body_gyro;
-  float pressure_altitude;
-
-  // debug / test variables:
   float HeadingDifferenceAhrsDgnss;
   float QFF;
-  float air_density;
   float satfix;
   float headwind;
   float crosswind;
   float inst_wind_N;
   float inst_wind_E;
-  float magnetic_disturbance;
   float inst_wind_corrected_N;
   float inst_wind_corrected_E;
+#endif
+
 } output_data_t;
 
 #pragma pack(pop)
