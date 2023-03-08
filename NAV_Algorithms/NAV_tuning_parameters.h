@@ -34,7 +34,7 @@
 #define VARIO_USE_SQUARED_VELOCITY 1 // use squared absolute air velocity for speed-compensation
 
 // *EMPIRIC* tuning parameter for best vario performance
-#define VERTICAL_ENERGY_TUNING_FACTOR 1.0f // theoretically 1.0, observed optimum around 0.75
+#define VERTICAL_ENERGY_TUNING_FACTOR 0.75f // theoretically 1.0, observed optimum around 0.75
 
 // filters for CAN information (turn-coordinator, G-load ...)
 #define ANGLE_F_BY_FS  ( 1.0f / 0.5f / 100.0f) 			// 0.5s
