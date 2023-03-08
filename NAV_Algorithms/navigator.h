@@ -177,7 +177,7 @@ public:
   void set_attitude( float roll, float nick, float yaw)
   {
     ahrs.set_from_euler(roll, nick, yaw);
-#if PARALLEL_MAGNETIC_AHRS
+#if DEVELOPMENT_ADDITIONS
     ahrs_magnetic.set_from_euler(roll, nick, yaw);
 #endif
   }
