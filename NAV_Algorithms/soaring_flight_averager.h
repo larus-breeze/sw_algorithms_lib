@@ -160,7 +160,10 @@ template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false, bool SOFT_TAKEOF
 	    average = average + sector_averages[index] * ( ONE / sector_sample_count[index]);
 	    ++number_of_used_sectors;
 	  }
-      return average * (1.0f / (float) number_of_used_sectors); // as division may not be implemented
+      if( number_of_used_sectors == 0)
+	return {0};
+      else
+	return average * (1.0f / (float) number_of_used_sectors); // as division may not be implemented
     }
 
     unsigned find_sector_index( float heading)

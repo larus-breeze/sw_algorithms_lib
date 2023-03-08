@@ -56,9 +56,18 @@ public:
 	 TAS_averager(1.0f / 1.0f / 100.0f),
 	 IAS_averager(1.0f / 1.0f / 100.0f),
 	 pitot_pressure(0.0f),
+	 TAS( 0.0f),
+	 IAS( 0.0f),
+	 GNSS_heading( 0.0f),
 	 GNSS_fix_type( 0),
 	 GNSS_speed( 0.0f),
-	 old_circling_state( STRAIGHT_FLIGHT)
+	 old_circling_state( STRAIGHT_FLIGHT),
+	 wind_obsolete( true),
+	 last_wind({0}),
+	 last_wind_average({0}),
+	 last_headwind(0.0f),
+	 last_crosswind(0.0f)
+
   {};
 
   void set_density_data( float temperature, float humidity)
@@ -229,6 +238,13 @@ private:
   pt2<float,float> TAS_averager;
   pt2<float,float> IAS_averager;
   circle_state_t old_circling_state;
+
+  // workaround for different sampling rates 10Hz and 100Hz
+  bool wind_obsolete; //!< wind has not been updated recently
+  float3vector last_wind;
+  float3vector last_wind_average;
+  float last_headwind;
+  float last_crosswind;
 };
 
 #endif /* NAVIGATORT_H_ */

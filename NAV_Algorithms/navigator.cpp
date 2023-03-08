@@ -30,6 +30,8 @@ void navigator_t::update_every_10ms (
     const float3vector &mag,
     const float3vector &gyro)
 {
+  wind_obsolete = true;
+
   ahrs.update( gyro, acc, mag,
 	    GNSS_acceleration,
 	    GNSS_heading,
@@ -97,6 +99,14 @@ void navigator_t::update_every_100ms (const coordinates_t &coordinates)
 				ahrs.get_euler ().y,
 				ahrs.get_circling_state ());
 
+  float3vector relative_wind_NAV  = flight_observer.get_instant_wind() - wind_average_observer.get_value();
+  float3vector relative_wind_BODY =  ahrs.get_body2nav().reverse_map(relative_wind_NAV);
+
+  if( ahrs.get_circling_state () == STRAIGHT_FLIGHT && old_circling_state == TRANSITION)
+    relative_wind_observer.reset({0});
+  else
+    relative_wind_observer.update(relative_wind_BODY, ahrs.get_euler ().y, ahrs.get_circling_state ());
+
   if(( ahrs.get_circling_state () == CIRCLING))
     {
       if(old_circling_state == TRANSITION) // when starting to circle
@@ -104,26 +114,20 @@ void navigator_t::update_every_100ms (const coordinates_t &coordinates)
 	  circling_wind_averager.reset(wind_average_observer.get_value(), 100);
 	  relative_wind_observer.reset({0});
 	}
-
-      float3vector relative_wind_NAV  = flight_observer.get_instant_wind() - wind_average_observer.get_value();
-      float3vector relative_wind_BODY =  ahrs.get_body2nav().reverse_map(relative_wind_NAV); // todo remove superfluous calc here !
-      relative_wind_observer.update(relative_wind_BODY, ahrs.get_euler ().y, ahrs.get_circling_state ());
-
-      float3vector wind_correction_nav = ahrs.get_body2nav() * relative_wind_observer.get_value();
-      wind_correction_nav.e[DOWN]=0.0f;
-
-      circling_wind_averager.update( flight_observer.get_instant_wind() - wind_correction_nav);
-      corrected_wind_averager.respond( flight_observer.get_instant_wind() - wind_correction_nav);
     }
 
-  if( ahrs.get_circling_state () == STRAIGHT_FLIGHT && old_circling_state == TRANSITION)
-    relative_wind_observer.reset({0});
+  float3vector wind_correction_nav = ahrs.get_body2nav() * relative_wind_observer.get_value();
+  wind_correction_nav.e[DOWN]=0.0f;
+
+  corrected_wind_averager.respond( flight_observer.get_instant_wind() - wind_correction_nav);
+  circling_wind_averager.update( flight_observer.get_instant_wind() - wind_correction_nav);
 
   vario_integrator.update (flight_observer.get_vario_GNSS(), // here because of the update rate 10Hz
 			   ahrs.get_euler ().y,
 			   ahrs.get_circling_state ());
 
   old_circling_state = ahrs.get_circling_state ();
+  wind_obsolete = false;
 }
 
 //! copy all navigator data into output_data structure
@@ -144,8 +148,24 @@ void navigator_t::report_data( output_data_t &d)
     d.integrator_vario		= vario_integrator.get_value();
     d.vario_uncompensated 	= flight_observer.get_vario_uncompensated_GNSS();
 
-    d.wind			= report_instant_wind();
-    d.wind_average		= report_average_wind();
+    if( ! wind_obsolete) // we have new wind information
+      {
+	// reported wind smoothening to avoid hard changes during transitions
+	    last_wind = d.wind			= last_wind * 0.95f + report_instant_wind() * 0.05f;
+	    last_wind_average = d.wind_average	= last_wind_average * 0.95f + report_average_wind() * 0.05f;
+	    last_headwind = d.headwind 		= get_relative_wind().e[FRONT];
+	    last_crosswind = d.crosswind	= get_relative_wind().e[RIGHT];
+      }
+    else // wind has not recently been updated
+      {
+	d.wind 		= last_wind;
+	d.wind_average	= last_wind_average;
+	d.headwind 	= last_headwind;
+	d.crosswind	= last_crosswind;
+      }
+
+    d.inst_wind_N		= flight_observer.get_instant_wind().e[NORTH];
+    d.inst_wind_E		= flight_observer.get_instant_wind().e[EAST];
 
     d.speed_compensation_TAS 	= flight_observer.get_speed_compensation_IAS();
     d.speed_compensation_GNSS 	= flight_observer.get_speed_compensation_GNSS();
@@ -172,9 +192,5 @@ void navigator_t::report_data( output_data_t &d)
     d.QFF			= atmosphere.get_QFF();
     d.air_density		= atmosphere.get_density();
     d.satfix			= (float)(d.c.sat_fix_type);
-    d.headwind	 		= get_relative_wind().e[FRONT];
-    d.crosswind	 		= get_relative_wind().e[RIGHT];
-    d.inst_wind_N		= flight_observer.get_instant_wind().e[NORTH];
-    d.inst_wind_E		= flight_observer.get_instant_wind().e[EAST];
     d.magnetic_disturbance		= ahrs.getMagneticDisturbance();
 }
