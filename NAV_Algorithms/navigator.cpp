@@ -192,5 +192,7 @@ void navigator_t::report_data( output_data_t &d)
     d.QFF			= atmosphere.get_QFF();
     d.air_density		= atmosphere.get_density();
     d.satfix			= (float)(d.c.sat_fix_type);
-    d.magnetic_disturbance		= ahrs.getMagneticDisturbance();
+    d.magnetic_disturbance	= ahrs.getMagneticDisturbance();
+    d.inst_wind_corrected_N	= report_corrected_wind().e[NORTH];
+    d.inst_wind_corrected_E	= report_corrected_wind().e[EAST];
 }

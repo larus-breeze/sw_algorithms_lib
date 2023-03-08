@@ -199,13 +199,18 @@ public:
     else
       return instant_wind_averager.get_output(); // report short-term average
   }
-
+  
   float3vector report_average_wind( void) const
   {
     if( ahrs.get_circling_state() == CIRCLING)
       return circling_wind_averager.get_average();
     else
       return wind_average_observer.get_value();
+  }
+
+  float3vector report_corrected_wind( void) const
+  {
+    return corrected_wind_averager.get_output();
   }
 
 private:
