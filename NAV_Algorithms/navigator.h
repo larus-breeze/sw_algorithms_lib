@@ -41,7 +41,7 @@ class navigator_t
 public:
   navigator_t (void)
 	:ahrs (0.01f),
-#if PARALLEL_MAGNETIC_AHRS
+#if DEVELOPMENT_ADDITIONS
 	 ahrs_magnetic (0.01f),
 #endif
 	 atmosphere (101325.0f),
@@ -218,7 +218,7 @@ private:
   atmosphere_t 		atmosphere;
   flight_observer_t 	flight_observer;
 
-#if PARALLEL_MAGNETIC_AHRS
+#if DEVELOPMENT_ADDITIONS
   AHRS_type	ahrs_magnetic;
 #endif
 

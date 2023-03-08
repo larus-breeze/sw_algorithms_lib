@@ -139,10 +139,6 @@ void navigator_t::report_data( output_data_t &d)
     d.euler			= ahrs.get_euler();
     d.q				= ahrs.get_attitude();
 
-#if PARALLEL_MAGNETIC_AHRS
-    d.euler_magnetic		= ahrs_magnetic.get_euler();
-    d.q_magnetic		= ahrs_magnetic.get_attitude();
-#endif
     d.vario			= flight_observer.get_vario_GNSS(); // todo pick one vario
     d.vario_pressure		= flight_observer.get_vario_pressure();
     d.integrator_vario		= vario_integrator.get_value();
@@ -155,7 +151,7 @@ void navigator_t::report_data( output_data_t &d)
 	    last_wind_average = d.wind_average	= last_wind_average * 0.95f + report_average_wind() * 0.05f;
 
 #if DEVELOPMENT_ADDITIONS
-	    last_headwind = d.headwind 		= get_relative_wind().e[FRONT];
+	    last_headwind  = d.headwind 	= get_relative_wind().e[FRONT];
 	    last_crosswind = d.crosswind	= get_relative_wind().e[RIGHT];
 #endif
       }
@@ -176,16 +172,6 @@ void navigator_t::report_data( output_data_t &d)
 				= flight_observer.get_effective_vertical_acceleration();
 
     d.circle_mode 		= ahrs.get_circling_state();
-    d.nav_correction		= ahrs.get_nav_correction();
-    d.gyro_correction		= ahrs.get_gyro_correction();
-    d.nav_acceleration_gnss 	= ahrs.get_nav_acceleration();
-    d.nav_induction_gnss 	= ahrs.get_nav_induction();
-
-#if PARALLEL_MAGNETIC_AHRS
-    d.nav_acceleration_mag 	= ahrs_magnetic.get_nav_acceleration();
-    d.nav_induction_mag 	= ahrs_magnetic.get_nav_induction();
-#endif
-
     d.turn_rate			= ahrs.get_turn_rate();
     d.slip_angle		= ahrs.getSlipAngle();
     d.nick_angle		= ahrs.getNickAngle();
@@ -194,6 +180,16 @@ void navigator_t::report_data( output_data_t &d)
     d.magnetic_disturbance	= ahrs.getMagneticDisturbance();
 
 #if DEVELOPMENT_ADDITIONS
+
+    d.nav_correction		= ahrs.get_nav_correction();
+    d.gyro_correction		= ahrs.get_gyro_correction();
+    d.nav_acceleration_gnss 	= ahrs.get_nav_acceleration();
+    d.nav_induction_gnss 	= ahrs.get_nav_induction();
+
+    d.euler_magnetic		= ahrs_magnetic.get_euler();
+    d.q_magnetic		= ahrs_magnetic.get_attitude();
+    d.nav_acceleration_mag 	= ahrs_magnetic.get_nav_acceleration();
+    d.nav_induction_mag 	= ahrs_magnetic.get_nav_induction();
 
     d.HeadingDifferenceAhrsDgnss = ahrs.getHeadingDifferenceAhrsDgnss();
     d.QFF			= atmosphere.get_QFF();
