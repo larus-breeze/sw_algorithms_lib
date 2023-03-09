@@ -31,12 +31,12 @@ ROM persistent_data_t PERSISTENT_DATA[]=
     {
 	{BOARD_ID, 	"Board_ID", 0},	 	//! Board ID Hash to avoid board confusion
 
-	{SENS_TILT_ROLL,"SensTilt_Roll", 0}, 	//! IMU Sensor tilt angle signed / (pi / 32768) front right down frame
-	{SENS_TILT_NICK,"SensTilt_Nick", 0}, 	//! IMU Sensor tilt angle signed / (pi / 32768)
-	{SENS_TILT_YAW, "SensTilt_Yaw", 0},  	//! IMU Sensor tilt angle signed / (pi / 32768)
+	{SENS_TILT_ROLL,"SensTilt_Roll", 0}, 	//! IMU Sensor tilt angle signed / degrees front right down frame
+	{SENS_TILT_NICK,"SensTilt_Nick", 0}, 	//! IMU Sensor tilt angle signed
+	{SENS_TILT_YAW, "SensTilt_Yaw", 0},  	//! IMU Sensor tilt angle signed
 
-	{PITOT_OFFSET,	"Pitot_Offset", 0},	//! Pitot offset signed / ( ADC readings )
-	{PITOT_SPAN, 	"Pitot_Span", 0},	//! Pitot Span signed ( scale-factor  = value / 32768 + 1.0f)
+	{PITOT_OFFSET,	"Pitot_Offset", 0},	//! Pitot offset signed / Pa
+	{PITOT_SPAN, 	"Pitot_Span", 0},	//! Pitot Span signed (around 1.0f)
 	{QNH_OFFSET, 	"QNH-delta", 0},	//! Absolute pressure sensor offset signed / Pa
 
 	{MAG_X_OFF,	"Mag_X_Off", 0},	//! Induction sensor x offset signed / ( 10.0f / 32768 )
