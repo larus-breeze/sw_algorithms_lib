@@ -149,9 +149,18 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
     case SENS_TILT_NICK:
     case SENS_TILT_YAW:
       if( read)
-	value = (float)(EEPROM_value.i16) / 32768.0f * M_PI_F;
+	value = (float)(EEPROM_value.i16) / 32768.0f * 180.0;
       else
-	EEPROM_value.i16 = (int16_t)(value * 32768.0f / M_PI_F);
+	{
+	  if( value < -180.0f)
+	    value += 360.0f;
+	  if( value >= +180.0f)
+	    value -= 360.0f;
+	  int ivalue = value * 32768.0f / 180.0;
+	  if( ivalue >= 32768)
+	    ivalue = 32767;
+	  EEPROM_value.i16 = (int16_t)ivalue;
+	}
       break;
     case VARIO_TC:
     case VARIO_INT_TC:
