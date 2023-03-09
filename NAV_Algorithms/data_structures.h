@@ -91,11 +91,10 @@ typedef struct
   float pressure_altitude;
   float air_density;
   float magnetic_disturbance;
-
-#if DEVELOPMENT_ADDITIONS
-
   float3vector nav_acceleration_gnss;
   float3vector nav_induction_gnss;
+
+#if DEVELOPMENT_ADDITIONS
   float3vector nav_correction;
   float3vector gyro_correction;
 

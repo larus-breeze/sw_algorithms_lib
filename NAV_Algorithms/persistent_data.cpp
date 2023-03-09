@@ -175,10 +175,12 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
       if( read)
 	value = (float)(EEPROM_value.u16) / 65536.0f;
       else
-	unsigned uvalue = value * 65536.0f;
-	if( uvalue >= 65536)
-	  uvalue = 65535;
-	EEPROM_value.u16 = (uint16_t)uvalue;
+	{
+	  unsigned uvalue = round( value * 65536.0f);
+	  if( uvalue >= 65536)
+	    uvalue = 65535;
+	  EEPROM_value.u16 = (uint16_t)uvalue;
+	}
       break;
     case EEPROM_PARAMETER_ID_END:
     default:
