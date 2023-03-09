@@ -78,14 +78,14 @@ void flight_observer_t::update_every_10ms (
       float speed_compensation_kalman = (
 		Kalman_v_a_observer_N.get_x(Kalman_V_A_observer_t::VELOCITY) * Kalman_v_a_observer_N.get_x(Kalman_V_A_observer_t::ACCELERATION) +
 		Kalman_v_a_observer_E.get_x(Kalman_V_A_observer_t::VELOCITY) * Kalman_v_a_observer_E.get_x(Kalman_V_A_observer_t::ACCELERATION) +
-		KalmanVario_GNSS.get_x( KalmanVario_PVA_t::VARIO)            * KalmanVario_GNSS.get_x( KalmanVario_PVA_t::ACCELERATION_OBSERVED) * VERTICAL_ENERGY_TUNING_FACTOR
+		KalmanVario_GNSS.get_x( KalmanVario_PVA_t::VARIO)            * KalmanVario_GNSS.get_x( KalmanVario_PVA_t::ACCELERATION_OBSERVED) * vertical_energy_tuning_factor
 	  ) * RECIP_GRAVITY;
 
       specific_energy =
 	  (
 	      SQR( gnss_velocity.e[NORTH] - wind_average.e[NORTH]) +
 	      SQR( gnss_velocity.e[EAST]  - wind_average.e[EAST])  +
-	      SQR( gnss_velocity.e[DOWN]) * VERTICAL_ENERGY_TUNING_FACTOR
+	      SQR( gnss_velocity.e[DOWN]) * vertical_energy_tuning_factor
 	   )  * ONE_DIV_BY_GRAVITY_TIMES_2;
 
       // blending of three mechanisms for speed-compensation

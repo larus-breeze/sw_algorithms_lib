@@ -50,10 +50,12 @@ class flight_observer_t
 public:
   flight_observer_t( void)
   :
-  vario_averager_pressure( (configuration( VARIO_TC) < 0.1f)
-   ? configuration( VARIO_TC) // normalized stop frequency given, old version
-   : (FAST_SAMPLING_TIME / configuration( VARIO_TC) ) ), // time-constant given, new version
-  vario_averager_GNSS( configuration( VARIO_TC)),
+  vario_averager_pressure( (configuration( VARIO_TC) < 0.25f)
+     ? configuration( VARIO_TC) // normalized stop frequency given, old version
+     : (FAST_SAMPLING_TIME / configuration( VARIO_TC) ) ), // time-constant given, new version
+  vario_averager_GNSS( (configuration( VARIO_TC) < 0.25f)
+     ? configuration( VARIO_TC)
+     : (FAST_SAMPLING_TIME / configuration( VARIO_TC) ) ),
   windspeed_decimator_100Hz_10Hz( FAST_SAMPLING_TIME),
   kinetic_energy_differentiator( 1.0f, FAST_SAMPLING_TIME),
   speed_compensation_IAS( ZERO),
@@ -63,7 +65,9 @@ public:
   KalmanVario_pressure( 0.0f, 0.0f, 0.0f, - GRAVITY),
   specific_energy_differentiator( 1.0f, FAST_SAMPLING_TIME),
   GNSS_INS_speedcomp_fusioner(SPEED_COMPENSATION_FUSIONER_FEEDBACK),
-  specific_energy(0.0f)
+  specific_energy(0.0f),
+  vertical_energy_tuning_factor(configuration( VETF)),
+  speed_compensation_GNSS( 0.0F)
   {
   };
 	void update_every_10ms
@@ -146,6 +150,7 @@ private:
 	float speed_compensation_GNSS;
 	float vario_uncompensated_GNSS;
 	float specific_energy;
+	float vertical_energy_tuning_factor;
 };
 
 #endif /* FLIGHT_OBSERVER_H_ */

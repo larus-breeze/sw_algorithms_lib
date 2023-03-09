@@ -54,6 +54,7 @@ ROM persistent_data_t PERSISTENT_DATA[]=
 	{VARIO_INT_TC,	"Vario_Int_TC", 0},	//! Vario integrator time constant unsigned s / ( 100.0f / 65536 )
 	{WIND_TC,	"Wind_TC", 0},	 	//! Wind fast time constant unsigned s / ( 100.0f / 65536 )
 	{MEAN_WIND_TC,	"Mean_Wind_TC", 0},	//! Wind slow time constant unsigned s / ( 100.0f / 65536 )
+	{VETF,		"VrtclEnrgTuning", 0},	//! Vertical Energy tuning factor s / ( 1.0f / 65536 )
 
 	{GNSS_CONFIGURATION, "GNSS_CONFIG", 0},	//! type of GNSS system
 	{ANT_BASELENGTH, "ANT_BASELEN", 0},	//! Slave DGNSS antenna baselength / mm
@@ -160,6 +161,15 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
 	value = (float)(EEPROM_value.u16) / 655.36f;
       else
 	EEPROM_value.u16 = (uint16_t)(value * 655.36f);
+      break;
+    case VETF:
+      if( read)
+	value = (float)(EEPROM_value.u16) / 65536.0f;
+      else
+	unsigned uvalue = value * 65536.0f;
+	if( uvalue >= 65536)
+	  uvalue = 65535;
+	EEPROM_value.u16 = (uint16_t)uvalue;
       break;
     case EEPROM_PARAMETER_ID_END:
     default:
