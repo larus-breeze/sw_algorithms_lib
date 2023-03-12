@@ -80,6 +80,9 @@ enum EEPROM_PARAMETER_ID
   EEPROM_PARAMETER_ID_END // 1 behind last parameter ID
 };
 
+#define N_ANGLE_CODING_IDENTIFIERS 5
+extern const unsigned ANGLE_CODING_IDENTIFIERS[ N_ANGLE_CODING_IDENTIFIERS];
+
 class persistent_data_t
 {
 public:

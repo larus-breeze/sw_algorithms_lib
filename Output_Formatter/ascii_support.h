@@ -39,7 +39,6 @@ extern "C"
  {
 #endif /* __cplusplus */
 
-float string2float(char *input);
 char* ftoa( char* Buffer, float Value);
 
 inline char * format_2_digits( char * target, uint32_t data)
