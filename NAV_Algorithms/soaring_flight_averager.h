@@ -28,6 +28,7 @@
 #include <AHRS.h>
 #define SQR(x) ((x)*(x))
 #include "pt2.h"
+#include "embedded_math.h"
 
 #define ONE_DIV_2PI 0.159155f
 #define PI_TIMES_2 6.2832f
@@ -111,7 +112,6 @@ template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false, bool SOFT_TAKEOF
     void record_input (value_t current_value, volatile float heading)
     {
       unsigned index = find_sector_index( heading);
-      assert( index < N_SECTORS);
 
       if( old_sector != index) // on sector change
 	{
@@ -168,7 +168,10 @@ template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false, bool SOFT_TAKEOF
 
     unsigned find_sector_index( float heading)
     {
-      return (unsigned) (heading * ONE_DIV_2PI * N_SECTORS);
+      unsigned retv = (unsigned) (heading * ONE_DIV_2PI * N_SECTORS);
+      if( retv >= N_SECTORS) // prevent rounding errors
+	retv = N_SECTORS -1;
+      return retv;
     }
 
     void fill_recordings_with_value ( value_t value)
