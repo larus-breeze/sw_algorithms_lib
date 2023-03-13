@@ -27,54 +27,6 @@
 #include "ascii_support.h"
 #include <stdlib.h>
 
-float string2float(char *input)
-{
-	float result = 0.0;
-	bool negative;
-
-	while( *input && ((*input == ' ') || (*input == '\t')))
-	  ++input;
-
-	if( *input == '-')
-	  {
-	    negative = true;
-	    ++input;
-	  }
-	else
-	  negative = false;
-
-	while( *input && (*input != '.'))
-	{
-		if( (*input < '0') || (*input > '9'))
-			return result;
-		result = result * 10.0f + (float)(*input - '0');
-		++input;
-	}
-	++input;
-	float factor = 0.1f;
-	while( (*input >= '0') && (*input <= '9'))
-	{
-		result = result + factor * (float)(*input - '0');
-		factor *= 0.1f;
-		++input;
-	}
-	if( *input == 'e')
-	  {
-	    int exponent=atoi( input+1);
-	    while( exponent > 0)
-	      {
-		result *= 10.0f;
-		--exponent;
-	      }
-	    while( exponent < 0)
-	      {
-		result /= 10.0f;
-		++exponent;
-	      }
-	  }
-	return negative ? -result : result;
-}
-
 static ROM char ASCIItable[]="zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz";
 
 char* itoa( int value, char* result, int base)

@@ -33,18 +33,16 @@
 
 #define VARIO_USE_SQUARED_VELOCITY 1 // use squared absolute air velocity for speed-compensation
 
-// *EMPIRIC* tuning parameter for best vario performance
-#define VERTICAL_ENERGY_TUNING_FACTOR 1.0 // theoretically 1.0, observed optimum around 0.75
-
 // filters for CAN information (turn-coordinator, G-load ...)
 #define ANGLE_F_BY_FS  ( 1.0f / 0.5f / 100.0f) 			// 0.5s
 #define G_LOAD_F_BY_FS ( 1.0f / 0.25f / 100.0f) 		// 0.25s
 
-// variometer tuning parameters
-#define AVG_VARIO_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
-#define WIND_AVG_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
-#define WIND_SHORTTERM_F_BY_FS 	( 1.0f / 5.0f / 100.0f) 	// 5s @ 100Hz
-#define VARIO_F_BY_FS          	( 1.0f / 2.0f / 100.0f)      	// 2s @ 100Hz
+// variometer tuning parameters, will be written into EEPROM as defaults if no config-file is given
+#define DEFAULT_VARIO_TC       	2.0f
+#define DEFAULT_AVG_VARIO_TC 	30.0f
+#define DEFAULT_WIND_TC 	5.0f
+#define DEFAULT_WIND_AVG_TC 	30.0f
+#define DEFAULT_VETF	 	0.75f
 
 // AHRS tuning parameters:
 // These parameters have been tuned for the flight-dynamics of gliders
@@ -56,13 +54,21 @@
 #define CROSS_GAIN 0.05f		//!< Attitude controller: cross-product gain
 #define INDUCTION_ERROR	0.03		//!< Maximum std deviation to update earth induction parameters
 #define NAV_CORRECTION_LIMIT 5.0f	//!< limit for "low AHRS correcting variable"
-#define HIGH_TURN_RATE 0.15f 		//!< turn rate high limit
-#define LOW_TURN_RATE  0.0707f 		//!< turn rate low limit
+#define HIGH_TURN_RATE 8.0*M_PI/180.0f	//!< turn rate high limit
+#define LOW_TURN_RATE  4.0*M_PI/180.0f	//!< turn rate low limit
+#define SPEED_COMPENSATION_FUSIONER_FEEDBACK 0.99f // empirically tuned alpha
 
 #define UPDATE_MAGNETIC_CALIB		1	//!< if 1: update magnetic calibration when new data are available
 #define MODIFY_EXPECTED_INDUCTION	1 	//!< set to 1 to update inclination and declination automatically
 #define CROSS_GAIN_ONLY			0 	//!< if 1: do not use induction to control attitude while circling
-#define MAGNETIC_CALIB_FROM_EEPROM	0 	//!< initially read data from EEPROM, may be set to 0 for tests
+#define MAGNETIC_CALIB_FROM_EEPROM	1 	//!< initially read data from EEPROM, may be set to 0 for tests
 #define DISABLE_CIRCLING_STATE		0	//!< for tests only: never use circling AHRS algorithm
+
+#define FAST_SAMPLING_REQUENCY 		100.0f
+#define FAST_SAMPLING_TIME 		0.01f
+#define SLOW_SAMPLING_REQUENCY 		10.0f
+#define SLOW_SAMPLING_TIME 		0.1f
+
+#define GRAVITY				9.81f
 
 #endif /* NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_ */

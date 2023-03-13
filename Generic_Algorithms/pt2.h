@@ -44,7 +44,9 @@ template <class datatype, class basetype> class pt2
 public:
 	pt2( basetype fcutoff) //! constructor taking Fc/Fs
 	: input( datatype()),
-	  output( datatype())
+	  output( datatype()),
+	  old( datatype()),
+	  very_old( datatype())
 	{
 		basetype delta = SIN( M_PI * (DESIGN_FREQUENCY - fcutoff)) / SIN( M_PI * (fcutoff + DESIGN_FREQUENCY));
 		basetype a0x = A2 * SQR(delta) - A1 + ONE;
@@ -63,23 +65,24 @@ public:
 		b2 = b2x / a0x;
 
 		// fine-tune DC-gain = 1.0
-		delta = (b0 + b1 + b2) / (ONE + a1 + a2);
-		b0 /= delta;
-		b1 /= delta;
-		b2 /= delta;
+		delta = (ONE + a1 + a2) / (b0 + b1 + b2);
+		b0 *= delta;
+		b1 *= delta;
+		b2 *= delta;
 	}
 	void settle( const datatype &present_input)
 	{
 		basetype tuning = ONE  / ( ONE + a1 + a2);
-		old.setAllValues( present_input * tuning);
+		very_old = old = present_input * tuning;
 		input = output = present_input;
 	}
 	datatype respond( const datatype &input)
 	{
 		this->input=input;;
-		datatype x = input - old.getValueAt(-1) * a1 - old.getValueAt(-2) * a2;
-		output = x * b0 + old.getValueAt(-1) * b1 + old.getValueAt(-2) * b2;
-		old.pushValue( x);
+		datatype x = input - old * a1 - very_old * a2;
+		output = x * b0 + old * b1 + very_old * b2;
+		very_old = old;
+		old = x;
 		return output;
 	}
 	datatype get_output( void) const
@@ -91,10 +94,11 @@ public:
 	  return input;
 	}
 private:
-	RingBuffer<datatype,2> old;
-	basetype b0, b1, b2, a1, a2;    //!< z-transformed transfer-function (b=nominator)
 	datatype input;
 	datatype output;
+	datatype old;
+	datatype very_old;
+	basetype b0, b1, b2, a1, a2;    //!< z-transformed transfer-function (b=nominator)
 };
 
 #endif /* PT2_H_ */

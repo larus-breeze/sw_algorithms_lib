@@ -40,19 +40,20 @@ void flight_observer_t::update_every_10ms (
     float TAS,
     float IAS,
     circle_state_t circle_state,
-    const float3vector &wind_average
+    const float3vector &wind_average,
+    bool GNSS_fix_avaliable
   )
 {
   vario_uncompensated_pressure = KalmanVario_pressure.update ( pressure_altitude, ahrs_acceleration.e[DOWN]);
-  speed_compensation_TAS = kinetic_energy_differentiator.respond( IAS * IAS * ONE_DIV_BY_GRAVITY_TIMES_2);
-  vario_averager_pressure.respond( speed_compensation_TAS  - vario_uncompensated_pressure); 	// -> positive on positive energy gain
+  speed_compensation_IAS = kinetic_energy_differentiator.respond( IAS * IAS * ONE_DIV_BY_GRAVITY_TIMES_2);
+  vario_averager_pressure.respond( speed_compensation_IAS  - vario_uncompensated_pressure); 	// -> positive on positive energy gain
 
-  if( isnan( gnss_acceleration.e[NORTH])) // no GNSS fix by now
+  if( ! GNSS_fix_avaliable)
     {
       // workaround for no GNSS fix: maintain GNSS vario with pressure data
-      vario_uncompensated_GNSS = - KalmanVario_GNSS.update ( pressure_altitude, ZERO, ahrs_acceleration.e[DOWN]); // todo MURX: what can we do without vertical speed information ?
-      // this time use pressure vario
-      vario_averager_GNSS.respond( speed_compensation_TAS  - vario_uncompensated_pressure);
+      vario_uncompensated_GNSS = vario_uncompensated_pressure;
+      speed_compensation_GNSS = speed_compensation_IAS ;
+      vario_averager_GNSS.respond( speed_compensation_IAS  - vario_uncompensated_pressure);
     }
   else
     {
@@ -62,21 +63,34 @@ void flight_observer_t::update_every_10ms (
       // The Kalman-filter-based uncompensated vario in NED-system reports negative if *climbing* !
       vario_uncompensated_GNSS = - KalmanVario_GNSS.update ( GNSS_negative_altitude, gnss_velocity.e[DOWN], ahrs_acceleration.e[DOWN]);
 
-#if 0 // experimental INS-acceleration * GNSS-velocity speed compensation
+      // INS-acceleration scalar product * GNSS-velocity speed compensation
       air_velocity = gnss_velocity - wind_average;
       air_velocity.e[DOWN] = KalmanVario_GNSS.get_x( KalmanVario_PVA_t::VARIO);
       float3vector acceleration = ahrs_acceleration;
       acceleration.e[DOWN] = KalmanVario_GNSS.get_x( KalmanVario_PVA_t::ACCELERATION_OBSERVED);
-      speed_compensation_GNSS = air_velocity * acceleration / 9.81;
-#else
-      specific_energy = specific_energy * 0.9f + 0.1f *  // primitive PT1 smoothing for upsampling
+      //      speed_compensation_GNSS = air_velocity * acceleration * RECIP_GRAVITY;
+      float speed_compensation_INS_GNSS = air_velocity * acceleration * RECIP_GRAVITY;
+
+      // horizontal kalman filter for velocity and acceleration
+      Kalman_v_a_observer_N.update(gnss_velocity.e[NORTH] - wind_average.e[NORTH], ahrs_acceleration.e[NORTH]);
+      Kalman_v_a_observer_E.update(gnss_velocity.e[EAST]  - wind_average.e[EAST],  ahrs_acceleration.e[EAST]);
+
+      float speed_compensation_kalman = (
+		Kalman_v_a_observer_N.get_x(Kalman_V_A_observer_t::VELOCITY) * Kalman_v_a_observer_N.get_x(Kalman_V_A_observer_t::ACCELERATION) +
+		Kalman_v_a_observer_E.get_x(Kalman_V_A_observer_t::VELOCITY) * Kalman_v_a_observer_E.get_x(Kalman_V_A_observer_t::ACCELERATION) +
+		KalmanVario_GNSS.get_x( KalmanVario_PVA_t::VARIO)            * KalmanVario_GNSS.get_x( KalmanVario_PVA_t::ACCELERATION_OBSERVED) * vertical_energy_tuning_factor
+	  ) * RECIP_GRAVITY;
+
+      specific_energy =
 	  (
 	      SQR( gnss_velocity.e[NORTH] - wind_average.e[NORTH]) +
 	      SQR( gnss_velocity.e[EAST]  - wind_average.e[EAST])  +
-	      SQR( gnss_velocity.e[DOWN]) * VERTICAL_ENERGY_TUNING_FACTOR
-	   );
-      speed_compensation_GNSS = specific_energy_differentiator.respond(specific_energy) * ONE_DIV_BY_GRAVITY_TIMES_2;
-#endif
+	      SQR( gnss_velocity.e[DOWN]) * vertical_energy_tuning_factor
+	   )  * ONE_DIV_BY_GRAVITY_TIMES_2;
+
+      // blending of three mechanisms for speed-compensation
+      speed_compensation_GNSS = GNSS_INS_speedcomp_fusioner.respond( 0.5 * (speed_compensation_kalman + speed_compensation_INS_GNSS), specific_energy_differentiator.respond(specific_energy));
+
       vario_averager_GNSS.respond( vario_uncompensated_GNSS + speed_compensation_GNSS);
     }
 }

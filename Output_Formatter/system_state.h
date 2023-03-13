@@ -39,4 +39,18 @@ inline void update_system_state_clear( unsigned value)
 	__atomic_and_fetch ( &system_state, ~value, __ATOMIC_ACQUIRE);
 }
 
+inline bool essential_sensors_available( bool need_DGNSS)
+    {
+	uint32_t essential_sensors_mask =
+	  GNSS_AVAILABLE |
+	  MTI_SENSOR_AVAILABE |
+	  MS5611_STATIC_AVAILABLE |
+	  PITOT_SENSOR_AVAILABLE;
+
+	if( need_DGNSS)
+	  essential_sensors_mask |= D_GNSS_AVAILABLE;
+
+	return( system_state & essential_sensors_mask) == essential_sensors_mask;
+    }
+
 #endif /* INC_SYSTEM_STATE_H_ */

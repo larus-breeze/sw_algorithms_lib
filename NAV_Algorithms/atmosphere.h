@@ -84,11 +84,11 @@ public:
   }
   float get_TAS_from_dynamic_pressure( float dynamic_pressure) const
   {
-    return dynamic_pressure < 0.0f ? 0.0f : SQRT( 2 * dynamic_pressure / get_density());
+    return SQRT( 2 * dynamic_pressure / get_density());
   }
   float get_IAS_from_dynamic_pressure( float dynamic_pressure) const
   {
-    return dynamic_pressure < 0.0f ? 0.0f : SQRT( dynamic_pressure * RECIP_STD_DENSITY_TIMES_2);
+    return SQRT( dynamic_pressure * RECIP_STD_DENSITY_TIMES_2);
   }
   void set_ambient_air_data( float temperature, float humidity)
   {

@@ -81,10 +81,6 @@ typedef struct
   float3vector wind;
   float3vector wind_average;
   uint32_t circle_mode;
-  float3vector nav_acceleration_gnss;
-  float3vector nav_induction_gnss;
-  float3vector nav_correction;
-  float3vector gyro_correction;
   quaternion<float> q;
   eulerangle<float> euler;
   float effective_vertical_acceleration;
@@ -92,28 +88,35 @@ typedef struct
   float slip_angle;
   float nick_angle;
   float G_load;
+  float pressure_altitude;
+  float air_density;
+  float magnetic_disturbance;
+  float3vector nav_acceleration_gnss;
+  float3vector nav_induction_gnss;
 
-#if PARALLEL_MAGNETIC_AHRS
+#if DEVELOPMENT_ADDITIONS
+  float3vector nav_correction;
+  float3vector gyro_correction;
+
   float3vector nav_acceleration_mag;
   float3vector nav_induction_mag;
   eulerangle<float> euler_magnetic;
   quaternion<float> q_magnetic;
-#endif
 
   float3vector body_acc;
   float3vector body_gyro;
-  float pressure_altitude;
-
-  // debug / test variables:
   float HeadingDifferenceAhrsDgnss;
   float QFF;
-  float air_density;
   float satfix;
   float headwind;
   float crosswind;
   float inst_wind_N;
   float inst_wind_E;
-  float magnetic_disturbance;
+  float inst_wind_corrected_N;
+  float inst_wind_corrected_E;
+
+#endif
+
 } output_data_t;
 
 #pragma pack(pop)

@@ -30,9 +30,11 @@
 #include <differentiator.h>
 #include "KalmanVario.h"
 #include "KalmanVario_PVA.h"
+#include "Kalman_V_A_observer.h"
 #include "embedded_math.h"
 #include "windobserver.h"
 #include "NAV_tuning_parameters.h"
+#include "HP_LP_fusion.h"
 
 #if USE_HARDWARE_EEPROM	== 0
 #include "EEPROM_emulation.h"
@@ -48,17 +50,24 @@ class flight_observer_t
 public:
   flight_observer_t( void)
   :
-  vario_averager_pressure( configuration( VARIO_TC)),
-  vario_averager_GNSS( configuration( VARIO_TC)),
-  windspeed_decimator_100Hz_10Hz( 1.0f / 100.0f),
-  kinetic_energy_differentiator( 1.0f, 1.0f / 100.0f),
-  speed_compensation_TAS( ZERO),
+  vario_averager_pressure( (configuration( VARIO_TC) < 0.25f)
+     ? configuration( VARIO_TC) // normalized stop frequency given, old version
+     : (FAST_SAMPLING_TIME / configuration( VARIO_TC) ) ), // time-constant given, new version
+  vario_averager_GNSS( (configuration( VARIO_TC) < 0.25f)
+     ? configuration( VARIO_TC)
+     : (FAST_SAMPLING_TIME / configuration( VARIO_TC) ) ),
+  windspeed_decimator_100Hz_10Hz( FAST_SAMPLING_TIME),
+  kinetic_energy_differentiator( 1.0f, FAST_SAMPLING_TIME),
+  speed_compensation_IAS( ZERO),
   vario_uncompensated_GNSS( ZERO),
   vario_uncompensated_pressure( ZERO),
-  KalmanVario_GNSS( 0.0f, 0.0f, 0.0f, -9.81f),
-  KalmanVario_pressure( 0.0f, 0.0f, 0.0f, -9.81f),
-  specific_energy_differentiator( 1.0f, 1.0f / 100.0f),
-  specific_energy(0.0f)
+  KalmanVario_GNSS( 0.0f, 0.0f, 0.0f, - GRAVITY),
+  KalmanVario_pressure( 0.0f, 0.0f, 0.0f, - GRAVITY),
+  specific_energy_differentiator( 1.0f, FAST_SAMPLING_TIME),
+  GNSS_INS_speedcomp_fusioner(SPEED_COMPENSATION_FUSIONER_FEEDBACK),
+  specific_energy(0.0f),
+  vertical_energy_tuning_factor(configuration( VETF)),
+  speed_compensation_GNSS( 0.0F)
   {
   };
 	void update_every_10ms
@@ -72,16 +81,17 @@ public:
 	    float TAS,
 	    float IAS,
 	    circle_state_t circle_state,
-	    const float3vector &wind_average
+	    const float3vector &wind_average,
+	    bool GNSS_fix_avaliable
 	);
 
 	void reset(float pressure_altitude, float GNSS_altitude);
 
 	float get_pressure_altitude( void) const;
 
-	float get_speed_compensation_TAS( void ) const
+	float get_speed_compensation_IAS( void ) const
 	{
-		return speed_compensation_TAS;
+		return speed_compensation_IAS;
 	}
 
 	float get_speed_compensation_GNSS( void ) const
@@ -109,28 +119,38 @@ public:
 		return windspeed_decimator_100Hz_10Hz.get_output();
 	}
 
+	float get_filtered_GNSS_altitude( void) const
+	{
+	  // the Kalman filter operates on *negative* altitude
+		return - KalmanVario_GNSS.get_x( KalmanVario_PVA_t::ALTITUDE);
+	}
+
 	float get_effective_vertical_acceleration( void) const
 	{
 		return KalmanVario_GNSS.get_x( KalmanVario_PVA_t::ACCELERATION_OBSERVED);
 	}
 
 private:
-	pt2<float,float> vario_averager_pressure;
-	pt2<float,float> vario_averager_GNSS;
 	pt2<float3vector,float> windspeed_decimator_100Hz_10Hz;
 
 	// filter systems for variometer
+	pt2<float,float> vario_averager_pressure;
+	pt2<float,float> vario_averager_GNSS;
 	differentiator<float,float>kinetic_energy_differentiator;
 	KalmanVario_PVA_t KalmanVario_GNSS;
 	KalmanVario_t KalmanVario_pressure;
 	differentiator<float,float>specific_energy_differentiator;
+	Kalman_V_A_observer_t Kalman_v_a_observer_N;
+	Kalman_V_A_observer_t Kalman_v_a_observer_E;
+	HP_LP_fusion <float, float> GNSS_INS_speedcomp_fusioner;
 
-	// variometer-relevant signals
-	float speed_compensation_TAS;
+	// variometer-related signals
+	float vario_uncompensated_pressure;
+	float speed_compensation_IAS;
 	float speed_compensation_GNSS;
 	float vario_uncompensated_GNSS;
-	float vario_uncompensated_pressure;
 	float specific_energy;
+	float vertical_energy_tuning_factor;
 };
 
 #endif /* FLIGHT_OBSERVER_H_ */

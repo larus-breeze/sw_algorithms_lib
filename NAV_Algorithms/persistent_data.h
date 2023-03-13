@@ -70,6 +70,7 @@ enum EEPROM_PARAMETER_ID
   VARIO_INT_TC,
   WIND_TC,
   MEAN_WIND_TC,
+  VETF, // VERTICAL_ENERGY_TUNING_FACTOR
 
   GNSS_CONFIGURATION=40,
   ANT_BASELENGTH,
@@ -78,6 +79,9 @@ enum EEPROM_PARAMETER_ID
 
   EEPROM_PARAMETER_ID_END // 1 behind last parameter ID
 };
+
+#define N_ANGLE_CODING_IDENTIFIERS 5
+extern const unsigned ANGLE_CODING_IDENTIFIERS[ N_ANGLE_CODING_IDENTIFIERS];
 
 class persistent_data_t
 {
@@ -96,6 +100,7 @@ bool write_EEPROM_value( EEPROM_PARAMETER_ID id, float value);
 bool read_EEPROM_value( EEPROM_PARAMETER_ID id, float &value);
 bool lock_EEPROM( bool lockit);
 bool EEPROM_initialize( void);
+bool all_EEPROM_parameters_existing( void);
 
 extern const persistent_data_t PERSISTENT_DATA[];
 extern const unsigned PERSISTENT_DATA_ENTRIES;

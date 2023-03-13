@@ -33,6 +33,7 @@
 #include "atmosphere.h"
 #include "flight_observer.h"
 #include "data_structures.h"
+#include "accumulating_averager.h"
 
 //! organizes horizontal navigation, wind observation and variometer
 class navigator_t
@@ -40,19 +41,42 @@ class navigator_t
 public:
   navigator_t (void)
 	:ahrs (0.01f),
-#if PARALLEL_MAGNETIC_AHRS
+#if DEVELOPMENT_ADDITIONS
 	 ahrs_magnetic (0.01f),
 #endif
 	 atmosphere (101325.0f),
-	 vario_integrator( configuration( VARIO_INT_TC)),
-	 wind_average_observer( configuration( MEAN_WIND_TC)),
-	 relative_wind_observer( configuration( MEAN_WIND_TC)),
-	 corrected_wind_averager( configuration( WIND_TC) * 10.0f),
-	 // WIND_TC designed for 100Hz but now used at 10 Hz
-	 GNSS_speed( ZERO),
+	 vario_integrator( configuration( VARIO_INT_TC) < 0.25f
+	   ? configuration( VARIO_INT_TC) // normalized stop frequency given, old version
+	   : (FAST_SAMPLING_TIME / configuration( VARIO_INT_TC) ) ), // time-constant given, new version
+	 wind_average_observer( configuration( MEAN_WIND_TC) < 0.25f
+	   ? configuration( MEAN_WIND_TC)
+	   : (FAST_SAMPLING_TIME / configuration( MEAN_WIND_TC) ) ),
+	 instant_wind_averager( configuration( WIND_TC)  < 0.25f
+	   ? configuration( MEAN_WIND_TC) * 10.0f // WIND_TC designed for 100Hz but now used at 10 Hz
+	   : (SLOW_SAMPLING_TIME / configuration( MEAN_WIND_TC) ) ),
+	 relative_wind_observer( configuration( MEAN_WIND_TC) < 0.25f
+	   ? configuration( MEAN_WIND_TC) * 10.0f
+	   : (SLOW_SAMPLING_TIME / configuration( MEAN_WIND_TC) ) ),
+	 corrected_wind_averager( configuration( MEAN_WIND_TC)  < 0.25f
+	   ? configuration( MEAN_WIND_TC) * 10.0f
+	   : (SLOW_SAMPLING_TIME / configuration( MEAN_WIND_TC) ) ),
+	 air_pressure_resampler_100Hz_10Hz(0.04f), // f/fc = 80% * 0.5 * 0.1
 	 GNSS_negative_altitude( ZERO),
 	 TAS_averager(1.0f / 1.0f / 100.0f),
-	 IAS_averager(1.0f / 1.0f / 100.0f)
+	 IAS_averager(1.0f / 1.0f / 100.0f),
+	 pitot_pressure(0.0f),
+	 TAS( 0.0f),
+	 IAS( 0.0f),
+	 GNSS_heading( 0.0f),
+	 GNSS_fix_type( 0),
+	 GNSS_speed( 0.0f),
+	 old_circling_state( STRAIGHT_FLIGHT),
+	 wind_obsolete( true),
+	 last_wind({0}),
+	 last_wind_average({0}),
+	 last_headwind(0.0f),
+	 last_crosswind(0.0f)
+
   {};
 
   void set_density_data( float temperature, float humidity)
@@ -94,6 +118,7 @@ public:
   void update_pressure( float pressure)
   {
     atmosphere.set_pressure(pressure);
+    air_pressure_resampler_100Hz_10Hz.respond(pressure);
   }
 
   void reset_altitude( void)
@@ -108,10 +133,21 @@ public:
    */
   void update_pitot( float pressure)
   {
-    pitot_pressure=pressure;
+    pitot_pressure = pressure < 0.0f ? 0.0f : pressure;
+    assert( pitot_pressure < 4500.0f);
+
     TAS = atmosphere.get_TAS_from_dynamic_pressure ( pitot_pressure);
+    assert( TAS >= 0.0f);
+    assert( TAS < 100.0f);
+    if( TAS > 0)
+      assert( isnormal(TAS));
     TAS_averager.respond(TAS);
+
     IAS = atmosphere.get_IAS_from_dynamic_pressure ( pitot_pressure);
+    assert( IAS >= 0.0f);
+    assert( IAS < 100.0f);
+    if( IAS > 0)
+      assert(isnormal(IAS));
     IAS_averager.respond(IAS);
   }
 
@@ -150,7 +186,7 @@ public:
   void set_attitude( float roll, float nick, float yaw)
   {
     ahrs.set_from_euler(roll, nick, yaw);
-#if PARALLEL_MAGNETIC_AHRS
+#if DEVELOPMENT_ADDITIONS
     ahrs_magnetic.set_from_euler(roll, nick, yaw);
 #endif
   }
@@ -165,15 +201,37 @@ public:
     return relative_wind_observer.get_value();
   }
 
+  float3vector report_instant_wind( void) const
+  {
+    if( ahrs.get_circling_state() != STRAIGHT_FLIGHT)
+      return wind_average_observer.get_value(); // report last circle mean
+    else
+      return instant_wind_averager.get_output(); // report short-term average
+  }
+  
+  float3vector report_average_wind( void) const
+  {
+    if( ahrs.get_circling_state() == CIRCLING)
+      return circling_wind_averager.get_average();
+    else
+      return wind_average_observer.get_value();
+  }
+
+  float3vector report_corrected_wind( void) const
+  {
+    return corrected_wind_averager.get_output();
+  }
+
 private:
   AHRS_type 		ahrs;
   atmosphere_t 		atmosphere;
   flight_observer_t 	flight_observer;
 
-#if PARALLEL_MAGNETIC_AHRS
+#if DEVELOPMENT_ADDITIONS
   AHRS_type	ahrs_magnetic;
 #endif
 
+  pt2<float,float> air_pressure_resampler_100Hz_10Hz;
   float 	pitot_pressure;
   float 	TAS;
   float 	IAS;
@@ -186,11 +244,21 @@ private:
   unsigned	GNSS_fix_type;
 
   soaring_flight_averager< float> 	vario_integrator;
+  pt2<float3vector,float> instant_wind_averager;
   soaring_flight_averager< float3vector, true> wind_average_observer; // configure wind average clamping on first circle
-  soaring_flight_averager< float3vector> relative_wind_observer;
+  soaring_flight_averager< float3vector, false, false> relative_wind_observer;
   pt2<float3vector,float> corrected_wind_averager;
+  accumulating_averager < float3vector> circling_wind_averager;
   pt2<float,float> TAS_averager;
   pt2<float,float> IAS_averager;
+  circle_state_t old_circling_state;
+
+  // workaround for different sampling rates 10Hz and 100Hz
+  bool wind_obsolete; //!< wind has not been updated recently
+  float3vector last_wind;
+  float3vector last_wind_average;
+  float last_headwind;
+  float last_crosswind;
 };
 
 #endif /* NAVIGATORT_H_ */

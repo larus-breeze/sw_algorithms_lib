@@ -105,9 +105,11 @@ public:
     mag  = sensor_mapping * output_data.m.mag;
     gyro = sensor_mapping * output_data.m.gyro;
 #endif
-    // copy data for our logger
+
+#if DEVELOPMENT_ADDITIONS
     output_data.body_acc  = acc;
     output_data.body_gyro = gyro;
+#endif
 
     navigator.update_every_10ms (acc, mag, gyro);
   }
