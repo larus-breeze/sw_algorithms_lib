@@ -63,6 +63,7 @@
 #define CROSS_GAIN_ONLY			0 	//!< if 1: do not use induction to control attitude while circling
 #define MAGNETIC_CALIB_FROM_EEPROM	1 	//!< initially read data from EEPROM, may be set to 0 for tests
 #define DISABLE_CIRCLING_STATE		0	//!< for tests only: never use circling AHRS algorithm
+#define OBSERVED_INDUCTION_STD_DEVIATION 0.3 // used to be 0.03 todo check me
 
 #define FAST_SAMPLING_REQUENCY 		100.0f
 #define FAST_SAMPLING_TIME 		0.01f
