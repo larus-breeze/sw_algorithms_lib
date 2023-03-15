@@ -134,7 +134,7 @@ public:
   void update_pitot( float pressure)
   {
     pitot_pressure = pressure < 0.0f ? 0.0f : pressure;
-    if( pitot_pressure > 4500.0f);
+    if( pitot_pressure > 4500.0f)
       return; // ignore implausible spikes
 
     TAS = atmosphere.get_TAS_from_dynamic_pressure ( pitot_pressure);
