@@ -130,9 +130,13 @@ AHRS_type::AHRS_type (float sampling_time)
   heading_difference_AHRS_DGNSS(0.0f),
   magnetic_disturbance(0.0f)
 {
+#if MAGNETIC_CALIB_FROM_EEPROM
   float inclination=configuration(INCLINATION);
   float declination=configuration(DECLINATION);
-
+#else
+  float inclination=M_PI*0.25f;
+  float declination=0.0f;
+#endif
   expected_nav_induction[NORTH] = COS( inclination);
   expected_nav_induction[EAST]  = COS( inclination) * SIN( declination);
   expected_nav_induction[DOWN]  = SIN( inclination);
@@ -169,8 +173,7 @@ AHRS_type::update_attitude ( const float3vector &acc,
 			     const float3vector &gyro,
 			     const float3vector &mag)
 {
-//  attitude.rotate ( (gyro.e[ROLL] + 2 *  0.0123 * gyro.e[NICK] + 2* 0.0331 * gyro.e[YAW])  * Ts_div_2,
-    attitude.rotate ( gyro.e[ROLL] * Ts_div_2,
+  attitude.rotate (gyro.e[ROLL] * Ts_div_2,
 		   gyro.e[NICK] * Ts_div_2,
 		   gyro.e[YAW]  * Ts_div_2);
 
@@ -271,22 +274,25 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
     	  mag_calibrator, 'S', (turn_rate_averager.get_output () > 0.0f), true);
 #endif
 
-      if (induction_observer.data_valid ())
-	{
-	  float north_induction = induction_observer.get_north_induction ();
-	  float east_induction = induction_observer.get_east_induction ();
-	  float std = SQRT(induction_observer.get_variance ());
+          if (induction_observer.data_valid ())
+    	{
+    	  float north_induction = induction_observer.get_north_induction ();
+    	  float east_induction  = induction_observer.get_east_induction ();
+    	  float down_induction  = induction_observer.get_down_induction ();
+    	  float std = SQRT(induction_observer.get_variance ());
 
-	  if (std < 0.03)
-	    {
+	  if (std < INDUCTION_ERROR)
+    	    {
 #if MODIFY_EXPECTED_INDUCTION
-	      expected_nav_induction[EAST] = east_induction;
-	      expected_nav_induction[NORTH] = north_induction;
-	      update_magnetic_loop_gain(); // adapt to magnetic inclination
+    	      expected_nav_induction[EAST] =  east_induction;
+    	      expected_nav_induction[NORTH] = north_induction;
+    	      expected_nav_induction[DOWN] =  down_induction;
+    	      expected_nav_induction.normalize();
+    	      update_magnetic_loop_gain(); // adapt to magnetic inclination
 #endif
-	    }
-	  induction_observer.reset ();
-	}
+    	    }
+    	  induction_observer.reset ();
+    	}
     }
 }
 
@@ -379,7 +385,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 	  float down_induction = induction_observer.get_down_induction ();
 	  float std = SQRT(induction_observer.get_variance ());
 
-	  if (std < 0.03)
+    	  if (std < INDUCTION_ERROR)
 	    {
 #if MODIFY_EXPECTED_INDUCTION
 	      expected_nav_induction[EAST] =  east_induction;
