@@ -169,7 +169,8 @@ AHRS_type::update_attitude ( const float3vector &acc,
 			     const float3vector &gyro,
 			     const float3vector &mag)
 {
-  attitude.rotate (gyro.e[ROLL] * Ts_div_2,
+//  attitude.rotate ( (gyro.e[ROLL] + 2 *  0.0123 * gyro.e[NICK] + 2* 0.0331 * gyro.e[YAW])  * Ts_div_2,
+    attitude.rotate ( gyro.e[ROLL] * Ts_div_2,
 		   gyro.e[NICK] * Ts_div_2,
 		   gyro.e[YAW]  * Ts_div_2);
 
