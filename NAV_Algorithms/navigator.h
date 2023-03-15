@@ -134,21 +134,20 @@ public:
   void update_pitot( float pressure)
   {
     pitot_pressure = pressure < 0.0f ? 0.0f : pressure;
-    assert( pitot_pressure < 4500.0f);
+    if( pitot_pressure > 4500.0f);
+      return; // ignore implausible spikes
 
     TAS = atmosphere.get_TAS_from_dynamic_pressure ( pitot_pressure);
-    assert( TAS >= 0.0f);
-    assert( TAS < 100.0f);
-    if( TAS > 0)
-      assert( isnormal(TAS));
-    TAS_averager.respond(TAS);
+    if( TAS > 5.0f)
+      TAS_averager.respond(TAS);
+    else
+      TAS_averager.settle(0.0f); // avoid underflow on decay
 
     IAS = atmosphere.get_IAS_from_dynamic_pressure ( pitot_pressure);
-    assert( IAS >= 0.0f);
-    assert( IAS < 100.0f);
-    if( IAS > 0)
-      assert(isnormal(IAS));
-    IAS_averager.respond(IAS);
+    if( IAS > 5.0f)
+      IAS_averager.respond(IAS);
+    else
+      IAS_averager.settle(0.0f); // avoid underflow on decay
   }
 
   /**

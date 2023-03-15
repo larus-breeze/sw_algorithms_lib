@@ -62,6 +62,12 @@ ROM persistent_data_t PERSISTENT_DATA[]=
 	{ANT_SLAVE_RIGHT,"ANT_SLAVE_RIGHT", 0},	//! Slave DGNSS antenna more right /mm
     };
 
+ROM unsigned ANGLE_CODING_IDENTIFIERS[ N_ANGLE_CODING_IDENTIFIERS]=
+    {
+	SENS_TILT_ROLL, SENS_TILT_NICK, SENS_TILT_YAW,
+	DECLINATION, INCLINATION
+    };
+
 ROM unsigned PERSISTENT_DATA_ENTRIES = sizeof(PERSISTENT_DATA) / sizeof(persistent_data_t);
 
 bool all_EEPROM_parameters_existing( void)
