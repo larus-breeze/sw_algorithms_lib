@@ -26,9 +26,7 @@
 #include "system_configuration.h"
 #include "GNSS.h"
 #include "embedded_memory.h"
-#if PRINT_DATA
-#include "stdio.h"
-#endif
+
 #if USE_HARDWARE_EEPROM	== 0
 #include "EEPROM_emulation.h"
 #endif
@@ -283,10 +281,6 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
     	  float down_induction  = induction_observer.get_down_induction ();
     	  float std = SQRT(induction_observer.get_variance ());
 
-#if PRINT_DATA
-	  printf( "%f %f %f %f\n\n" , north_induction, east_induction, down_induction, std);
-#endif
-
 	  if (std < OBSERVED_INDUCTION_STD_DEVIATION)
     	    {
 #if MODIFY_EXPECTED_INDUCTION
@@ -295,7 +289,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
     	      expected_nav_induction[DOWN] =  down_induction;
     	      expected_nav_induction.normalize();
     	      update_magnetic_loop_gain(); // adapt to magnetic inclination
-    #endif
+#endif
     	    }
     	  induction_observer.reset ();
     	}
@@ -390,10 +384,6 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 	  float east_induction = induction_observer.get_east_induction ();
 	  float down_induction = induction_observer.get_down_induction ();
 	  float std = SQRT(induction_observer.get_variance ());
-
-#if PRINT_DATA
-	  printf( "%f %f %f %f\n\n" , north_induction, east_induction, down_induction, std);
-#endif
 
     	  if (std < OBSERVED_INDUCTION_STD_DEVIATION)
 	    {

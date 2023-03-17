@@ -76,8 +76,8 @@ void flight_observer_t::update_every_10ms (
       Kalman_v_a_observer_E.update(gnss_velocity.e[EAST]  - wind_average.e[EAST],  ahrs_acceleration.e[EAST]);
 
       float speed_compensation_kalman = (
-		Kalman_v_a_observer_N.get_x(Kalman_V_A_observer_t::VELOCITY) * Kalman_v_a_observer_N.get_x(Kalman_V_A_observer_t::ACCELERATION) +
-		Kalman_v_a_observer_E.get_x(Kalman_V_A_observer_t::VELOCITY) * Kalman_v_a_observer_E.get_x(Kalman_V_A_observer_t::ACCELERATION) +
+		Kalman_v_a_observer_N.get_x(Kalman_V_A_Aoff_observer_t::VELOCITY) * Kalman_v_a_observer_N.get_x(Kalman_V_A_Aoff_observer_t::ACCELERATION) +
+		Kalman_v_a_observer_E.get_x(Kalman_V_A_Aoff_observer_t::VELOCITY) * Kalman_v_a_observer_E.get_x(Kalman_V_A_Aoff_observer_t::ACCELERATION) +
 		KalmanVario_GNSS.get_x( KalmanVario_PVA_t::VARIO)            * KalmanVario_GNSS.get_x( KalmanVario_PVA_t::ACCELERATION_OBSERVED) * vertical_energy_tuning_factor
 	  ) * RECIP_GRAVITY;
 

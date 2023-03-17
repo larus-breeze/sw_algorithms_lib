@@ -30,7 +30,7 @@
 #include <differentiator.h>
 #include "KalmanVario.h"
 #include "KalmanVario_PVA.h"
-#include "Kalman_V_A_observer.h"
+#include "Kalman_V_A_Aoff_observer.h"
 #include "embedded_math.h"
 #include "windobserver.h"
 #include "NAV_tuning_parameters.h"
@@ -140,8 +140,8 @@ private:
 	KalmanVario_PVA_t KalmanVario_GNSS;
 	KalmanVario_t KalmanVario_pressure;
 	differentiator<float,float>specific_energy_differentiator;
-	Kalman_V_A_observer_t Kalman_v_a_observer_N;
-	Kalman_V_A_observer_t Kalman_v_a_observer_E;
+	Kalman_V_A_Aoff_observer_t Kalman_v_a_observer_N;
+	Kalman_V_A_Aoff_observer_t Kalman_v_a_observer_E;
 	HP_LP_fusion <float, float> GNSS_INS_speedcomp_fusioner;
 
 	// variometer-related signals
