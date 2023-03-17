@@ -281,7 +281,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
     	  float down_induction  = induction_observer.get_down_induction ();
     	  float std = SQRT(induction_observer.get_variance ());
 
-	  if (std < INDUCTION_ERROR)
+	  if (std < OBSERVED_INDUCTION_STD_DEVIATION)
     	    {
 #if MODIFY_EXPECTED_INDUCTION
     	      expected_nav_induction[EAST] =  east_induction;
@@ -385,7 +385,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 	  float down_induction = induction_observer.get_down_induction ();
 	  float std = SQRT(induction_observer.get_variance ());
 
-    	  if (std < INDUCTION_ERROR)
+    	  if (std < OBSERVED_INDUCTION_STD_DEVIATION)
 	    {
 #if MODIFY_EXPECTED_INDUCTION
 	      expected_nav_induction[EAST] =  east_induction;
