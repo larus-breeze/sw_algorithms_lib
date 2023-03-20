@@ -46,9 +46,12 @@ ROM persistent_data_t PERSISTENT_DATA[]=
 	{MAG_Z_OFF,	"Mag_Z_Off", 0},	//! Induction sensor x offset signed / ( 10.0f / 32768 )
 	{MAG_Z_SCALE,	"Mag_Z_Scale", 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
 	{MAG_STD_DEVIATION, "Mag_Calib_Err", 0},//! Magnetic calibration STD deviation / ( 1 % / 65536 )
+	{MAG_STD_DEVIATION, "Mag_Calib_Err", 0},//! Magnetic calibration STD deviation / ( 1 % / 65536 )
+	{MAG_AUTO_CALIB, "Mag_Auto_Calib", 0},	//! Magnetic calibration adjusted automatically
 
 	{DECLINATION,	"Mag_Declination", 0}, 	//! Magnetic declination (east positive) signed / ( 180° / 32768)
 	{INCLINATION,	"Mag_Inclination", 0}, 	//! Magnetic inclination (down positive) signed / ( 180° / 32768)
+	{MAG_EARTH_AUTO, "Mag_Earth_Auto", 0},	//! Earth magnetic field recognized automatically
 
 	{VARIO_TC,	"Vario_TC", 0},	 	//! Vario time constant unsigned s / ( 100.0f / 65536 )
 	{VARIO_INT_TC,	"Vario_Int_TC", 0},	//! Vario integrator time constant unsigned s / ( 100.0f / 65536 )
@@ -105,10 +108,12 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
   {
     case BOARD_ID:
     case GNSS_CONFIGURATION:
+    case MAG_AUTO_CALIB:
+    case MAG_EARTH_AUTO:
       if( read)
 	value = (float)(EEPROM_value.u16);
       else
-	EEPROM_value.u16 = (uint16_t)(value + 0.5f); // rounding
+	EEPROM_value.u16 = (uint16_t)round(value); // rounding
       break;
     case QNH_OFFSET:
     case PITOT_OFFSET:

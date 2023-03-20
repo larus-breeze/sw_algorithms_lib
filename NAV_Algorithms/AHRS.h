@@ -215,6 +215,8 @@ private:
   float heading_difference_AHRS_DGNSS;
   float magnetic_disturbance; //!< abs( observed_induction - expected_induction)
   float magnetic_control_gain; //!< declination-dependent magnetic control loop gain
+  bool automatic_magnetic_calibration;
+  bool automatic_earth_field_parameters;
 };
 
 #endif /* AHRS_H_ */
