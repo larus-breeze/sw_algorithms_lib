@@ -46,7 +46,6 @@ ROM persistent_data_t PERSISTENT_DATA[]=
 	{MAG_Z_OFF,	"Mag_Z_Off", 0},	//! Induction sensor x offset signed / ( 10.0f / 32768 )
 	{MAG_Z_SCALE,	"Mag_Z_Scale", 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
 	{MAG_STD_DEVIATION, "Mag_Calib_Err", 0},//! Magnetic calibration STD deviation / ( 1 % / 65536 )
-	{MAG_STD_DEVIATION, "Mag_Calib_Err", 0},//! Magnetic calibration STD deviation / ( 1 % / 65536 )
 	{MAG_AUTO_CALIB, "Mag_Auto_Calib", 0},	//! Magnetic calibration adjusted automatically
 
 	{DECLINATION,	"Mag_Declination", 0}, 	//! Magnetic declination (east positive) signed / ( 180° / 32768)
