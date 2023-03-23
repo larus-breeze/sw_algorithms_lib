@@ -82,24 +82,14 @@ enum EEPROM_PARAMETER_ID
   EEPROM_PARAMETER_ID_END // 1 behind last parameter ID
 };
 
-#define N_ANGLE_CODING_IDENTIFIERS 5
-extern const unsigned ANGLE_CODING_IDENTIFIERS[ N_ANGLE_CODING_IDENTIFIERS];
-
-inline bool parameter_is_an_angle( unsigned parameter_id)
-{
-  for( unsigned this_id = 0; this_id < N_ANGLE_CODING_IDENTIFIERS; ++this_id)
-    if( ANGLE_CODING_IDENTIFIERS[this_id] == parameter_id)
-      return true;
-
-  return false;
-}
-
 class persistent_data_t
 {
 public:
   enum { MNEMONIC_LENGTH=16};
   EEPROM_PARAMETER_ID id;
   char mnemonic[MNEMONIC_LENGTH];
+  bool is_an_angle;
+  float default_value;
   EEPROM_data_t value;
 };
 
