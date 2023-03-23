@@ -128,7 +128,12 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
       if( read)
 	value = (float)(EEPROM_value.u16) / 65536.0f * 1e-2f;
       else
-	EEPROM_value.u16 = (uint16_t)(value * 1e2f * 65536.0f);
+	{
+	  if( value >= 0.009999f || value < 0.0f)
+	    EEPROM_value.u16 = 0xffff;
+	  else
+	    EEPROM_value.u16 = (uint16_t)(value * 1e2f * 65536.0f);
+	}
       break;
     case MAG_X_OFF:
     case MAG_Y_OFF:
