@@ -149,8 +149,13 @@ void CAN_output ( const output_data_t &x)
   else
     system_state &= ~CAN_OUTPUT_ACTIVE;
 
+#ifndef GIT_TAG_DEC
+#define GIT_TAG_DEC 0xffffffff
+#endif
+  
   p.id=c_CAN_Id_SystemState;				// 0x10d
-  p.dlc=4;
+  p.dlc=8;
   p.data_w[0] = system_state;
+  p.data_w[1] = GIT_TAG_DEC;
   CAN_send(p, 1);
 }
