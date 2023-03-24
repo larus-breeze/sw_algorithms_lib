@@ -56,7 +56,7 @@
 #define NAV_CORRECTION_LIMIT 5.0f	//!< limit for "low AHRS correcting variable"
 #define HIGH_TURN_RATE 8.0*M_PI/180.0f	//!< turn rate high limit
 #define LOW_TURN_RATE  4.0*M_PI/180.0f	//!< turn rate low limit
-#define SPEED_COMPENSATION_FUSIONER_FEEDBACK 0.99f // empirically tuned alpha
+#define SPEED_COMPENSATION_FUSIONER_FEEDBACK 0.992f // empirically tuned alpha
 
 #define CROSS_GAIN_ONLY			0 	//!< if 1: do not use induction to control attitude while circling
 #define DISABLE_CIRCLING_STATE		0	//!< for tests only: never use circling AHRS algorithm

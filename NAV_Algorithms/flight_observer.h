@@ -85,6 +85,22 @@ public:
 
 	float get_pressure_altitude( void) const;
 
+	float get_speed_compensation( unsigned index) const
+	{
+	  switch( index)
+	  {
+	    case 0:
+		return speed_compensation_INS_GNSS_1;
+	      break;
+	    case 1:
+		return speed_compensation_kalman_2;
+	      break;
+	    default:
+		return speed_compensation_energy_3;
+	      break;
+	  }
+	}
+
 	float get_speed_compensation_IAS( void ) const
 	{
 		return speed_compensation_IAS;
@@ -147,6 +163,10 @@ private:
 	float vario_uncompensated_GNSS;
 	float specific_energy;
 	float vertical_energy_tuning_factor;
+
+	float speed_compensation_INS_GNSS_1;
+	float speed_compensation_kalman_2;
+	float speed_compensation_energy_3;
 };
 
 #endif /* FLIGHT_OBSERVER_H_ */

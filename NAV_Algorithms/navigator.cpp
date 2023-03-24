@@ -199,5 +199,7 @@ void navigator_t::report_data( output_data_t &d)
     d.inst_wind_E		= flight_observer.get_instant_wind().e[EAST];
     d.inst_wind_corrected_N	= report_corrected_wind().e[NORTH];
     d.inst_wind_corrected_E	= report_corrected_wind().e[EAST];
+    for( unsigned i=0; i<3; ++i)
+      d.speed_compensation[i]  = flight_observer.get_speed_compensation(i);
 #endif
 }
