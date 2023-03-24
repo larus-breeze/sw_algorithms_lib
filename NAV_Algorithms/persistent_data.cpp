@@ -50,7 +50,7 @@ ROM persistent_data_t PERSISTENT_DATA[]=
 
 	{DECLINATION,	"Mag_Declination",	true,  0.05f, 0}, 	//! Magnetic declination (east positive) signed / ( 180° / 32768)
 	{INCLINATION,	"Mag_Inclination",	true,  1.13f, 0}, 	//! Magnetic inclination (down positive) signed / ( 180° / 32768)
-	{MAG_EARTH_AUTO, "Mag_Earth_Auto",	true,  0.0f, 0},	//! Earth magnetic field recognized automatically
+	{MAG_EARTH_AUTO, "Mag_Earth_Auto",	false,  0.0f, 0},	//! Earth magnetic field recognized automatically
 
 	{VARIO_TC,	"Vario_TC",		false, 2.0f, 0}, 	//! Vario time constant unsigned s / ( 100.0f / 65536 )
 	{VARIO_INT_TC,	"Vario_Int_TC",		false, 30.0f, 0},	//! Vario integrator time constant unsigned s / ( 100.0f / 65536 )
@@ -106,7 +106,7 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
       if( read)
 	value = (float)(EEPROM_value.u16);
       else
-	EEPROM_value.u16 = (uint16_t)round(value); // rounding
+	EEPROM_value.u16 = (uint16_t)round(value);
       break;
     case QNH_OFFSET:
     case PITOT_OFFSET:
@@ -165,7 +165,7 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
 	    value += 2.0f * M_PI_F;
 	  if( value >= M_PI_F)
 	    value -= 2 * M_PI_F;
-	  int ivalue = value * 32768.0f / M_PI_F;
+	  int ivalue = round(value * 32768.0f / M_PI_F);
 	  if( ivalue >= 32768)
 	    ivalue = 32767;
 	  EEPROM_value.i16 = (int16_t)ivalue;
