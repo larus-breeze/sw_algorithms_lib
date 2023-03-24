@@ -166,7 +166,7 @@ inline void compass_calibration_t::write_into_EEPROM (void) const
       write_EEPROM_value( (EEPROM_PARAMETER_ID)(MAG_X_SCALE + 2*i), calibration[i].scale);
       variance += calibration[i].variance;
     }
-  write_EEPROM_value(MAG_STD_DEVIATION, SQRT( variance / 3.0f));
+  write_EEPROM_value(MAG_STD_DEVIATION, SQRT( variance / 6.0f));
 }
 
 inline bool compass_calibration_t::read_from_EEPROM (void)
