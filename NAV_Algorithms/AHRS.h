@@ -154,7 +154,7 @@ public:
   {
     return G_load_averager.get_output();
   }
-  void handle_magnetic_calibration( void) const;
+  void handle_magnetic_calibration( void);
 
   void update_compass(
 		  const float3vector &gyro, const float3vector &acc, const float3vector &mag,

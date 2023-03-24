@@ -259,33 +259,8 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 	feed_magnetic_induction_observer (mag_sensor);
 
   // when circling is finished eventually update the magnetic calibration
-  if ((old_circle_state == CIRCLING) && (circling_state == TRANSITION))
-    {
-      handle_magnetic_calibration ();
-      if( automatic_magnetic_calibration)
-	{
-	  compass_calibration.set_calibration (
-	  mag_calibrator, 'S', (turn_rate_averager.get_output () > 0.0f), true);
-	}
-
-      if (induction_observer.data_valid ())
-    	{
-    	  float north_induction = induction_observer.get_north_induction ();
-    	  float east_induction  = induction_observer.get_east_induction ();
-    	  float down_induction  = induction_observer.get_down_induction ();
-    	  float std = SQRT(induction_observer.get_variance ());
-
-	  if ( automatic_earth_field_parameters && (std < INDUCTION_STD_DEVIATION_LIMIT))
-    	    {
-    	      expected_nav_induction[EAST] =  east_induction;
-    	      expected_nav_induction[NORTH] = north_induction;
-    	      expected_nav_induction[DOWN] =  down_induction;
-    	      expected_nav_induction.normalize();
-    	      update_magnetic_loop_gain(); // adapt to magnetic inclination
-    	    }
-    	  induction_observer.reset ();
-    	}
-    }
+  if (automatic_magnetic_calibration && (old_circle_state == CIRCLING) && (circling_state == TRANSITION))
+	  handle_magnetic_calibration ();
 }
 
 /**
@@ -361,33 +336,8 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 	feed_magnetic_induction_observer (mag_sensor);
 
   // when circling is finished eventually update the magnetic calibration
-  if ((old_circle_state == CIRCLING) && (circling_state == TRANSITION))
-    {
-      handle_magnetic_calibration ();
-      if( automatic_magnetic_calibration)
-	{
-	  compass_calibration.set_calibration (
-	  mag_calibrator, 'M', (turn_rate_averager.get_output () > 0.0f), true);
-	}
-
-      if (induction_observer.data_valid ())
-    	{
-    	  float north_induction = induction_observer.get_north_induction ();
-    	  float east_induction  = induction_observer.get_east_induction ();
-    	  float down_induction  = induction_observer.get_down_induction ();
-    	  float std = SQRT(induction_observer.get_variance ());
-
-	  if ( automatic_earth_field_parameters && (std < INDUCTION_STD_DEVIATION_LIMIT))
-    	    {
-    	      expected_nav_induction[EAST] =  east_induction;
-    	      expected_nav_induction[NORTH] = north_induction;
-    	      expected_nav_induction[DOWN] =  down_induction;
-    	      expected_nav_induction.normalize();
-    	      update_magnetic_loop_gain(); // adapt to magnetic inclination
-    	    }
-    	  induction_observer.reset ();
-    	}
-    }
+  if (automatic_magnetic_calibration && (old_circle_state == CIRCLING) && (circling_state == TRANSITION))
+	  handle_magnetic_calibration();
 }
 
 
@@ -425,17 +375,25 @@ void AHRS_type::update_ACC_only (const float3vector &gyro, const float3vector &a
   update_attitude(acc, gyro + gyro_correction, mag);
 }
 
-void AHRS_type::handle_magnetic_calibration (void) const
+void AHRS_type::handle_magnetic_calibration ( void)
 {
-  if( false == compass_calibration.isCalibrationDone())
-    return;
+  compass_calibration.set_calibration_if_changed ( mag_calibrator, (turn_rate_averager.get_output () > 0.0f));
 
-  // make calibration permanent if precision improved or values have changed significantly
-  if( ( SQRT( compass_calibration.get_variance_average()) < configuration(MAG_STD_DEVIATION) )
-      ||
-      (       compass_calibration.parameters_changed_significantly())
-      )
-    {
-      compass_calibration.write_into_EEPROM();
-    }
+  if (induction_observer.data_valid ())
+	{
+	  float north_induction = induction_observer.get_north_induction ();
+	  float east_induction  = induction_observer.get_east_induction ();
+	  float down_induction  = induction_observer.get_down_induction ();
+	  float std = SQRT(induction_observer.get_variance ());
+
+	  if ( automatic_earth_field_parameters && (std < INDUCTION_STD_DEVIATION_LIMIT))
+	    {
+	      expected_nav_induction[EAST] =  east_induction;
+	      expected_nav_induction[NORTH] = north_induction;
+	      expected_nav_induction[DOWN] =  down_induction;
+	      expected_nav_induction.normalize();
+	      update_magnetic_loop_gain(); // adapt to magnetic inclination
+	    }
+	  induction_observer.reset ();
+	}
 }

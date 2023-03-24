@@ -51,7 +51,7 @@ public:
     {
       offset = result.y_offset;
       scale = 1.0f / result.slope;
-      variance = result.variance_offset + result.variance_slope;
+      variance = (result.variance_offset + result.variance_slope) * 0.5f; // use variance average
     }
 
   //! calibrate instant sensor reading using calibration data
@@ -86,30 +86,44 @@ public:
       out.e[i]=calibration[i].calibrate( in.e[i]);
     return out;
   }
+
   bool set_default (void);
-  void set_calibration( linear_least_square_fit<float> mag_calibrator[3], char id, bool turning_right, bool check_samples=true)
+
+  void set_calibration_if_changed( linear_least_square_fit<float> mag_calibrator[3], bool turning_right)
   {
     if( turning_right)
       completeness |= HAVE_RIGHT;
     else
       completeness |= HAVE_LEFT;
 
-    if( check_samples && !
-	( (completeness == HAVE_BOTH) && ( mag_calibrator[0].get_count() > MINIMUM_MAG_CALIBRATION_SAMPLES) )
-	)
-      return; // not enough entropy
+    if( false == (completeness == HAVE_BOTH))
+      return;
 
+    if( ( mag_calibrator[0].get_count() < MINIMUM_MAG_CALIBRATION_SAMPLES) )
+      return;
+
+    // now we have enough entropy and evaluate our result
     linear_least_square_result<float> new_calibration[3];
-    new_calibration[0].id=id;
 
+    float variance = 0;
     for (unsigned i = 0; i < 3; ++i)
       {
 	mag_calibrator[i].evaluate( new_calibration[i]);
-        calibration[i].refresh ( new_calibration[i]);
+	variance += new_calibration[i].variance_offset;
+	variance += new_calibration[i].variance_slope;
         mag_calibrator[i].reset();
       }
-    calibration_done = true; // at least one calibration has been done now
-    completeness = HAVE_NONE; // restart acquisition
+
+    variance *= 0.1666666f; // gives us the mean value
+
+    if( SQRT( variance) > configuration(MAG_STD_DEVIATION))
+      return; // measurement precision has not improved
+
+    for (unsigned i = 0; i < 3; ++i)
+      calibration[i].refresh ( new_calibration[i]);
+
+    if( parameters_changed_significantly())
+      write_into_EEPROM();
 
 #if WRITE_MAG_CALIB_EEPROM
     magnetic_calibration_queue.send(new_calibration, 0);
