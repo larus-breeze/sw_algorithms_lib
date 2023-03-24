@@ -122,12 +122,14 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
       if( read)
 	value = ( (float)(EEPROM_value.i16) / 32768.0f) + 1.0f;
       else
-	int ivalue = (int)((value - 1.0f) * 32768.0f);
-	if( ivalue > 32767)
-	  ivalue = 32767;
-	if( ivalue < -32768)
-	  ivalue = -32768;
-	EEPROM_value.i16 = (int16_t)ivalue;
+	{
+	  int ivalue = (int)((value - 1.0f) * 32768.0f);
+	  if( ivalue > 32767)
+	    ivalue = 32767;
+	  if( ivalue < -32768)
+	    ivalue = -32768;
+	  EEPROM_value.i16 = (int16_t)ivalue;
+	}
       break;
     case MAG_STD_DEVIATION:
       if( read)
