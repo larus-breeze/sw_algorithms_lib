@@ -39,7 +39,7 @@ size = length(vel);
 
 acc_offset = [ linspace( 0, 1, size/2) ones( 1, size/2)];  
 
-vpa = 1.0^2; % acceleration process variance / (m/s²)²
+vpa = 3.0^2; % acceleration process variance / (m/s²)²
 
 %V = T * var_proc_a;
 vaoff = 0.0001;
