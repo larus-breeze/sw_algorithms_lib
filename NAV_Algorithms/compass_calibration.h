@@ -31,11 +31,6 @@
 #include "persistent_data.h"
 #include "NAV_tuning_parameters.h"
 
-#if WRITE_MAG_CALIB_EEPROM
-#include "FreeRTOS_wrapper.h"
-extern Queue< linear_least_square_result<float>[3] > magnetic_calibration_queue;
-#endif
-
 //! maintain offset and slope data for one sensor axis
 class calibration_t
 {
@@ -89,7 +84,7 @@ public:
 
   bool set_default (void);
 
-  void set_calibration_if_changed( linear_least_square_fit<float> mag_calibrator[3], bool turning_right)
+bool set_calibration_if_changed( linear_least_square_fit<float> mag_calibrator[3], bool turning_right)
   {
     if( turning_right)
       completeness |= HAVE_RIGHT;
@@ -97,10 +92,10 @@ public:
       completeness |= HAVE_LEFT;
 
     if( false == (completeness == HAVE_BOTH))
-      return;
+      return false;
 
     if( ( mag_calibrator[0].get_count() < MINIMUM_MAG_CALIBRATION_SAMPLES) )
-      return;
+      return false;
 
     // now we have enough entropy and evaluate our result
     linear_least_square_result<float> new_calibration[3];
@@ -117,17 +112,17 @@ public:
     variance *= 0.1666666f; // gives us the mean value
 
     if( SQRT( variance) > configuration(MAG_STD_DEVIATION))
-      return; // measurement precision has not improved
+      return false; // measurement precision has not improved
 
     for (unsigned i = 0; i < 3; ++i)
       calibration[i].refresh ( new_calibration[i]);
 
     if( parameters_changed_significantly())
+      {
       write_into_EEPROM();
-
-#if WRITE_MAG_CALIB_EEPROM
-    magnetic_calibration_queue.send(new_calibration, 0);
-#endif
+      return true;
+      }
+    return false;
   }
 
   bool isCalibrationDone () const
@@ -140,7 +135,12 @@ public:
     float retv = 0.0f;
     for( unsigned i=0; i < 3; ++i)
       retv += calibration[i].variance;
-    return retv * 0.33333f;
+    return retv * 0.33333333f;
+  }
+
+  const calibration_t *get_calibration(void) const
+  {
+    return calibration_done ? calibration : 0;
   }
 
   bool parameters_changed_significantly(void) const;

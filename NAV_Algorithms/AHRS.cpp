@@ -25,6 +25,7 @@
 #include <AHRS.h>
 #include "system_configuration.h"
 #include "GNSS.h"
+#include "magnetic_induction_report.h"
 #include "embedded_memory.h"
 
 #if USE_HARDWARE_EEPROM	== 0
@@ -377,23 +378,39 @@ void AHRS_type::update_ACC_only (const float3vector &gyro, const float3vector &a
 
 void AHRS_type::handle_magnetic_calibration ( void)
 {
-  compass_calibration.set_calibration_if_changed ( mag_calibrator, (turn_rate_averager.get_output () > 0.0f));
+  bool calibration_changed =
+      compass_calibration.set_calibration_if_changed ( mag_calibrator, (turn_rate_averager.get_output () > 0.0f));
+
+  float induction_error;
 
   if (induction_observer.data_valid ())
 	{
 	  float north_induction = induction_observer.get_north_induction ();
 	  float east_induction  = induction_observer.get_east_induction ();
 	  float down_induction  = induction_observer.get_down_induction ();
-	  float std = SQRT(induction_observer.get_variance ());
+	  induction_error = SQRT(induction_observer.get_variance ());
 
-	  if ( automatic_earth_field_parameters && (std < INDUCTION_STD_DEVIATION_LIMIT))
+	  if ( automatic_earth_field_parameters && ( induction_error < INDUCTION_STD_DEVIATION_LIMIT))
 	    {
-	      expected_nav_induction[EAST] =  east_induction;
 	      expected_nav_induction[NORTH] = north_induction;
+	      expected_nav_induction[EAST] =  east_induction;
 	      expected_nav_induction[DOWN] =  down_induction;
 	      expected_nav_induction.normalize();
 	      update_magnetic_loop_gain(); // adapt to magnetic inclination
+	      calibration_changed = true;
 	    }
 	  induction_observer.reset ();
 	}
+
+  if( calibration_changed)
+    {
+      magnetic_induction_report_t magnetic_induction_report;
+      for( unsigned i=0; i<3; ++i)
+	magnetic_induction_report.calibration[i] = (compass_calibration.get_calibration())[i];
+
+      magnetic_induction_report.nav_induction=expected_nav_induction;
+      magnetic_induction_report.nav_induction_std_deviation = induction_error;
+
+      report_magnetic_calibration_has_changed( &magnetic_induction_report);
+    }
 }

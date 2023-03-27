@@ -154,7 +154,6 @@ public:
   {
     return G_load_averager.get_output();
   }
-  void handle_magnetic_calibration( void);
 
   void update_compass(
 		  const float3vector &gyro, const float3vector &acc, const float3vector &mag,
@@ -176,6 +175,7 @@ public:
   }
 
 private:
+  void handle_magnetic_calibration( void);
   void update_magnetic_loop_gain( void)
   {
     magnetic_control_gain = M_H_GAIN / SQRT( SQR(expected_nav_induction[EAST])+SQR(expected_nav_induction[NORTH]));
