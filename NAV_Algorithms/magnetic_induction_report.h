@@ -19,6 +19,6 @@ public:
   float nav_induction_std_deviation;
 };
 
-void report_magnetic_calibration_has_changed( magnetic_induction_report_t *p_magnetic_induction_report);
+void report_magnetic_calibration_has_changed( magnetic_induction_report_t *p_magnetic_induction_report, char type);
 
 #endif /* MAGNETIC_INDUCTION_REPORT_H_ */

@@ -3,21 +3,21 @@
 #ifndef GENERIC_ALGORITHMS_MEAN_AND_VARIANCE_FINDER_H_
 #define GENERIC_ALGORITHMS_MEAN_AND_VARIANCE_FINDER_H_
 
-class mean_and_variance_finder_t
+template <class sample_data>class mean_and_variance_finder_t
 {
 public:
   mean_and_variance_finder_t( void)
-  : sum(0.0f),
-    square_sum(0.0f),
+  : sum(0),
+    square_sum(0),
     samples(0)
   {}
   void reset( void)
   {
-    sum = 0.0f;
-    square_sum = 0.0f;
+    sum = 0;
+    square_sum = 0;
     samples = 0;
   }
-  void feed( float value)
+  void feed( sample_data value)
   {
     sum += value;
     square_sum += SQR( value);
@@ -29,16 +29,17 @@ public:
   }
   float get_mean( void) const
   {
-    return sum / (float)samples;
+    return sum / samples;
   }
   float get_variance( void) const
   {
-    return square_sum / (float)samples - SQR( get_mean());
+    sample_data mean = sum / samples;
+    return square_sum / samples - mean * mean;
   }
 
 private:
-  float sum;
-  float square_sum;
+  sample_data sum;
+  sample_data square_sum;
   unsigned samples;
 };
 

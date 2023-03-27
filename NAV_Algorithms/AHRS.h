@@ -33,7 +33,6 @@
 #include "compass_calibration.h"
 #include "HP_LP_fusion.h"
 #include "induction_observer.h"
-
 #include "pt2.h"
 
 extern float3vector nav_induction;
@@ -175,7 +174,7 @@ public:
   }
 
 private:
-  void handle_magnetic_calibration( void);
+  void handle_magnetic_calibration( char type);
   void update_magnetic_loop_gain( void)
   {
     magnetic_control_gain = M_H_GAIN / SQRT( SQR(expected_nav_induction[EAST])+SQR(expected_nav_induction[NORTH]));
@@ -207,9 +206,15 @@ private:
   pt2<float,float> nick_angle_averager;
   pt2<float,float> turn_rate_averager;
   pt2<float,float> G_load_averager;
-  linear_least_square_fit<float> mag_calibrator[3];
-  compass_calibration_t compass_calibration;
-  induction_observer_t induction_observer;
+#if MAG_HIGH_PRECISION
+  linear_least_square_fit<int64_t, float> mag_calibration_data_collector[3];
+  compass_calibration_t <int64_t, float> compass_calibration;
+  induction_observer_t <int64_t> earth_induction_data_collector;
+#else
+  linear_least_square_fit<float, float> mag_calibration_data_collector[3];
+  induction_observer_t <float> earth_induction_data_collector;
+  compass_calibration_t <float, float> compass_calibration;
+#endif
   float antenna_DOWN_correction;  //!< slave antenna lower / DGNSS base length
   float antenna_RIGHT_correction; //!< slave antenna more right / DGNSS base length
   float heading_difference_AHRS_DGNSS;
