@@ -224,11 +224,12 @@ public:
     return false; // no error;
   }
 
+  calibration_t calibration[3];
+  bool calibration_done;
+
 private:
   enum completeness_type { HAVE_NONE=0, HAVE_RIGHT=1, HAVE_LEFT=2, HAVE_BOTH=3};
   unsigned completeness; // bits from completeness_type
-  bool calibration_done;
-  calibration_t calibration[3];
 };
 
 #endif /* COMPASS_CALIBRATION_H_ */

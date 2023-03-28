@@ -62,7 +62,7 @@
 #define DISABLE_CIRCLING_STATE		0	//!< for tests only: never use circling AHRS algorithm
 #define INDUCTION_STD_DEVIATION_LIMIT	0.03 	//!< results outperforming this number will be used further on
 
-#define MAG_HIGH_PRECISION		0
+#define MAG_HIGH_PRECISION		1
 #if MAG_HIGH_PRECISION
 #define MAG_SCALE			10000.0f //!< scale factor for high-precision integer statistics
 #else
