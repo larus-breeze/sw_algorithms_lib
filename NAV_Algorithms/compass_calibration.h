@@ -73,8 +73,8 @@ template <class sample_type, class evaluation_type> class compass_calibration_t
 {
 public:
   compass_calibration_t( void)
-    : completeness( HAVE_NONE),
-      calibration_done( false)
+    : calibration_done( false),
+      completeness( HAVE_NONE)
   {}
 
   float3vector calibrate( const float3vector &in)
