@@ -56,14 +56,18 @@
 #define NAV_CORRECTION_LIMIT 5.0f	//!< limit for "low AHRS correcting variable"
 #define HIGH_TURN_RATE 8.0*M_PI/180.0f	//!< turn rate high limit
 #define LOW_TURN_RATE  4.0*M_PI/180.0f	//!< turn rate low limit
-#define SPEED_COMPENSATION_FUSIONER_FEEDBACK 0.99f // empirically tuned alpha
+#define SPEED_COMPENSATION_FUSIONER_FEEDBACK 0.992f // empirically tuned alpha
 
-#define UPDATE_MAGNETIC_CALIB		1	//!< if 1: update magnetic calibration when new data are available
-#define MODIFY_EXPECTED_INDUCTION	1 	//!< set to 1 to update inclination and declination automatically
 #define CROSS_GAIN_ONLY			0 	//!< if 1: do not use induction to control attitude while circling
-#define MAGNETIC_CALIB_FROM_EEPROM	1 	//!< initially read data from EEPROM, may be set to 0 for tests
 #define DISABLE_CIRCLING_STATE		0	//!< for tests only: never use circling AHRS algorithm
-#define OBSERVED_INDUCTION_STD_DEVIATION 0.03 	//!< results outperforming this number will be used further on
+#define INDUCTION_STD_DEVIATION_LIMIT	0.03 	//!< results outperforming this number will be used further on
+
+#define MAG_HIGH_PRECISION		1
+#if MAG_HIGH_PRECISION
+#define MAG_SCALE			10000.0f //!< scale factor for high-precision integer statistics
+#else
+#define MAG_SCALE			1.0f
+#endif
 
 #define FAST_SAMPLING_REQUENCY 		100.0f
 #define FAST_SAMPLING_TIME 		0.01f

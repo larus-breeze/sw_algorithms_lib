@@ -179,6 +179,7 @@ void navigator_t::report_data( output_data_t &d)
     d.pressure_altitude		= - atmosphere.get_negative_altitude();
     d.magnetic_disturbance	= ahrs.getMagneticDisturbance();
     d.air_density		= atmosphere.get_density();
+    d.nav_induction_gnss 	= ahrs.get_nav_induction();
 
 #if DEVELOPMENT_ADDITIONS
 
@@ -186,7 +187,6 @@ void navigator_t::report_data( output_data_t &d)
     d.nav_correction		= ahrs.get_nav_correction();
     d.gyro_correction		= ahrs.get_gyro_correction();
     d.nav_acceleration_gnss 	= ahrs.get_nav_acceleration();
-    d.nav_induction_gnss 	= ahrs.get_nav_induction();
 
     d.euler_magnetic		= ahrs_magnetic.get_euler();
     d.q_magnetic		= ahrs_magnetic.get_attitude();
@@ -199,5 +199,7 @@ void navigator_t::report_data( output_data_t &d)
     d.inst_wind_E		= flight_observer.get_instant_wind().e[EAST];
     d.inst_wind_corrected_N	= report_corrected_wind().e[NORTH];
     d.inst_wind_corrected_E	= report_corrected_wind().e[EAST];
+    for( unsigned i=0; i<3; ++i)
+      d.speed_compensation[i]  = flight_observer.get_speed_compensation(i);
 #endif
 }

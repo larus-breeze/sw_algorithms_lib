@@ -62,9 +62,11 @@ enum EEPROM_PARAMETER_ID
   MAG_Z_OFF,
   MAG_Z_SCALE,
   MAG_STD_DEVIATION,
+  MAG_AUTO_CALIB,
 
   DECLINATION=20,
   INCLINATION,
+  MAG_EARTH_AUTO,
 
   VARIO_TC=30,
   VARIO_INT_TC,
@@ -80,15 +82,14 @@ enum EEPROM_PARAMETER_ID
   EEPROM_PARAMETER_ID_END // 1 behind last parameter ID
 };
 
-#define N_ANGLE_CODING_IDENTIFIERS 5
-extern const unsigned ANGLE_CODING_IDENTIFIERS[ N_ANGLE_CODING_IDENTIFIERS];
-
 class persistent_data_t
 {
 public:
   enum { MNEMONIC_LENGTH=16};
   EEPROM_PARAMETER_ID id;
   char mnemonic[MNEMONIC_LENGTH];
+  bool is_an_angle;
+  float default_value;
   EEPROM_data_t value;
 };
 

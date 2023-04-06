@@ -29,43 +29,39 @@
 
 ROM persistent_data_t PERSISTENT_DATA[]=
     {
-	{BOARD_ID, 	"Board_ID", 0},	 	//! Board ID Hash to avoid board confusion
+	{BOARD_ID, 	"Board_ID",		false, 0.0f, 0},	//! Board ID Hash to avoid board confusion
 
-	{SENS_TILT_ROLL,"SensTilt_Roll", 0}, 	//! IMU Sensor tilt angle signed / degrees front right down frame
-	{SENS_TILT_NICK,"SensTilt_Nick", 0}, 	//! IMU Sensor tilt angle signed
-	{SENS_TILT_YAW, "SensTilt_Yaw", 0},  	//! IMU Sensor tilt angle signed
+	{SENS_TILT_ROLL,"SensTilt_Roll",	true,  0.0f, 0}, 	//! IMU Sensor tilt angle signed / degrees front right down frame
+	{SENS_TILT_NICK,"SensTilt_Nick",	true,  0.0f, 0}, 	//! IMU Sensor tilt angle signed
+	{SENS_TILT_YAW, "SensTilt_Yaw",		true,  0.0f, 0},  	//! IMU Sensor tilt angle signed
 
-	{PITOT_OFFSET,	"Pitot_Offset", 0},	//! Pitot offset signed / Pa
-	{PITOT_SPAN, 	"Pitot_Span", 0},	//! Pitot Span signed (around 1.0f)
-	{QNH_OFFSET, 	"QNH-delta", 0},	//! Absolute pressure sensor offset signed / Pa
+	{PITOT_OFFSET,	"Pitot_Offset",		false,  0.0f, 0},	//! Pitot offset signed / Pa
+	{PITOT_SPAN, 	"Pitot_Span",		false,  1.0f, 0},	//! Pitot Span signed (around 1.0f)
+	{QNH_OFFSET, 	"QNH-delta",		false,  0.0f, 0},	//! Absolute pressure sensor offset signed / Pa
 
-	{MAG_X_OFF,	"Mag_X_Off", 0},	//! Induction sensor x offset signed / ( 10.0f / 32768 )
-	{MAG_X_SCALE,	"Mag_X_Scale", 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
-	{MAG_Y_OFF,	"Mag_Y_Off", 0},	//! Induction sensor x offset signed / ( 10.0f / 32768 )
-	{MAG_Y_SCALE,	"Mag_Y_Scale", 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
-	{MAG_Z_OFF,	"Mag_Z_Off", 0},	//! Induction sensor x offset signed / ( 10.0f / 32768 )
-	{MAG_Z_SCALE,	"Mag_Z_Scale", 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
-	{MAG_STD_DEVIATION, "Mag_Calib_Err", 0},//! Magnetic calibration STD deviation / ( 1 % / 65536 )
+	{MAG_X_OFF,	"Mag_X_Off",		false,  0.0f, 0},	//! Induction sensor x offset signed / ( 10.0f / 32768 )
+	{MAG_X_SCALE,	"Mag_X_Scale",		false,  1.0f, 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
+	{MAG_Y_OFF,	"Mag_Y_Off",		false,  0.0f, 0},	//! Induction sensor x offset signed / ( 10.0f / 32768 )
+	{MAG_Y_SCALE,	"Mag_Y_Scale", 		false,  1.0f, 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
+	{MAG_Z_OFF,	"Mag_Z_Off",		false,  0.0f, 0},	//! Induction sensor x offset signed / ( 10.0f / 32768 )
+	{MAG_Z_SCALE,	"Mag_Z_Scale",		false,  1.0f, 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
+	{MAG_STD_DEVIATION, "Mag_Calib_Err",	false,  1e-2f, 0},	//! Magnetic calibration STD deviation / ( 1 % / 65536 )
+	{MAG_AUTO_CALIB, "Mag_Auto_Calib",	false,  1.0f, 0},	//! Magnetic calibration adjusted automatically
 
-	{DECLINATION,	"Mag_Declination", 0}, 	//! Magnetic declination (east positive) signed / ( 180° / 32768)
-	{INCLINATION,	"Mag_Inclination", 0}, 	//! Magnetic inclination (down positive) signed / ( 180° / 32768)
+	{DECLINATION,	"Mag_Declination",	true,  0.05f, 0}, 	//! Magnetic declination (east positive) signed / ( 180° / 32768)
+	{INCLINATION,	"Mag_Inclination",	true,  1.13f, 0}, 	//! Magnetic inclination (down positive) signed / ( 180° / 32768)
+	{MAG_EARTH_AUTO, "Mag_Earth_Auto",	false,  0.0f, 0},	//! Earth magnetic field recognized automatically
 
-	{VARIO_TC,	"Vario_TC", 0},	 	//! Vario time constant unsigned s / ( 100.0f / 65536 )
-	{VARIO_INT_TC,	"Vario_Int_TC", 0},	//! Vario integrator time constant unsigned s / ( 100.0f / 65536 )
-	{WIND_TC,	"Wind_TC", 0},	 	//! Wind fast time constant unsigned s / ( 100.0f / 65536 )
-	{MEAN_WIND_TC,	"Mean_Wind_TC", 0},	//! Wind slow time constant unsigned s / ( 100.0f / 65536 )
-	{VETF,		"VrtclEnrgTuning", 0},	//! Vertical Energy tuning factor s / ( 1.0f / 65536 )
+	{VARIO_TC,	"Vario_TC",		false, 2.0f, 0}, 	//! Vario time constant unsigned s / ( 100.0f / 65536 )
+	{VARIO_INT_TC,	"Vario_Int_TC",		false, 30.0f, 0},	//! Vario integrator time constant unsigned s / ( 100.0f / 65536 )
+	{WIND_TC,	"Wind_TC",		false, 5.0f, 0}, 	//! Wind fast time constant unsigned s / ( 100.0f / 65536 )
+	{MEAN_WIND_TC,	"Mean_Wind_TC",		false, 30.0f, 0},	//! Wind slow time constant unsigned s / ( 100.0f / 65536 )
+	{VETF,		"VrtclEnrgTuning",	false, 1.0f, 0},	//! Vertical Energy tuning factor s / ( 1.0f / 65536 )
 
-	{GNSS_CONFIGURATION, "GNSS_CONFIG", 0},	//! type of GNSS system
-	{ANT_BASELENGTH, "ANT_BASELEN", 0},	//! Slave DGNSS antenna baselength / mm
-	{ANT_SLAVE_DOWN, "ANT_SLAVE_DOWN", 0},	//! Slave DGNSS antenna lower / mm
-	{ANT_SLAVE_RIGHT,"ANT_SLAVE_RIGHT", 0},	//! Slave DGNSS antenna more right /mm
-    };
-
-ROM unsigned ANGLE_CODING_IDENTIFIERS[ N_ANGLE_CODING_IDENTIFIERS]=
-    {
-	SENS_TILT_ROLL, SENS_TILT_NICK, SENS_TILT_YAW,
-	DECLINATION, INCLINATION
+	{GNSS_CONFIGURATION, "GNSS_CONFIG",	false, 1.0f, 0},	//! type of GNSS system
+	{ANT_BASELENGTH, "ANT_BASELEN",		false, 1.0f, 0},	//! Slave DGNSS antenna baselength / mm
+	{ANT_SLAVE_DOWN, "ANT_SLAVE_DOWN",	false, 0.0f, 0},	//! Slave DGNSS antenna lower / mm
+	{ANT_SLAVE_RIGHT,"ANT_SLAVE_RIGHT",	false, 0.0f, 0},	//! Slave DGNSS antenna more right /mm
     };
 
 ROM unsigned PERSISTENT_DATA_ENTRIES = sizeof(PERSISTENT_DATA) / sizeof(persistent_data_t);
@@ -105,10 +101,12 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
   {
     case BOARD_ID:
     case GNSS_CONFIGURATION:
+    case MAG_AUTO_CALIB:
+    case MAG_EARTH_AUTO:
       if( read)
 	value = (float)(EEPROM_value.u16);
       else
-	EEPROM_value.u16 = (uint16_t)(value + 0.5f); // rounding
+	EEPROM_value.u16 = (uint16_t)round(value);
       break;
     case QNH_OFFSET:
     case PITOT_OFFSET:
@@ -124,13 +122,25 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
       if( read)
 	value = ( (float)(EEPROM_value.i16) / 32768.0f) + 1.0f;
       else
-	EEPROM_value.i16 = (int16_t)((value - 1.0f) * 32768.0f);
+	{
+	  int ivalue = (int)((value - 1.0f) * 32768.0f);
+	  if( ivalue > 32767)
+	    ivalue = 32767;
+	  if( ivalue < -32768)
+	    ivalue = -32768;
+	  EEPROM_value.i16 = (int16_t)ivalue;
+	}
       break;
     case MAG_STD_DEVIATION:
       if( read)
 	value = (float)(EEPROM_value.u16) / 65536.0f * 1e-2f;
       else
-	EEPROM_value.u16 = (uint16_t)(value * 1e2f * 65536.0f);
+	{
+	  if( value >= 0.009999f || value < 0.0f)
+	    EEPROM_value.u16 = 0xffff;
+	  else
+	    EEPROM_value.u16 = (uint16_t)(value * 1e2f * 65536.0f);
+	}
       break;
     case MAG_X_OFF:
     case MAG_Y_OFF:
@@ -162,7 +172,7 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
 	    value += 2.0f * M_PI_F;
 	  if( value >= M_PI_F)
 	    value -= 2 * M_PI_F;
-	  int ivalue = value * 32768.0f / M_PI_F;
+	  int ivalue = round(value * 32768.0f / M_PI_F);
 	  if( ivalue >= 32768)
 	    ivalue = 32767;
 	  EEPROM_value.i16 = (int16_t)ivalue;
