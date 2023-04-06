@@ -242,7 +242,7 @@ private:
   float 	GNSS_negative_altitude;
   unsigned	GNSS_fix_type;
 
-  soaring_flight_averager< float> 	vario_integrator;
+  soaring_flight_averager< float, false, false> vario_integrator;
   pt2<float3vector,float> instant_wind_averager;
   soaring_flight_averager< float3vector, true> wind_average_observer; // configure wind average clamping on first circle
   soaring_flight_averager< float3vector, false, false> relative_wind_observer;
