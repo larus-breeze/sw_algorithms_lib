@@ -269,7 +269,7 @@ char *format_MWV ( float wind_north, float wind_east, char *p)
   float direction = ATAN2( -wind_east, -wind_north);
   if( direction < 0.0f)
     direction += 360.0f;
-  int angle_10 = round( direction * RAD_TO_DEGREE_10);
+  int32_t angle_10 = round( direction * RAD_TO_DEGREE_10);
   p=integer_to_ascii_1_decimal( angle_10, p);
   *p++ = ',';
   *p++ = 'T'; // true direction
@@ -277,7 +277,7 @@ char *format_MWV ( float wind_north, float wind_east, char *p)
 
   float value = SQRT( SQR( wind_north) + SQR( wind_east));
 
-  unsigned wind_10 = value * 10.0f;
+  int32_t wind_10 = value * 10.0f;
   p=integer_to_ascii_1_decimal( wind_10, p);
   *p++ = ',';
   *p++ = 'M'; // m/s
@@ -334,7 +334,7 @@ ROM char HCHDT[]="$HCHDT,";
 //! create HCHDM sentence to report true heading
 void format_HCHDT( float true_heading, char *p) // report magnetic heading
 {
-  int heading = round(true_heading * 573.0f); // -> 1/10 degree
+  int32_t heading = round(true_heading * 573.0f); // -> 1/10 degree
   if( heading < 0)
     heading += 3600;
 

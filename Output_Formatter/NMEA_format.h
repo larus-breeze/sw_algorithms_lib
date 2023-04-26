@@ -20,7 +20,15 @@ public:
 //! combine all data to be output to the NMEA port
 void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA_buf);
 char * integer_to_ascii_2_decimals( int32_t number, char *s);
+inline char * integer_to_ascii_2_decimals( float32_t number, char *s)
+{
+  return integer_to_ascii_2_decimals( round( number), s);
+}
 char * integer_to_ascii_1_decimal( int32_t number, char *s);
+inline char * integer_to_ascii_1_decimal( float32_t number, char *s)
+{
+  return integer_to_ascii_1_decimal( round( number), s);
+}
 void format_PLARV ( float variometer, float avg_variometer, float pressure_altitude, float TAS, char *p);
 void format_RMC (const coordinates_t &coordinates, char *p);
 char * NMEA_append_tail( char *p);
