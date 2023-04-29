@@ -42,7 +42,7 @@ ROM char HEX[]="0123456789ABCDEF";
 
 //! format an integer into ASCII with exactly two digits after the decimal point
 //! @param number value * 100
-char * integer_to_ascii_2_decimals( int32_t number, char *s)
+char * to_ascii_2_decimals( int32_t number, char *s)
 {
   if( number < 0)
     {
@@ -65,7 +65,7 @@ char * integer_to_ascii_2_decimals( int32_t number, char *s)
 
 //! format an integer into ASCII with one decimal
 //! @param number value * 10
-char * integer_to_ascii_1_decimal( int32_t number, char *s)
+char * to_ascii_1_decimal( int32_t number, char *s)
 {
   if( number < 0)
     {
@@ -233,13 +233,13 @@ char *format_GGA( const coordinates_t &coordinates, char *p)
   *p++ = ',';
 
   int32_t altitude_msl_dm = coordinates.position.e[DOWN] * -10.0f;
-  p = integer_to_ascii_1_decimal( altitude_msl_dm, p);
+  p = to_ascii_1_decimal( altitude_msl_dm, p);
   *p++ = ',';
   *p++ = 'M';
   *p++ = ',';
 
   int32_t geo_sep_10 = coordinates.geo_sep_dm;
-  p = integer_to_ascii_1_decimal( geo_sep_10, p);
+  p = to_ascii_1_decimal( geo_sep_10, p);
   *p++ = ',';
   *p++ = 'M';
   *p++ = ','; // no DGPS
@@ -270,7 +270,7 @@ char *format_MWV ( float wind_north, float wind_east, char *p)
   if( direction < 0.0f)
     direction += 360.0f;
   int32_t angle_10 = round( direction * RAD_TO_DEGREE_10);
-  p=integer_to_ascii_1_decimal( angle_10, p);
+  p=to_ascii_1_decimal( angle_10, p);
   *p++ = ',';
   *p++ = 'T'; // true direction
   *p++ = ',';
@@ -278,7 +278,7 @@ char *format_MWV ( float wind_north, float wind_east, char *p)
   float value = SQRT( SQR( wind_north) + SQR( wind_east));
 
   int32_t wind_10 = value * 10.0f;
-  p=integer_to_ascii_1_decimal( wind_10, p);
+  p=to_ascii_1_decimal( wind_10, p);
   *p++ = ',';
   *p++ = 'M'; // m/s
   *p++ = ',';
@@ -299,29 +299,29 @@ void format_POV( float TAS, float pabs, float pitot, float TEK_vario, float volt
   p = append_string( p, POV);
 #if 1
   p = append_string( p, ",E,");
-  p = integer_to_ascii_2_decimals( round(TEK_vario * 100.0f), p);
+  p = to_ascii_2_decimals( round(TEK_vario * 100.0f), p);
 
   p = append_string( p, ",P,");
-  p = integer_to_ascii_2_decimals( round( pabs), p); // static pressure, already in Pa = 100 hPa
+  p = to_ascii_2_decimals( round( pabs), p); // static pressure, already in Pa = 100 hPa
 
   if( pitot < 0.0f)
     pitot = 0.0f;
   p = append_string( p, ",R,");
-  p = integer_to_ascii_2_decimals( round(pitot), p); // pitot pressure (difference) / Pa = 100hPa
+  p = to_ascii_2_decimals( round(pitot), p); // pitot pressure (difference) / Pa = 100hPa
 
   p = append_string( p, ",S,");
-  p = integer_to_ascii_1_decimal( round(TAS * 36.0f), p); // m/s -> 1/10 km/h
+  p = to_ascii_1_decimal( round(TAS * 36.0f), p); // m/s -> 1/10 km/h
 #endif
   p = append_string( p, ",V,");
-  p = integer_to_ascii_2_decimals( round(voltage * 100.0f), p);
+  p = to_ascii_2_decimals( round(voltage * 100.0f), p);
 
   if( airdata_available)
     {
       p = append_string( p, ",H,");
-      p = integer_to_ascii_2_decimals( round(humidity * 100.0f), p);
+      p = to_ascii_2_decimals( round(humidity * 100.0f), p);
 
       p = append_string( p, ",T,");
-      p = integer_to_ascii_2_decimals( round(temperature * 100.0f), p);
+      p = to_ascii_2_decimals( round(temperature * 100.0f), p);
     }
 
   *p = 0;
@@ -339,7 +339,7 @@ void format_HCHDT( float true_heading, char *p) // report magnetic heading
     heading += 3600;
 
   p = append_string( p, HCHDT);
-  p = integer_to_ascii_1_decimal( heading, p);
+  p = to_ascii_1_decimal( heading, p);
   *p++ = ',';
   *p++ = 'T';
 
@@ -354,7 +354,7 @@ ROM char PLARD[]="$PLARD,";
 void format_PLARD ( float density, char type, char *p)
 {
     p = append_string( p, PLARD);
-    p = integer_to_ascii_2_decimals( round( density * 1e5f), p); // units = g / m^3, * 100 to get 2 decimals
+    p = to_ascii_2_decimals( round( density * 1e5f), p); // units = g / m^3, * 100 to get 2 decimals
     *p++ = ',';
     *p++ = type;
     *p = 0;
@@ -365,7 +365,7 @@ ROM char PLARB[]="$PLARB,";
 void format_PLARB ( float voltage, char *p)
 {
     p = append_string( p, PLARB);
-    p = integer_to_ascii_2_decimals( round( voltage * 100.0f), p);
+    p = to_ascii_2_decimals( round( voltage * 100.0f), p);
     *p = 0;
 }
 
@@ -375,15 +375,15 @@ void format_PLARA ( float roll, float nick, float yaw, char *p)
 {
     p = append_string( p, PLARA);
 
-    p = integer_to_ascii_1_decimal( round(roll * RAD_TO_DEGREE_10), p);
+    p = to_ascii_1_decimal( round(roll * RAD_TO_DEGREE_10), p);
 
     p = append_string( p, ",");
-    p = integer_to_ascii_1_decimal( round(nick * RAD_TO_DEGREE_10), p);
+    p = to_ascii_1_decimal( round(nick * RAD_TO_DEGREE_10), p);
 
     if( yaw < 0.0f)
         yaw += 6.2832f;
     p = append_string( p, ",");
-    p = integer_to_ascii_1_decimal( round(yaw * RAD_TO_DEGREE_10), p);
+    p = to_ascii_1_decimal( round(yaw * RAD_TO_DEGREE_10), p);
 
     *p = 0;
 }
@@ -433,10 +433,10 @@ void format_PLARV ( float variometer, float avg_variometer, float pressure_altit
   avg_variometer = CLIP<float>(avg_variometer, -50.0, 50.0);
   TAS = CLIP<float>(TAS, 0, 100);
 
-  p=integer_to_ascii_2_decimals( round( variometer * 100.0f), p);
+  p=to_ascii_2_decimals( round( variometer * 100.0f), p);
   *p++ = ',';
 
-  p=integer_to_ascii_2_decimals( round( avg_variometer * 100.0f), p);
+  p=to_ascii_2_decimals( round( avg_variometer * 100.0f), p);
   *p++ = ',';
 
   p=format_integer( p, round( pressure_altitude));
