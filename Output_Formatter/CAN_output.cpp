@@ -30,20 +30,20 @@
 
 enum CAN_ID_SENSOR
 {
-  c_CAN_Id_EulerAngles	= 0x101,	//!< int16_t roll nick yaw / 1/1000 rad
-  c_CAN_Id_Airspeed     = 0x102,	//!< uint16_t TAS, IAS / km/h
-  c_CAN_Id_Vario	= 0x103,	//!< int16_t vario, vario-integrator / mm/s
-  c_CAN_Id_GPS_Date_Time= 0x104,	//!< uint8_t year-2000, month, day, hour, mins, secs
-  c_CAN_Id_GPS_LatLon	= 0x105,	//!< int32_t lat, lon / 10^-7 degrees
-  c_CAN_Id_GPS_Alt	= 0x106,	//!< int64_t MSL altitude / mm
-  c_CAN_Id_GPS_Trk_Spd	= 0x107,	//!< int16_t ground vector / 1/1000 rad, uint16_t groundspeed / km/h
-  c_CAN_Id_Wind		= 0x108,	//!< int16_t 1/1000 rad , uint16_t km/h
-  c_CAN_Id_Atmosphere	= 0x109,	//!< uint16_t pressure / Pa uint16_t density / g/m^3
-  c_CAN_Id_GPS_Sats	= 0x10a,	//!< uin8_t No of Sats, Fix-Type NO=0 2D=1 3D=2 RTK=3
-  c_CAN_Id_Acceleration = 0x10b,	//!< int16_t G-force mm / s^2
-  c_CAN_Id_TurnCoord	= 0x10c,	//!< slip angle int16_t 1/1000 rad, turn rate int16_t 1/1000 rad/s
-  c_CAN_Id_SystemState	= 0x10d,	//!< slip angle int16_t 1/1000 rad, turn rate int16_t 1/1000 rad/s
-  c_CID_KSB_Vdd         = 0x112,    	//!< unit16_t as float voltage * 10
+  c_CAN_Id_EulerAngles	= 0x101,    //!< int16_t roll nick yaw / 1/1000 rad
+  c_CAN_Id_Airspeed     = 0x102,    //!< int16_t TAS, IAS / km/h
+  c_CAN_Id_Vario        = 0x103,    //!< int16_t vario, vario-integrator / mm/s
+  c_CAN_Id_GPS_Date_Time= 0x104,    //!< uint8_t year-2000, month, day, hour, mins, secs
+  c_CAN_Id_GPS_LatLon   = 0x105,    //!< int32_t lat, lon / 10^-7 degrees
+  c_CAN_Id_GPS_Alt      = 0x106,    //!< int32_t MSL altitude / mm, int32_t geo separation in 1/10 m
+  c_CAN_Id_GPS_Trk_Spd  = 0x107,    //!< int32_t ground vector / 1/1000 rad, uint16_t groundspeed / km/h
+  c_CAN_Id_Wind         = 0x108,    //!< wind int16_t 1/1000 rad , uint16_t km/h, average wind int16_t, int16_t
+  c_CAN_Id_Atmosphere   = 0x109,    //!< uint32_t pressure / Pa uint32_t density / g/m^3
+  c_CAN_Id_GPS_Sats     = 0x10a,    //!< uin8_t No of Sats, uint8_t Fix-Type NO=0 2D=1 3D=2 RTK=3
+  c_CAN_Id_Acceleration = 0x10b,    //!< int16_t G-force mm / s^2, int16_t vertical acc mm / m^2, vario uncomp mm / s, u_int8_t circle mode
+  c_CAN_Id_TurnCoord    = 0x10c,    //!< slip angle int16_t 1/1000 rad, turn rate int16_t 1/1000 rad/s, nick angle 1/1000 rad
+  c_CAN_Id_SystemState  = 0x10d,    //!< u32 system_state, u32 git_tag dec
+  c_CID_KSB_Vdd         = 0x112,    //!< unit16_t as voltage * 10
 };
 
 void CAN_output ( const output_data_t &x)
