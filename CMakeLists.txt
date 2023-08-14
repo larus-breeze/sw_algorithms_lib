@@ -1,7 +1,6 @@
 project(sw_sensor_algorithms)
 
 set(SOURCE_FILES
-    Generic_Algorithms/ascii_support.cpp
     Generic_Algorithms/serial_io.cpp
     NAV_Algorithms/AHRS.cpp
     NAV_Algorithms/air_density_observer.cpp
@@ -11,12 +10,12 @@ set(SOURCE_FILES
     NAV_Algorithms/KalmanVario_PVA.cpp
     NAV_Algorithms/navigator.cpp
     NAV_Algorithms/persistent_data.cpp
+    Output_Formatter/ascii_support.cpp
     Output_Formatter/CAN_output.cpp
     Output_Formatter/NMEA_format.cpp
 )
 
 set(HEADER_FILES
-    Generic_Algorithms/ascii_support.h
     Generic_Algorithms/delay_line.h
     Generic_Algorithms/differentiator.h
     Generic_Algorithms/euler.h
@@ -47,6 +46,7 @@ set(HEADER_FILES
     NAV_Algorithms/persistent_data.h
     NAV_Algorithms/soaring_flight_averager.h
     NAV_Algorithms/windobserver.h
+    Output_Formatter/ascii_support.h
     Output_Formatter/CAN_output.h
     Output_Formatter/generic_CAN_driver.h
     Output_Formatter/NMEA_format.h
