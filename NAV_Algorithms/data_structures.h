@@ -62,6 +62,10 @@ typedef struct
 typedef struct
 {
   measurement_data_t m;
+#if WITH_DENSITY_DUMMY
+  float dummy1;
+  float dummy2;
+#endif
   coordinates_t c;
 } observations_type;
 
@@ -114,7 +118,7 @@ typedef struct
   float inst_wind_E;
   float inst_wind_corrected_N;
   float inst_wind_corrected_E;
-  float speed_compensation[3];
+  float speed_compensation[4];
 
 #endif
 
