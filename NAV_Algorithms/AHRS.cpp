@@ -347,9 +347,15 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
  * @brief  update attitude from IMU data NOT using magnetometer of D-GNSS
  */
 void AHRS_type::update_ACC_only (const float3vector &gyro, const float3vector &acc,
-			   const float3vector &mag,
+			   const float3vector &mag_sensor,
 			   const float3vector &GNSS_acceleration)
 {
+  float3vector mag;
+  if (compass_calibration.isCalibrationDone ()) // use calibration if available
+    mag = compass_calibration.calibrate (mag_sensor);
+  else
+    mag = mag_sensor;
+
   float3vector nav_acceleration = body2nav * acc;
 
   // calculate horizontal leveling error
@@ -363,10 +369,23 @@ void AHRS_type::update_ACC_only (const float3vector &gyro, const float3vector &a
       +nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
 	  - nav_acceleration.e[EAST] * GNSS_acceleration.e[NORTH];
 
-  if( circling_state == STRAIGHT_FLIGHT)
-    cross_correction *= 40; // empirically tuned OM flight 2022 7 24
 
-  nav_correction[DOWN] = cross_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
+
+  if( circling_state == CIRCLING) // heading correction using acceleration cross product GNSS * INS
+    {
+      float cross_correction = // vector cross product GNSS-acc und INS-acc -> heading error
+	   + nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
+	   - nav_acceleration.e[EAST]  * GNSS_acceleration.e[NORTH];
+
+      nav_correction[DOWN] = cross_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
+    }
+  else
+    {
+      if( circling_state == STRAIGHT_FLIGHT)
+        cross_correction *= 40; // empirically tuned OM flight 2022 7 24
+      nav_correction[DOWN] = cross_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
+    }
+
   gyro_correction = body2nav.reverse_map (nav_correction);
   gyro_correction *= P_GAIN;
 
