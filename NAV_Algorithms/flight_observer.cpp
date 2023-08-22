@@ -119,9 +119,9 @@ void flight_observer_t::update_every_10ms (
 
       speed_compensation_projected_4 = air_velocity_projected * acceleration_projected * RECIP_GRAVITY;
 
-#if 0 // new method under test
-      speed_compensation_GNSS = GNSS_INS_speedcomp_fusioner.respond( speed_compensation_projected_4, speed_compensation_energy_3);
-//	speed_compensation_GNSS = GNSS_INS_speedcomp_fusioner.respond( 0.3333333f * (speed_compensation_INS_GNSS_1 + speed_compensation_kalman_2 + speed_compensation_projected_4), speed_compensation_energy_3);
+#if 1 // new method under test
+//      speed_compensation_GNSS = GNSS_INS_speedcomp_fusioner.respond( speed_compensation_projected_4, speed_compensation_energy_3);
+	speed_compensation_GNSS = GNSS_INS_speedcomp_fusioner.respond( 0.3333333f * (speed_compensation_INS_GNSS_1 + speed_compensation_kalman_2 + speed_compensation_projected_4), speed_compensation_energy_3);
 #else
       // blending of three mechanisms for speed-compensation
       speed_compensation_GNSS = GNSS_INS_speedcomp_fusioner.respond( 0.5 * ( speed_compensation_INS_GNSS_1 + speed_compensation_kalman_2 ), speed_compensation_energy_3);
