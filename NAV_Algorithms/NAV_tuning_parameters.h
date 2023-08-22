@@ -25,6 +25,8 @@
 #ifndef NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_
 #define NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_
 
+#define HORIZON_DATA_SECRET	0
+
 #define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
 #define MAG_CALIBRATION_CHANGE_LIMIT 6.0e-4f //!< variance average of changes: 3 * { offset, scale }
 //this means an average change of all 6 parameters of 1 % STD-deviation (= 1e-4 variance)

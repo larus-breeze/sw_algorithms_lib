@@ -561,9 +561,14 @@ void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA
 
 #if USE_LARUS_NMEA_EXTENSIONS
 
+#if  HORIZON_DATA_SECRET == 1
   // aircraft attitude
+  format_PLARA( ZERO, ZERO, output_data.euler.y, next);
+  next = NMEA_append_tail(next);
+#else
   format_PLARA(output_data.euler.r, output_data.euler.n, output_data.euler.y, next);
   next = NMEA_append_tail(next);
+#endif
 
   // battery_voltage
   format_PLARB( output_data.m.supply_voltage, next);
