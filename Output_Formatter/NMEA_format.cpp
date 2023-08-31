@@ -26,10 +26,6 @@
 #include "ascii_support.h"
 #include "embedded_math.h"
 
-#define USE_PTAS1	0
-#define USE_MWV		0
-#define USE_POV		0
-
 #define ANGLE_SCALE 1e-7f
 #define MPS_TO_NMPH 1.944f // 90 * 60 NM / 10000km * 3600 s/h
 #define RAD_TO_DEGREE_10 572.958f
@@ -288,47 +284,6 @@ char *format_MWV ( float wind_north, float wind_east, char *p)
   return p;
 }
 
-#if USE_POV // the OpenVario way to do it ...
-
-ROM char POV[]="$POV";
-
-//! format the OpenVario sequence TAS, pressures and TEK variometer
-void format_POV( float TAS, float pabs, float pitot, float TEK_vario, float voltage,
-		 bool airdata_available, float humidity, float temperature, char *p)
-{
-  p = append_string( p, POV);
-#if 1
-  p = append_string( p, ",E,");
-  p = to_ascii_2_decimals( round(TEK_vario * 100.0f), p);
-
-  p = append_string( p, ",P,");
-  p = to_ascii_2_decimals( round( pabs), p); // static pressure, already in Pa = 100 hPa
-
-  if( pitot < 0.0f)
-    pitot = 0.0f;
-  p = append_string( p, ",R,");
-  p = to_ascii_2_decimals( round(pitot), p); // pitot pressure (difference) / Pa = 100hPa
-
-  p = append_string( p, ",S,");
-  p = to_ascii_1_decimal( round(TAS * 36.0f), p); // m/s -> 1/10 km/h
-#endif
-  p = append_string( p, ",V,");
-  p = to_ascii_2_decimals( round(voltage * 100.0f), p);
-
-  if( airdata_available)
-    {
-      p = append_string( p, ",H,");
-      p = to_ascii_2_decimals( round(humidity * 100.0f), p);
-
-      p = append_string( p, ",T,");
-      p = to_ascii_2_decimals( round(temperature * 100.0f), p);
-    }
-
-  *p = 0;
-}
-
-#endif
-
 ROM char HCHDT[]="$HCHDT,";
 
 //! create HCHDM sentence to report true heading
@@ -347,7 +302,6 @@ void format_HCHDT( float true_heading, char *p) // report magnetic heading
 }
 
 // ********* Larus-specific protocols *************************************
-#if USE_LARUS_NMEA_EXTENSIONS
 
 ROM char PLARD[]="$PLARD,";
 
@@ -447,8 +401,6 @@ void format_PLARV ( float variometer, float avg_variometer, float pressure_altit
   *p++ = 0;
 }
 
-#endif
-
 // ********* Generic stuff ************************************************
 inline char hex4( uint8_t data)
 {
@@ -484,33 +436,6 @@ char * NMEA_append_tail( char *p)
  	return p+5;
  }
 
-#if USE_PTAS1
-ROM char PTAS1[]="$PTAS1,";
-
-char *format_PTAS1 ( float vario, float avg_vario, float altitude, float TAS, char *p)
-{
-  vario=CLIP(vario, -10.0f, 10.0f);
-  avg_vario=CLIP(avg_vario, -10.0f, 10.0f);
-
-  p = append_string( p, PTAS1);
-
-  p=format_integer( round( vario * MPS_TO_NMPH * 10.0f + 200.0f), p);
-  *p++ = ',';
-
-  p=format_integer( round( avg_vario * MPS_TO_NMPH * 10.0f + 200.0f), p);
-  *p++ = ',';
-
-  p=format_integer( round( altitude * METER_TO_FEET + 2000.0), p);
-  *p++ = ',';
-
-  p=format_integer( round( TAS * MPS_TO_NMPH), p);
-
-  *p++ = 0;
-  return p;
-}
-#endif // USE_PTAS
-
-
 //! this procedure formats all our NMEA sequences
 void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA_buf)
 {
@@ -524,42 +449,8 @@ void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA
   format_GGA ( output_data.c, next);
   next = NMEA_append_tail (next);
 
-#if USE_MWV
-  // report wind, the standard way, redundant to PLARW
-  format_MWV (output_data.wind_average.e[NORTH], output_data.wind_average.e[EAST], next);
-  next = NMEA_append_tail (next);
-
-#endif
-
-#if USE_PTAS1
-
-  // report instant and average total-energy-compensated variometer, pressure altitude, TAS
-  format_PTAS1 ( output_data.vario,
-		 output_data.integrator_vario,
-		 output_data.pressure_altitude,
-		 output_data.TAS,
-		 next);
-  next = NMEA_append_tail (next);
-#endif
-
-#if USE_POV // the OpenVario way to do it ...
-
-#if WITH_DENSITY_DATA
-  format_POV( output_data.TAS, output_data.m.static_pressure, output_data.m.pitot_pressure, output_data.vario, output_data.m.supply_voltage,
-  	      (output_data.m.outside_air_humidity > 0.0f), // true if outside air data are available
-  	      output_data.m.outside_air_humidity*100.0f, output_data.m.outside_air_temperature, next);
-#else
-  format_POV( output_data.TAS, output_data.m.static_pressure, output_data.m.pitot_pressure, output_data.vario, output_data.m.supply_voltage,
-  	      false, 0.0f, 0.0f, next);
-#endif
-  next = NMEA_append_tail (next);
-
-#endif
-
   format_HCHDT( output_data.euler.y, next);
   next = NMEA_append_tail (next);
-
-#if USE_LARUS_NMEA_EXTENSIONS
 
 #if  HORIZON_DATA_SECRET == 1
   // aircraft attitude
@@ -593,8 +484,6 @@ void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA
   // average wind
   format_PLARW (output_data.wind_average.e[NORTH], output_data.wind_average.e[EAST], 'A', next);
   next = NMEA_append_tail (next);
-
-#endif
 
 //  assert(   next - NMEA_buf.string < string_buffer_t::BUFLEN);
   NMEA_buf.length = next - NMEA_buf.string;
