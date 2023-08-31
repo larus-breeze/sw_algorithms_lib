@@ -50,13 +50,21 @@ void CAN_output ( const output_data_t &x)
 {
   CANpacket p;
 
+#if  HORIZON_DATA_SECRET == 1
+  p.id=c_CAN_Id_EulerAngles;		// 0x101
+  p.dlc=6;
+  p.data_sh[0] = ZERO;
+  p.data_sh[1] = ZERO;
+  p.data_sh[2] = (int16_t)(round(x.euler.y * 1000.0f));
+  CAN_send(p, 1);
+#else
   p.id=c_CAN_Id_EulerAngles;		// 0x101
   p.dlc=6;
   p.data_sh[0] = (int16_t)(round(x.euler.r * 1000.0f)); 	// unit = 1/1000 RAD
   p.data_sh[1] = (int16_t)(round(x.euler.n * 1000.0f));
   p.data_sh[2] = (int16_t)(round(x.euler.y * 1000.0f));
   CAN_send(p, 1);
-
+#endif
   p.id=c_CAN_Id_Airspeed;		// 0x102
   p.dlc=4;
   p.data_sh[0] = (int16_t)(round(x.TAS * 3.6f)); 		// m/s -> km/h

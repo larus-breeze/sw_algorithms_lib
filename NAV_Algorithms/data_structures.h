@@ -114,7 +114,7 @@ typedef struct
   float inst_wind_E;
   float inst_wind_corrected_N;
   float inst_wind_corrected_E;
-  float speed_compensation[3];
+  float speed_compensation[4];
 
 #endif
 
