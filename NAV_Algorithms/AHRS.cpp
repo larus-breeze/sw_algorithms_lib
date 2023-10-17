@@ -107,12 +107,16 @@ AHRS_type::update_circling_state ()
 void AHRS_type::feed_magnetic_induction_observer(const float3vector &mag_sensor)
 {
   float3vector expected_body_induction = body2nav.reverse_map(expected_nav_induction);
+  bool turning_right = turn_rate_averager.get_output() > 0.0f;
 
   for (unsigned i = 0; i < 3; ++i)
-    mag_calibration_data_collector[i].add_value ( MAG_SCALE * expected_body_induction.e[i], MAG_SCALE * mag_sensor.e[i]);
+    if( turning_right)
+      mag_calibration_data_collector_right_turn[i].add_value ( MAG_SCALE * expected_body_induction.e[i], MAG_SCALE * mag_sensor.e[i]);
+    else
+      mag_calibration_data_collector_left_turn[i].add_value ( MAG_SCALE * expected_body_induction.e[i], MAG_SCALE * mag_sensor.e[i]);
 
   // measurement of earth induction to find the local earth field parameters
-  earth_induction_data_collector.feed( induction_nav_frame, turn_rate_averager.get_output() > 0.0f);
+  earth_induction_data_collector.feed( induction_nav_frame, turning_right);
 }
 
 AHRS_type::AHRS_type (float sampling_time)
@@ -380,7 +384,7 @@ void AHRS_type::update_ACC_only (const float3vector &gyro, const float3vector &a
 void AHRS_type::handle_magnetic_calibration ( char type)
 {
   bool calibration_changed =
-      compass_calibration.set_calibration_if_changed ( mag_calibration_data_collector, MAG_SCALE, (turn_rate_averager.get_output () > 0.0f));
+      compass_calibration.set_calibration_if_changed ( mag_calibration_data_collector_right_turn, mag_calibration_data_collector_left_turn, MAG_SCALE);
 
   float induction_error = 0.0f;
 

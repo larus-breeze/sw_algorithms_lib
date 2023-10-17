@@ -207,7 +207,8 @@ private:
   pt2<float,float> turn_rate_averager;
   pt2<float,float> G_load_averager;
 #if MAG_HIGH_PRECISION
-  linear_least_square_fit<int64_t, float> mag_calibration_data_collector[3];
+  linear_least_square_fit<int64_t, float> mag_calibration_data_collector_right_turn[3];
+  linear_least_square_fit<int64_t, float> mag_calibration_data_collector_left_turn[3];
   compass_calibration_t <int64_t, float> compass_calibration;
   induction_observer_t <int64_t> earth_induction_data_collector;
 #else

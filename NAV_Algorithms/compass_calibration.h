@@ -73,8 +73,7 @@ template <class sample_type, class evaluation_type> class compass_calibration_t
 {
 public:
   compass_calibration_t( void)
-    : calibration_done( false),
-      completeness( HAVE_NONE)
+    : calibration_done( false)
   {}
 
   float3vector calibrate( const float3vector &in)
@@ -106,33 +105,34 @@ public:
   }
 
 
-  bool set_calibration_if_changed( linear_least_square_fit<sample_type, evaluation_type> mag_calibrator[3], float scale_factor, bool turning_right)
+  bool set_calibration_if_changed(
+      linear_least_square_fit<sample_type, evaluation_type> mag_calibrator_right[3],
+      linear_least_square_fit<sample_type, evaluation_type> mag_calibrator_left[3],
+      float scale_factor)
   {
-    if( turning_right)
-      completeness |= HAVE_RIGHT;
-    else
-      completeness |= HAVE_LEFT;
-
-    if( completeness != HAVE_BOTH)
+    if( ( mag_calibrator_right[0].get_count() < MINIMUM_MAG_CALIBRATION_SAMPLES) )
       return false;
-
-    if( ( mag_calibrator[0].get_count() < MINIMUM_MAG_CALIBRATION_SAMPLES) )
+    if( ( mag_calibrator_left[0].get_count() < MINIMUM_MAG_CALIBRATION_SAMPLES) )
       return false;
 
     // now we have enough entropy and evaluate our result
-    linear_least_square_result< float> new_calibration_data[3];
+    linear_least_square_result< float> new_calibration_data_right[3];
+    linear_least_square_result< float> new_calibration_data_left[3];
     single_axis_calibration_t calibration_candidate[3];
 
     for (unsigned i = 0; i < 3; ++i)
       {
-	mag_calibrator[i].evaluate( new_calibration_data[i]);
-	calibration_candidate[i].refresh(
-	    new_calibration_data[i].y_offset / scale_factor,
-	    new_calibration_data[i].slope,
-	    new_calibration_data[i].variance_offset / SQR(scale_factor),
-	    new_calibration_data[i].variance_slope);
+	mag_calibrator_right[i].evaluate( new_calibration_data_right[i]);
+	mag_calibrator_left[i].evaluate( new_calibration_data_left[i]);
 
-	mag_calibrator[i].reset();
+	calibration_candidate[i].refresh(
+	    (new_calibration_data_right[i].y_offset        + new_calibration_data_left[i].y_offset) / scale_factor / TWO,
+	    (new_calibration_data_right[i].slope           + new_calibration_data_left[i].slope) / TWO,
+	    (new_calibration_data_right[i].variance_offset + new_calibration_data_left[i].variance_offset) / SQR(scale_factor) / TWO,
+	    (new_calibration_data_right[i].variance_slope  + new_calibration_data_left[i].variance_slope) / TWO);
+
+	mag_calibrator_right[i].reset();
+	mag_calibrator_left[i].reset();
       }
 
     if( ! parameters_changed_significantly ( calibration_candidate))
@@ -215,10 +215,6 @@ public:
 
   single_axis_calibration_t calibration[3];
   bool calibration_done;
-
-private:
-  enum completeness_type { HAVE_NONE=0, HAVE_RIGHT=1, HAVE_LEFT=2, HAVE_BOTH=3};
-  unsigned completeness; // bits from completeness_type
 };
 
 #endif /* COMPASS_CALIBRATION_H_ */
