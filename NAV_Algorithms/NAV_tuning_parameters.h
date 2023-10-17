@@ -26,8 +26,8 @@
 #define NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_
 
 #define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
-#define MAG_CALIBRATION_CHANGE_LIMIT 6.0e-4f //!< variance average of changes: 3 * { offset, scale }
-//this means an average change of all 6 parameters of 1 % STD-deviation (= 1e-4 variance)
+#define MAG_OFFSET_CHANGE_LIMIT 0.01f
+#define MAG_SCALE_CHANGE_LIMIT 0.01f
 
 #define CIRCLE_LIMIT (10 * 100) //!< 10 * 1/100 s delay into / out of circling state
 
