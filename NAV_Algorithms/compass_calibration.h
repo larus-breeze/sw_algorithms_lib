@@ -125,11 +125,16 @@ public:
 	mag_calibrator_right[i].evaluate( new_calibration_data_right[i]);
 	mag_calibrator_left[i].evaluate( new_calibration_data_left[i]);
 
+	float vo_r = ONE; //new_calibration_data_right[i].variance_offset;
+	float vo_l =  ONE; //new_calibration_data_left[i].variance_offset;
+	float vs_r =  ONE; //new_calibration_data_right[i].variance_slope;
+	float vs_l =  ONE; //new_calibration_data_left[i].variance_slope;
+
 	calibration_candidate[i].refresh(
-	    (new_calibration_data_right[i].y_offset        + new_calibration_data_left[i].y_offset) / scale_factor / TWO,
-	    (new_calibration_data_right[i].slope           + new_calibration_data_left[i].slope) / TWO,
+	    (new_calibration_data_right[i].y_offset * vo_l + new_calibration_data_left[i].y_offset * vo_r) / scale_factor / (vo_l + vo_r),
+	    (new_calibration_data_right[i].slope * vs_l    + new_calibration_data_left[i].slope * vs_r)    / (vs_r + vs_l),
 	    (new_calibration_data_right[i].variance_offset + new_calibration_data_left[i].variance_offset) / SQR(scale_factor) / TWO,
-	    (new_calibration_data_right[i].variance_slope  + new_calibration_data_left[i].variance_slope) / TWO);
+	    (new_calibration_data_right[i].variance_slope  + new_calibration_data_left[i].variance_slope)  / TWO);
 
 	mag_calibrator_right[i].reset();
 	mag_calibrator_left[i].reset();
