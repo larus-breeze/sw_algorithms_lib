@@ -37,8 +37,8 @@ public:
   bool data_valid( void) const
   {
     return (
-	(induction_observer_right[0].get_samples() > MINIMUM_SAMPLES) &&
-	(induction_observer_left[0].get_samples() > MINIMUM_SAMPLES) );
+	(induction_observer_right[0].get_samples() > MINIMUM_MAG_CALIBRATION_SAMPLES) &&
+	(induction_observer_left[0].get_samples() > MINIMUM_MAG_CALIBRATION_SAMPLES) );
   }
   float3vector get_estimated_induction( void) const
   {

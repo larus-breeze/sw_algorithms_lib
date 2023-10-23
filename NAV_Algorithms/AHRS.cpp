@@ -388,15 +388,27 @@ void AHRS_type::handle_magnetic_calibration ( char type)
 
   float induction_error = 0.0f;
 
+  float3vector new_induction_estimate;
+
   if (earth_induction_data_collector.data_valid ())
 	{
+	  new_induction_estimate = earth_induction_data_collector.get_estimated_induction();
 	  induction_error = SQRT(earth_induction_data_collector.get_variance ());
 
 	  if ( automatic_earth_field_parameters && ( induction_error < INDUCTION_STD_DEVIATION_LIMIT))
 	    {
-	      expected_nav_induction = earth_induction_data_collector.get_estimated_induction();
+	      expected_nav_induction = new_induction_estimate;
 	      expected_nav_induction.normalize();
 	      update_magnetic_loop_gain(); // adapt to magnetic inclination
+
+	      float inclination=ATAN2(expected_nav_induction[DOWN], expected_nav_induction[NORTH]);
+	      float declination=ATAN2(expected_nav_induction[EAST], expected_nav_induction[NORTH]);
+
+	      EEPROM_initialize();
+
+	      write_EEPROM_value( (EEPROM_PARAMETER_ID)DECLINATION, declination);
+	      write_EEPROM_value( (EEPROM_PARAMETER_ID)INCLINATION, inclination);
+
 	      calibration_changed = true;
 	    }
 	  earth_induction_data_collector.reset ();
@@ -408,7 +420,7 @@ void AHRS_type::handle_magnetic_calibration ( char type)
       for( unsigned i=0; i<3; ++i)
 	magnetic_induction_report.calibration[i] = (compass_calibration.get_calibration())[i];
 
-      magnetic_induction_report.nav_induction=expected_nav_induction;
+      magnetic_induction_report.nav_induction=new_induction_estimate;
       magnetic_induction_report.nav_induction_std_deviation = induction_error;
 
       report_magnetic_calibration_has_changed( &magnetic_induction_report, type);
