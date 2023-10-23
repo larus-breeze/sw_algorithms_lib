@@ -31,8 +31,6 @@
 
 #define CIRCLE_LIMIT (10 * 100) //!< 10 * 1/100 s delay into / out of circling state
 
-#define VARIO_USE_SQUARED_VELOCITY 1 // use squared absolute air velocity for speed-compensation
-
 // filters for CAN information (turn-coordinator, G-load ...)
 #define ANGLE_F_BY_FS  ( 1.0f / 0.5f / 100.0f) 			// 0.5s
 #define G_LOAD_F_BY_FS ( 1.0f / 0.25f / 100.0f) 		// 0.25s
