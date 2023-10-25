@@ -128,6 +128,10 @@ void navigator_t::update_every_100ms (const coordinates_t &coordinates)
 
   old_circling_state = ahrs.get_circling_state ();
   wind_obsolete = false;
+
+  airborne_detector.report_to_be_airborne( abs( flight_observer.get_speed_compensation_GNSS()) > AIRBORNE_TRIGGER_SPEED);
+  if( airborne_detector.detect_just_landed())
+    ahrs.write_calibration_into_EEPROM();
 }
 
 //! copy all navigator data into output_data structure

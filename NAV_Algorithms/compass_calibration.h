@@ -142,8 +142,6 @@ public:
     for (unsigned i = 0; i < 3; ++i)
       calibration[i] = calibration_candidate[i];
 
-    write_into_EEPROM();
-
     return true;
   }
 

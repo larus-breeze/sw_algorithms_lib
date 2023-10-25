@@ -132,7 +132,7 @@ public:
 	{
 	  return circling_state;
 	}
-
+	void write_calibration_into_EEPROM( void);
   float
   getSlipAngle () const
   {
@@ -216,6 +216,7 @@ private:
   float magnetic_control_gain; //!< declination-dependent magnetic control loop gain
   bool automatic_magnetic_calibration;
   bool automatic_earth_field_parameters;
+  bool magnetic_calibration_updated;
 };
 
 #endif /* AHRS_H_ */

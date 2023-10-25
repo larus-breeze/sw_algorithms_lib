@@ -174,7 +174,8 @@ AHRS_type::AHRS_type (float sampling_time)
   heading_difference_AHRS_DGNSS(0.0f),
   magnetic_disturbance(0.0f),
   automatic_magnetic_calibration(configuration(MAG_AUTO_CALIB)),
-  automatic_earth_field_parameters(configuration(MAG_EARTH_AUTO))
+  automatic_earth_field_parameters(configuration(MAG_EARTH_AUTO)),
+  magnetic_calibration_updated( false)
 {
   float inclination=configuration(INCLINATION);
   float declination=configuration(DECLINATION);
@@ -419,10 +420,28 @@ void AHRS_type::update_ACC_only (const float3vector &gyro, const float3vector &a
   update_attitude(acc, gyro + gyro_correction, mag);
 }
 
+void AHRS_type::write_calibration_into_EEPROM( void)
+{
+  if( !magnetic_calibration_updated)
+    return;
+
+  EEPROM_initialize();
+
+  if ( automatic_earth_field_parameters)
+    {
+      float inclination=ATAN2(expected_nav_induction[DOWN], expected_nav_induction[NORTH]);
+      float declination=ATAN2(expected_nav_induction[EAST], expected_nav_induction[NORTH]);
+
+      write_EEPROM_value( (EEPROM_PARAMETER_ID)DECLINATION, declination);
+      write_EEPROM_value( (EEPROM_PARAMETER_ID)INCLINATION, inclination);
+    }
+  compass_calibration.write_into_EEPROM();
+  magnetic_calibration_updated = false; // done ...
+}
+
 void AHRS_type::handle_magnetic_calibration ( char type)
 {
-  bool calibration_changed =
-      compass_calibration.set_calibration_if_changed ( mag_calibration_data_collector_right_turn, mag_calibration_data_collector_left_turn, MAG_SCALE);
+  bool calibration_changed = compass_calibration.set_calibration_if_changed ( mag_calibration_data_collector_right_turn, mag_calibration_data_collector_left_turn, MAG_SCALE);
 
   float induction_error = 0.0f;
 
@@ -439,14 +458,6 @@ void AHRS_type::handle_magnetic_calibration ( char type)
 	      expected_nav_induction.normalize();
 	      update_magnetic_loop_gain(); // adapt to magnetic inclination
 
-	      float inclination=ATAN2(expected_nav_induction[DOWN], expected_nav_induction[NORTH]);
-	      float declination=ATAN2(expected_nav_induction[EAST], expected_nav_induction[NORTH]);
-
-	      EEPROM_initialize();
-
-	      write_EEPROM_value( (EEPROM_PARAMETER_ID)DECLINATION, declination);
-	      write_EEPROM_value( (EEPROM_PARAMETER_ID)INCLINATION, inclination);
-
 	      calibration_changed = true;
 	    }
 	  earth_induction_data_collector.reset ();
@@ -462,5 +473,6 @@ void AHRS_type::handle_magnetic_calibration ( char type)
       magnetic_induction_report.nav_induction_std_deviation = induction_error;
 
       report_magnetic_calibration_has_changed( &magnetic_induction_report, type);
+      magnetic_calibration_updated = true;
     }
 }

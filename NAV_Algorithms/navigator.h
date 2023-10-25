@@ -34,6 +34,7 @@
 #include "flight_observer.h"
 #include "data_structures.h"
 #include "accumulating_averager.h"
+#include "airborne_detector.h"
 
 //! organizes horizontal navigation, wind observation and variometer
 class navigator_t
@@ -46,6 +47,7 @@ public:
 #endif
 	 atmosphere (101325.0f),
 	 flight_observer(),
+	 airborne_detector(),
 	 air_pressure_resampler_100Hz_10Hz(0.04f), // f/fc = 80% * 0.5 * 0.1
 	 pitot_pressure(0.0f),
 	 TAS( 0.0f),
@@ -232,6 +234,7 @@ private:
 #endif
   atmosphere_t 		atmosphere;
   flight_observer_t 	flight_observer;
+  airborne_detector_t	airborne_detector;
 
   pt2<float,float> air_pressure_resampler_100Hz_10Hz;
   float 	pitot_pressure;
