@@ -50,20 +50,23 @@ class flight_observer_t
 public:
   flight_observer_t( void)
   :
-  vario_averager_pressure( FAST_SAMPLING_TIME / configuration( VARIO_TC)),
-  vario_averager_GNSS( FAST_SAMPLING_TIME / configuration( VARIO_TC)),
-  windspeed_decimator_100Hz_10Hz( FAST_SAMPLING_TIME),
-  kinetic_energy_differentiator( 1.0f, FAST_SAMPLING_TIME),
-  speed_compensation_IAS( ZERO),
-  vario_uncompensated_GNSS( ZERO),
-  vario_uncompensated_pressure( ZERO),
-  KalmanVario_GNSS( 0.0f, 0.0f, 0.0f, - GRAVITY),
-  KalmanVario_pressure( 0.0f, 0.0f, 0.0f, - GRAVITY),
-  specific_energy_differentiator( 1.0f, FAST_SAMPLING_TIME),
-  GNSS_INS_speedcomp_fusioner(SPEED_COMPENSATION_FUSIONER_FEEDBACK),
-  specific_energy(0.0f),
-  vertical_energy_tuning_factor(configuration( VETF)),
-  speed_compensation_GNSS( 0.0F)
+    windspeed_decimator_100Hz_10Hz( FAST_SAMPLING_TIME),
+    vario_averager_pressure( FAST_SAMPLING_TIME / configuration( VARIO_TC)),
+    vario_averager_GNSS( FAST_SAMPLING_TIME / configuration( VARIO_TC)),
+    kinetic_energy_differentiator( 1.0f, FAST_SAMPLING_TIME),
+    KalmanVario_GNSS( 0.0f, 0.0f, 0.0f, - GRAVITY),
+    KalmanVario_pressure( 0.0f, 0.0f, 0.0f, - GRAVITY),
+    specific_energy_differentiator( 1.0f, FAST_SAMPLING_TIME),
+    GNSS_INS_speedcomp_fusioner(SPEED_COMPENSATION_FUSIONER_FEEDBACK),
+    vario_uncompensated_pressure( ZERO),
+    speed_compensation_IAS( ZERO),
+    speed_compensation_GNSS( 0.0f),
+    vario_uncompensated_GNSS( ZERO),
+    specific_energy(0.0f),
+    speed_compensation_INS_GNSS_1(0.0f),
+    speed_compensation_kalman_2(0.0f),
+    speed_compensation_energy_3(0.0f),
+    speed_compensation_projected_4(0.0f)
   {
   };
 	void update_every_10ms
@@ -167,7 +170,6 @@ private:
 	float speed_compensation_GNSS;
 	float vario_uncompensated_GNSS;
 	float specific_energy;
-	float vertical_energy_tuning_factor;
 
 	float speed_compensation_INS_GNSS_1;
 	float speed_compensation_kalman_2;

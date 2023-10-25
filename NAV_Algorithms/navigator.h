@@ -45,31 +45,35 @@ public:
 	 ahrs_magnetic (0.01f),
 #endif
 	 atmosphere (101325.0f),
+	 flight_observer(),
+	 air_pressure_resampler_100Hz_10Hz(0.04f), // f/fc = 80% * 0.5 * 0.1
+	 pitot_pressure(0.0f),
+	 TAS( 0.0f),
+	 IAS( 0.0f),
+	 GNSS_velocity(),
+	 GNSS_speed(),
+	 GNSS_acceleration(),
+	 GNSS_heading(),
+	 GNSS_negative_altitude( ZERO),
+	 GNSS_fix_type( 0),
 	 vario_integrator( configuration( VARIO_INT_TC) < 0.25f
 	   ? configuration( VARIO_INT_TC) // normalized stop frequency given, old version
 	   : (FAST_SAMPLING_TIME / configuration( VARIO_INT_TC) ) ), // time-constant given, new version
-	 wind_average_observer( configuration( MEAN_WIND_TC) < 0.25f
-	   ? configuration( MEAN_WIND_TC)
-	   : (FAST_SAMPLING_TIME / configuration( MEAN_WIND_TC) ) ),
 	 instant_wind_averager( configuration( WIND_TC)  < 0.25f
 	   ? configuration( MEAN_WIND_TC) * 10.0f // WIND_TC designed for 100Hz but now used at 10 Hz
 	   : (SLOW_SAMPLING_TIME / configuration( MEAN_WIND_TC) ) ),
+	 wind_average_observer( configuration( MEAN_WIND_TC) < 0.25f
+	   ? configuration( MEAN_WIND_TC)
+	   : (FAST_SAMPLING_TIME / configuration( MEAN_WIND_TC) ) ),
 	 relative_wind_observer( configuration( MEAN_WIND_TC) < 0.25f
 	   ? configuration( MEAN_WIND_TC) * 10.0f
 	   : (SLOW_SAMPLING_TIME / configuration( MEAN_WIND_TC) ) ),
 	 corrected_wind_averager( configuration( MEAN_WIND_TC)  < 0.25f
 	   ? configuration( MEAN_WIND_TC) * 10.0f
 	   : (SLOW_SAMPLING_TIME / configuration( MEAN_WIND_TC) ) ),
-	 air_pressure_resampler_100Hz_10Hz(0.04f), // f/fc = 80% * 0.5 * 0.1
-	 GNSS_negative_altitude( ZERO),
+	 circling_wind_averager(),
 	 TAS_averager(1.0f / 1.0f / 100.0f),
 	 IAS_averager(1.0f / 1.0f / 100.0f),
-	 pitot_pressure(0.0f),
-	 TAS( 0.0f),
-	 IAS( 0.0f),
-	 GNSS_heading( 0.0f),
-	 GNSS_fix_type( 0),
-	 GNSS_speed( 0.0f),
 	 old_circling_state( STRAIGHT_FLIGHT),
 	 wind_obsolete( true),
 	 last_wind({0}),
@@ -222,13 +226,12 @@ public:
   }
 
 private:
-  AHRS_type 		ahrs;
-  atmosphere_t 		atmosphere;
-  flight_observer_t 	flight_observer;
-
+  AHRS_type	ahrs;
 #if DEVELOPMENT_ADDITIONS
   AHRS_type	ahrs_magnetic;
 #endif
+  atmosphere_t 		atmosphere;
+  flight_observer_t 	flight_observer;
 
   pt2<float,float> air_pressure_resampler_100Hz_10Hz;
   float 	pitot_pressure;

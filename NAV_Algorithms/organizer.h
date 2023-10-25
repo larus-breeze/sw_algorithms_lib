@@ -34,6 +34,10 @@ class organizer_t
 {
 public:
   organizer_t( void)
+    : pitot_offset(0.0f),
+      pitot_span(0.0f),
+      QNH_offset(0.0f)
+
   {
 
   }

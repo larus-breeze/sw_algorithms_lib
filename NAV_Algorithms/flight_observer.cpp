@@ -65,7 +65,6 @@ void flight_observer_t::update_every_10ms (
 
       // run the 100 Hz -> 10 Hz wind speed decimation filter
       float3vector ahrs_instant_air_velocity = heading_vector * TAS;
-      vertical_energy_tuning_factor = 1.0f; // patch SQR(heading_vector.e[DOWN]);
       windspeed_decimator_100Hz_10Hz.respond ( gnss_velocity - ahrs_instant_air_velocity);
 
       // The Kalman-Vario
@@ -75,7 +74,7 @@ void flight_observer_t::update_every_10ms (
       // 3d acceleration from the AHRS and from the vertical Kalman filter
       float3vector acceleration = ahrs_acceleration;
       // the vertical component comes from the Kalman Vario, effective value without gravitation
-      acceleration.e[DOWN] = KalmanVario_GNSS.get_x ( KalmanVario_PVA_t::ACCELERATION_OBSERVED) * vertical_energy_tuning_factor;
+      acceleration.e[DOWN] = KalmanVario_GNSS.get_x ( KalmanVario_PVA_t::ACCELERATION_OBSERVED);
 
       // horizontal kalman filter for velocity and acceleration in the air- (not ground) system
       Kalman_v_a_observer_N.update ( gnss_velocity.e[NORTH] - wind_average.e[NORTH], ahrs_acceleration.e[NORTH]);
@@ -85,21 +84,17 @@ void flight_observer_t::update_every_10ms (
       specific_energy = (
             SQR( gnss_velocity.e[NORTH] - wind_average.e[NORTH])
 	  + SQR( gnss_velocity.e[EAST]  - wind_average.e[EAST])
-	  + SQR( gnss_velocity.e[DOWN]) * vertical_energy_tuning_factor)
+	  + SQR( gnss_velocity.e[DOWN]))
 	  * ONE_DIV_BY_GRAVITY_TIMES_2;
 
       // speed-compensation type 1 = scalar product( air_velocity , acceleration) / g;
       speed_compensation_INS_GNSS_1 = ahrs_instant_air_velocity * acceleration * RECIP_GRAVITY;
 
-      // INS-acceleration {scalar product *} air-velocity = speed compensation type 1
-      float3vector gnss_air_velocity = gnss_velocity - wind_average;
-      gnss_air_velocity.e[DOWN] = KalmanVario_GNSS.get_x ( KalmanVario_PVA_t::VARIO);
-
       // speed compensation type 2 = air velocity * acceleration , both Kalman-filtered
       speed_compensation_kalman_2 =
 	   (Kalman_v_a_observer_N.get_x ( Kalman_V_A_Aoff_observer_t::VELOCITY) * Kalman_v_a_observer_N.get_x ( Kalman_V_A_Aoff_observer_t::ACCELERATION)
 	  + Kalman_v_a_observer_E.get_x ( Kalman_V_A_Aoff_observer_t::VELOCITY) * Kalman_v_a_observer_E.get_x ( Kalman_V_A_Aoff_observer_t::ACCELERATION)
-	  + KalmanVario_GNSS.get_x (KalmanVario_PVA_t::VARIO) * KalmanVario_GNSS.get_x ( KalmanVario_PVA_t::ACCELERATION_OBSERVED)  * vertical_energy_tuning_factor)
+	  + KalmanVario_GNSS.get_x (KalmanVario_PVA_t::VARIO) * KalmanVario_GNSS.get_x ( KalmanVario_PVA_t::ACCELERATION_OBSERVED))
 	  * RECIP_GRAVITY;
 
       // speed compensation type 3 comes from the derivative of the specific energy
