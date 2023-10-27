@@ -118,36 +118,7 @@ void AHRS_type::feed_magnetic_induction_observer(const float3vector &mag_sensor)
   // measurement of earth induction to find the local earth field parameters
   earth_induction_data_collector.feed( induction_nav_frame, turning_right);
 }
-#if 0
-ftype Ts;
-ftype Ts_div_2;
-quaternion<ftype>attitude;
-float3vector gyro_integrator;
-unsigned circling_counter;
-circle_state_t circling_state;
-float3vector nav_correction;
-float3vector gyro_correction;
-float3vector acceleration_nav_frame;
-float3vector induction_nav_frame; 	//!< observed NAV induction
-float3vector expected_nav_induction;	//!< expected NAV induction
-float3matrix body2nav;
-eulerangle<ftype> euler;
-pt2<float,float> slip_angle_averager;
-pt2<float,float> nick_angle_averager;
-pt2<float,float> turn_rate_averager;
-pt2<float,float> G_load_averager;
-linear_least_square_fit<int64_t, float> mag_calibration_data_collector_right_turn[3];
-linear_least_square_fit<int64_t, float> mag_calibration_data_collector_left_turn[3];
-compass_calibration_t <int64_t, float> compass_calibration;
-induction_observer_t <int64_t> earth_induction_data_collector;
-float antenna_DOWN_correction;  //!< slave antenna lower / DGNSS base length
-float antenna_RIGHT_correction; //!< slave antenna more right / DGNSS base length
-float heading_difference_AHRS_DGNSS;
-float magnetic_disturbance; //!< abs( observed_induction - expected_induction)
-float magnetic_control_gain; //!< declination-dependent magnetic control loop gain
-bool automatic_magnetic_calibration;
-bool automatic_earth_field_parameters;
-#endif
+
 AHRS_type::AHRS_type (float sampling_time)
 :
   Ts(sampling_time),
