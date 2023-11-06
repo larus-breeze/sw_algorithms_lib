@@ -41,7 +41,9 @@ class air_data_result
 {
 public:
   air_data_result( void)
-    : valid( false)
+    : density_correction(1.0f),
+      QFF(101325.0f),
+      valid( false)
   {}
   float density_correction;
   float QFF;
@@ -53,7 +55,9 @@ class air_density_observer
 {
 public:
   air_density_observer (void)
-  : altitude_trigger( ALTITUDE_TRIGGER_HYSTERESIS)
+  : min_altitude(10000.0f),
+    max_altitude(0.0f),
+    altitude_trigger( ALTITUDE_TRIGGER_HYSTERESIS)
   {
   }
   air_data_result feed_metering( float pressure, float MSL_altitude);

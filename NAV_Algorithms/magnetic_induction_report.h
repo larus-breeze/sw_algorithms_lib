@@ -11,9 +11,8 @@
 #include "compass_calibration.h"
 #include "float3vector.h"
 
-class magnetic_induction_report_t
+struct magnetic_induction_report_t
 {
-public:
   single_axis_calibration_t calibration[3];
   float3vector nav_induction;
   float nav_induction_std_deviation;

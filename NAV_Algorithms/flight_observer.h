@@ -27,12 +27,12 @@
 
 #include "system_configuration.h"
 #include "GNSS.h"
+#include "AHRS.h"
 #include <differentiator.h>
 #include "KalmanVario.h"
 #include "KalmanVario_PVA.h"
 #include "Kalman_V_A_Aoff_observer.h"
 #include "embedded_math.h"
-#include "windobserver.h"
 #include "NAV_tuning_parameters.h"
 #include "HP_LP_fusion.h"
 
@@ -57,6 +57,8 @@ public:
     KalmanVario_GNSS( 0.0f, 0.0f, 0.0f, - GRAVITY),
     KalmanVario_pressure( 0.0f, 0.0f, 0.0f, - GRAVITY),
     specific_energy_differentiator( 1.0f, FAST_SAMPLING_TIME),
+    Kalman_v_a_observer_N(),
+    Kalman_v_a_observer_E(),
     GNSS_INS_speedcomp_fusioner(SPEED_COMPENSATION_FUSIONER_FEEDBACK),
     vario_uncompensated_pressure( ZERO),
     speed_compensation_IAS( ZERO),
