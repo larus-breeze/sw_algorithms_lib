@@ -115,7 +115,7 @@ typedef struct
   float inst_wind_corrected_N;
   float inst_wind_corrected_E;
   float speed_compensation[4];
-
+  float cross_acc_correction;
 #endif
 
 } output_data_t;

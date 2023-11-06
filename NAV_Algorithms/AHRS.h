@@ -104,6 +104,10 @@ public:
 	{
 		return attitude.get_down();
 	}
+	inline float get_cross_acc_correction(void) const
+	{
+		return cross_acc_correction;
+	}
 	inline const float3vector get_orientation(void) const
 	{
 	  float3vector retv;
@@ -212,6 +216,7 @@ private:
   float antenna_DOWN_correction;  //!< slave antenna lower / DGNSS base length
   float antenna_RIGHT_correction; //!< slave antenna more right / DGNSS base length
   float heading_difference_AHRS_DGNSS;
+  float cross_acc_correction;
   float magnetic_disturbance; //!< abs( observed_induction - expected_induction)
   float magnetic_control_gain; //!< declination-dependent magnetic control loop gain
   bool automatic_magnetic_calibration;

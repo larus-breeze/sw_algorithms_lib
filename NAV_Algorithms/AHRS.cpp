@@ -143,6 +143,7 @@ AHRS_type::AHRS_type (float sampling_time)
   antenna_DOWN_correction(  configuration( ANT_SLAVE_DOWN)  / configuration( ANT_BASELENGTH)),
   antenna_RIGHT_correction( configuration( ANT_SLAVE_RIGHT) / configuration( ANT_BASELENGTH)),
   heading_difference_AHRS_DGNSS(0.0f),
+  cross_acc_correction(0.0f),
   magnetic_disturbance(0.0f),
   magnetic_control_gain(1.0f),
   automatic_magnetic_calibration(configuration(MAG_AUTO_CALIB)),
@@ -247,11 +248,12 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   nav_correction[NORTH] = - nav_acceleration.e[EAST]  + GNSS_acceleration.e[EAST];
   nav_correction[EAST]  = + nav_acceleration.e[NORTH] - GNSS_acceleration.e[NORTH];
 
-  if( circling_state == CIRCLING) // heading correction using acceleration cross product GNSS * INS
-    {
-      float cross_correction = // vector cross product GNSS-acc und INS-acc -> heading error
+  cross_acc_correction = // vector cross product GNSS-acc und INS-acc -> heading error
 	   + nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
 	   - nav_acceleration.e[EAST]  * GNSS_acceleration.e[NORTH];
+
+  if( circling_state == CIRCLING) // heading correction using acceleration cross product GNSS * INS
+    {
 
 #if CROSS_GAIN_ONLY
       nav_correction[DOWN] = cross_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
@@ -259,7 +261,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
       float mag_correction =
     	+ nav_induction[NORTH] * expected_nav_induction[EAST]
     	- nav_induction[EAST]  * expected_nav_induction[NORTH];
-      nav_correction[DOWN] = cross_correction * CROSS_GAIN + mag_correction * magnetic_control_gain ; // use X-ACC and MAG: better !
+      nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN + mag_correction * magnetic_control_gain ; // use X-ACC and MAG: better !
 #endif
     }
   else
@@ -316,6 +318,10 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   float mag_correction = +nav_induction[NORTH] * expected_nav_induction[EAST]
       - nav_induction[EAST] * expected_nav_induction[NORTH];
 
+  cross_acc_correction = // vector cross product GNSS-acc und INS-acc -> heading error
+	   + nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
+	   - nav_acceleration.e[EAST]  * GNSS_acceleration.e[NORTH];
+
   switch (circling_state)
     {
     case STRAIGHT_FLIGHT:
@@ -330,14 +336,10 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
       // *******************************************************************************************************
     case CIRCLING:
       {
-	float cross_correction = // vector cross product GNSS-acc und INS-acc -> heading error
-	    +nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
-		- nav_acceleration.e[EAST] * GNSS_acceleration.e[NORTH];
-
 #if CROSS_GAIN_ONLY
 	    nav_correction[DOWN] = cross_correction * CROSS_GAIN; // no MAG or D-GNSS use here ! (old version)
 #else
-	nav_correction[DOWN] = cross_correction * CROSS_GAIN
+	nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN
 	    + mag_correction * M_H_GAIN; // use cross-acceleration and induction: better !
 #endif
 	gyro_correction = body2nav.reverse_map (nav_correction);
@@ -378,14 +380,16 @@ void AHRS_type::update_ACC_only (const float3vector &gyro, const float3vector &a
 
   update_circling_state ();
 
-  float cross_correction = // vector cross product GNSS-acc und INS-acc -> heading error
+  cross_acc_correction = // vector cross product GNSS-acc und INS-acc -> heading error
       +nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
-	  - nav_acceleration.e[EAST] * GNSS_acceleration.e[NORTH];
+      - nav_acceleration.e[EAST] * GNSS_acceleration.e[NORTH];
 
   if( circling_state == STRAIGHT_FLIGHT)
-    cross_correction *= 40; // empirically tuned OM flight 2022 7 24
+    // empirically tuned OM flight 2022 7 24
+    nav_correction[DOWN] = cross_acc_correction * 40.0f * CROSS_GAIN; // no MAG or D-GNSS use here !
+  else
+    nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
 
-  nav_correction[DOWN] = cross_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
   gyro_correction = body2nav.reverse_map (nav_correction);
   gyro_correction *= P_GAIN;
 
