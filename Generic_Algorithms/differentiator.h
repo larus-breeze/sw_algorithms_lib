@@ -34,7 +34,10 @@ template <class basetype, class datatype>
 public:
 //! constructor taking sampling-time and initial value
    differentiator( basetype Tdiff, basetype Tsampling, const datatype& init_value = 0)
-      : time_constant( Tdiff / Tsampling), old_value( init_value)
+      : time_constant( Tdiff / Tsampling),
+	old_value( init_value),
+	differentiation(),
+	output()
       {};
 
    //! update differentiator taking next input value
