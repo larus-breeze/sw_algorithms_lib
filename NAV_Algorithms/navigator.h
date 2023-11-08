@@ -227,6 +227,11 @@ public:
     return corrected_wind_averager.get_output();
   }
 
+  float3vector report_vario_wind( void) const
+  {
+    return wind_average_observer.get_value();
+  }
+
 private:
   AHRS_type	ahrs;
 #if DEVELOPMENT_ADDITIONS

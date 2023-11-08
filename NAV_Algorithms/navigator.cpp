@@ -204,7 +204,9 @@ void navigator_t::report_data( output_data_t &d)
     d.inst_wind_corrected_N	= report_corrected_wind().e[NORTH];
     d.inst_wind_corrected_E	= report_corrected_wind().e[EAST];
     for( unsigned i=0; i<4; ++i)
-    d.speed_compensation[i]  	= flight_observer.get_speed_compensation(i);
-    d.cross_acc_correction 	= ahrs.get_cross_acc_correction();
+      d.speed_compensation[i]  	= flight_observer.get_speed_compensation(i);
+    d.cross_acc_correction 	= ahrs_magnetic.get_cross_acc_correction();
+    d.vario_wind_N		= report_vario_wind().e[NORTH];
+    d.vario_wind_E		= report_vario_wind().e[EAST];
 #endif
 }
