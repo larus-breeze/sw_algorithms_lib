@@ -22,15 +22,15 @@
 
  **************************************************************************/
 
+#include <variometer.h>
 #include "system_configuration.h"
-#include "flight_observer.h"
 #include "embedded_math.h"
 
 #define ONE_DIV_BY_GRAVITY_TIMES_2 0.0509684f
 #define RECIP_GRAVITY 0.1094f
 
 //! calculate instant windspeed and variometer data, update @ 100 Hz
-void flight_observer_t::update_every_10ms (
+void variometer_t::update_every_10ms (
     const float3vector &gnss_velocity,
     const float3vector &gnss_acceleration,
     const float3vector &ahrs_acceleration,
@@ -120,7 +120,7 @@ void flight_observer_t::update_every_10ms (
     }
 }
 
-void flight_observer_t::reset(float pressure_negative_altitude, float GNSS_negative_altitude)
+void variometer_t::reset(float pressure_negative_altitude, float GNSS_negative_altitude)
 {
   KalmanVario_GNSS.reset( GNSS_negative_altitude, -9.81f);
   KalmanVario_pressure.reset( pressure_negative_altitude, -9.81f);

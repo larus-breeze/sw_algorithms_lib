@@ -28,10 +28,10 @@
 #include <system_configuration.h>
 #include <AHRS.h>
 #include <soaring_flight_averager.h>
+#include <variometer.h>
 #include "GNSS.h"
 #include "differentiator.h"
 #include "atmosphere.h"
-#include "flight_observer.h"
 #include "data_structures.h"
 #include "accumulating_averager.h"
 #include "airborne_detector.h"
@@ -238,7 +238,7 @@ private:
   AHRS_type	ahrs_magnetic;
 #endif
   atmosphere_t 		atmosphere;
-  flight_observer_t 	flight_observer;
+  variometer_t 	flight_observer;
   airborne_detector_t	airborne_detector;
 
   pt2<float,float> air_pressure_resampler_100Hz_10Hz;

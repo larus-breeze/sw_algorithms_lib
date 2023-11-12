@@ -22,8 +22,8 @@
 
  **************************************************************************/
 
-#ifndef FLIGHT_OBSERVER_H_
-#define FLIGHT_OBSERVER_H_
+#ifndef VARIOMETER_H_
+#define VARIOMETER_H_
 
 #include "system_configuration.h"
 #include "GNSS.h"
@@ -45,10 +45,10 @@
 #include "delay_line.h"
 
 //! this class is responsible for all glider flight data
-class flight_observer_t
+class variometer_t
 {
 public:
-  flight_observer_t( void)
+  variometer_t( void)
   :
     windspeed_decimator_100Hz_10Hz( FAST_SAMPLING_TIME),
     vario_averager_pressure( FAST_SAMPLING_TIME / configuration( VARIO_TC)),
@@ -179,4 +179,4 @@ private:
 	float speed_compensation_projected_4;
 };
 
-#endif /* FLIGHT_OBSERVER_H_ */
+#endif /* VARIOMETER_H_ */

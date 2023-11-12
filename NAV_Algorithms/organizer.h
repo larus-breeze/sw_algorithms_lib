@@ -25,9 +25,9 @@
 #ifndef ORGANIZER_H_
 #define ORGANIZER_H_
 
+#include <variometer.h>
 #include "data_structures.h"
 #include "navigator.h"
-#include "flight_observer.h"
 
 //! set of algorithms and data to be used by Larus flight sensor
 class organizer_t
