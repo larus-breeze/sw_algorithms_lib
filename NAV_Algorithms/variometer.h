@@ -50,7 +50,6 @@ class variometer_t
 public:
   variometer_t( void)
   :
-    windspeed_decimator_100Hz_10Hz( FAST_SAMPLING_TIME),
     vario_averager_pressure( FAST_SAMPLING_TIME / configuration( VARIO_TC)),
     vario_averager_GNSS( FAST_SAMPLING_TIME / configuration( VARIO_TC)),
     kinetic_energy_differentiator( 1.0f, FAST_SAMPLING_TIME),
@@ -71,24 +70,23 @@ public:
     speed_compensation_projected_4(0.0f)
   {
   };
-	void update_every_10ms
-	(
-	    const float3vector &gnss_velocity,
-	    const float3vector &gnss_acceleration,
-	    const float3vector &ahrs_acceleration,
-	    const float3vector &heading_vector,
-	    float GNSS_altitude,
-	    float pressure_altitude,
-	    float TAS,
-	    float IAS,
-	    circle_state_t circle_state,
-	    const float3vector &wind_average,
-	    bool GNSS_fix_avaliable
-	);
+    void update_at_100Hz
+    (
+	const float3vector &gnss_velocity,
+	const float3vector &gnss_acceleration,
+	const float3vector &ahrs_acceleration,
+	const float3vector &heading_vector,
+	float GNSS_altitude,
+	float pressure_altitude,
+	float TAS,
+	float IAS,
+	const float3vector &wind_average,
+	bool GNSS_fix_avaliable
+    );
 
-	void reset(float pressure_altitude, float GNSS_altitude);
+    void reset(float pressure_altitude, float GNSS_altitude);
 
-	float get_pressure_altitude( void) const;
+    float get_pressure_altitude( void) const;
 
   float
   get_speed_compensation (unsigned index) const
@@ -136,11 +134,6 @@ public:
 		return vario_averager_GNSS.get_output();
 	}
 
-	float3vector get_instant_wind( void ) const
-	{
-		return windspeed_decimator_100Hz_10Hz.get_output();
-	}
-
 	float get_filtered_GNSS_altitude( void) const
 	{
 	  // the Kalman filter operates on *negative* altitude
@@ -153,8 +146,6 @@ public:
 	}
 
 private:
-	pt2<float3vector,float> windspeed_decimator_100Hz_10Hz;
-
 	// filter systems for variometer
 	pt2<float,float> vario_averager_pressure;
 	pt2<float,float> vario_averager_GNSS;

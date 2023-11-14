@@ -30,7 +30,7 @@
 #define RECIP_GRAVITY 0.1094f
 
 //! calculate instant windspeed and variometer data, update @ 100 Hz
-void variometer_t::update_every_10ms (
+void variometer_t::update_at_100Hz (
     const float3vector &gnss_velocity,
     const float3vector &gnss_acceleration,
     const float3vector &ahrs_acceleration,
@@ -39,8 +39,7 @@ void variometer_t::update_every_10ms (
     float pressure_altitude,
     float TAS,
     float IAS,
-    circle_state_t circle_state,
-    const float3vector &wind_average,
+    const float3vector &speed_compensator_wind,
     bool GNSS_fix_avaliable
   )
 {
@@ -61,13 +60,6 @@ void variometer_t::update_every_10ms (
     }
   else
     {
-      // calculation of all the prerequisites:
-
-      // run the 100 Hz -> 10 Hz wind speed decimation filter
-      float3vector ahrs_instant_air_velocity = heading_vector * TAS;
-      windspeed_decimator_100Hz_10Hz.respond ( gnss_velocity - ahrs_instant_air_velocity);
-
-      // The Kalman-Vario
       // The Kalman-filter-based un-compensated variometer in NED-system reports negative if *climbing* !
       vario_uncompensated_GNSS = -KalmanVario_GNSS.update ( GNSS_negative_altitude, gnss_velocity.e[DOWN], ahrs_acceleration.e[DOWN]);
 
@@ -77,18 +69,18 @@ void variometer_t::update_every_10ms (
       acceleration.e[DOWN] = KalmanVario_GNSS.get_x ( KalmanVario_PVA_t::ACCELERATION_OBSERVED);
 
       // horizontal kalman filter for velocity and acceleration in the air- (not ground) system
-      Kalman_v_a_observer_N.update ( gnss_velocity.e[NORTH] - wind_average.e[NORTH], ahrs_acceleration.e[NORTH]);
-      Kalman_v_a_observer_E.update ( gnss_velocity.e[EAST]  - wind_average.e[EAST],  ahrs_acceleration.e[EAST]);
+      Kalman_v_a_observer_N.update ( gnss_velocity.e[NORTH] - speed_compensator_wind.e[NORTH], ahrs_acceleration.e[NORTH]);
+      Kalman_v_a_observer_E.update ( gnss_velocity.e[EAST]  - speed_compensator_wind.e[EAST],  ahrs_acceleration.e[EAST]);
 
       // compute our kinetic energy in the air-system
       specific_energy = (
-            SQR( gnss_velocity.e[NORTH] - wind_average.e[NORTH])
-	  + SQR( gnss_velocity.e[EAST]  - wind_average.e[EAST])
+            SQR( gnss_velocity.e[NORTH] - speed_compensator_wind.e[NORTH])
+	  + SQR( gnss_velocity.e[EAST]  - speed_compensator_wind.e[EAST])
 	  + SQR( gnss_velocity.e[DOWN]))
 	  * ONE_DIV_BY_GRAVITY_TIMES_2;
 
       // speed-compensation type 1 = scalar product( air_velocity , acceleration) / g;
-      speed_compensation_INS_GNSS_1 = ahrs_instant_air_velocity * acceleration * RECIP_GRAVITY;
+      speed_compensation_INS_GNSS_1 = ( gnss_velocity - speed_compensator_wind) * acceleration * RECIP_GRAVITY;
 
       // speed compensation type 2 = air velocity * acceleration , both Kalman-filtered
       speed_compensation_kalman_2 =

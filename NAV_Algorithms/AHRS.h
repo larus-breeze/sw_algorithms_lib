@@ -111,16 +111,16 @@ public:
 	inline const float3vector get_orientation(void) const
 	{
 	  float3vector retv;
-	  retv[0] = get_north();
-	  retv[1] = get_east();
-	  retv[2] = get_down();
+	  retv[NORTH] = get_north();
+	  retv[EAST]  = get_east();
+	  retv[DOWN]  = get_down();
 	  return retv;
 	}
 	inline const float3vector &get_gyro_correction(void) const
 	{
 		return gyro_correction;
 	}
-	inline const float3matrix &get_body2nav( void)
+	inline const float3matrix &get_body2nav( void) const
 	{
 	  return body2nav;
 	}

@@ -84,7 +84,7 @@ public:
 
   void update_every_100ms( output_data_t & output_data)
   {
-    navigator.update_every_100ms ( output_data.c);
+    navigator.update_at_10Hz ( output_data.c);
     navigator.feed_QFF_density_metering( output_data.m.static_pressure - QNH_offset, -output_data.c.position[DOWN]);
   }
 
@@ -115,7 +115,7 @@ public:
     output_data.body_gyro = gyro;
 #endif
 
-    navigator.update_every_10ms (acc, mag, gyro);
+    navigator.update_at_100Hz (acc, mag, gyro);
   }
 
   void report_data ( output_data_t &data)
