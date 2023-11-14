@@ -228,7 +228,7 @@ char *format_GGA( const coordinates_t &coordinates, char *p)
   *p++ = '0';
   *p++ = ',';
 
-  int32_t altitude_msl_dm = coordinates.position.e[DOWN] * -10.0f;
+  int32_t altitude_msl_dm = coordinates.position[DOWN] * -10.0f;
   p = to_ascii_1_decimal( altitude_msl_dm, p);
   *p++ = ',';
   *p++ = 'M';
@@ -478,11 +478,11 @@ void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA
   next = NMEA_append_tail (next);
 
   // instant wind
-  format_PLARW (output_data.wind.e[NORTH], output_data.wind.e[EAST], 'I', next);
+  format_PLARW (output_data.wind[NORTH], output_data.wind[EAST], 'I', next);
   next = NMEA_append_tail (next);
 
   // average wind
-  format_PLARW (output_data.wind_average.e[NORTH], output_data.wind_average.e[EAST], 'A', next);
+  format_PLARW (output_data.wind_average[NORTH], output_data.wind_average[EAST], 'A', next);
   next = NMEA_append_tail (next);
 
 //  assert(   next - NMEA_buf.string < string_buffer_t::BUFLEN);

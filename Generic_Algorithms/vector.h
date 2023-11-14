@@ -120,6 +120,10 @@ public:
 		assert( index < size);
 		return e[index];
 	};
+	const datatype operator []( int index) const
+	{
+	  return e[index];
+	}
 
 	//! vector normalization
 	void normalize( void)
@@ -129,7 +133,7 @@ public:
 		*this *= norm;
 	}
 
-	// protected:
+private:
 	//! c-style vector[] of "size" elements
 	datatype e[size];
 };
