@@ -85,7 +85,7 @@ public:
       return in;
 
     for( unsigned i=0; i<3; ++i)
-      out.e[i]=calibration[i].calibrate( in.e[i]);
+      out[i]=calibration[i].calibrate( in[i]);
     return out;
   }
 

@@ -44,7 +44,7 @@ void variometer_t::update_at_100Hz (
   )
 {
   vario_uncompensated_pressure = KalmanVario_pressure.update (
-      pressure_altitude, ahrs_acceleration.e[DOWN]);
+      pressure_altitude, ahrs_acceleration[DOWN]);
   speed_compensation_IAS = kinetic_energy_differentiator.respond (
       IAS * IAS * ONE_DIV_BY_GRAVITY_TIMES_2);
   vario_averager_pressure.respond (
@@ -61,22 +61,22 @@ void variometer_t::update_at_100Hz (
   else
     {
       // The Kalman-filter-based un-compensated variometer in NED-system reports negative if *climbing* !
-      vario_uncompensated_GNSS = -KalmanVario_GNSS.update ( GNSS_negative_altitude, gnss_velocity.e[DOWN], ahrs_acceleration.e[DOWN]);
+      vario_uncompensated_GNSS = -KalmanVario_GNSS.update ( GNSS_negative_altitude, gnss_velocity[DOWN], ahrs_acceleration[DOWN]);
 
       // 3d acceleration from the AHRS and from the vertical Kalman filter
       float3vector acceleration = ahrs_acceleration;
       // the vertical component comes from the Kalman Vario, effective value without gravitation
-      acceleration.e[DOWN] = KalmanVario_GNSS.get_x ( KalmanVario_PVA_t::ACCELERATION_OBSERVED);
+      acceleration[DOWN] = KalmanVario_GNSS.get_x ( KalmanVario_PVA_t::ACCELERATION_OBSERVED);
 
       // horizontal kalman filter for velocity and acceleration in the air- (not ground) system
-      Kalman_v_a_observer_N.update ( gnss_velocity.e[NORTH] - speed_compensator_wind.e[NORTH], ahrs_acceleration.e[NORTH]);
-      Kalman_v_a_observer_E.update ( gnss_velocity.e[EAST]  - speed_compensator_wind.e[EAST],  ahrs_acceleration.e[EAST]);
+      Kalman_v_a_observer_N.update ( gnss_velocity[NORTH] - speed_compensator_wind[NORTH], ahrs_acceleration[NORTH]);
+      Kalman_v_a_observer_E.update ( gnss_velocity[EAST]  - speed_compensator_wind[EAST],  ahrs_acceleration[EAST]);
 
       // compute our kinetic energy in the air-system
       specific_energy = (
-            SQR( gnss_velocity.e[NORTH] - speed_compensator_wind.e[NORTH])
-	  + SQR( gnss_velocity.e[EAST]  - speed_compensator_wind.e[EAST])
-	  + SQR( gnss_velocity.e[DOWN]))
+            SQR( gnss_velocity[NORTH] - speed_compensator_wind[NORTH])
+	  + SQR( gnss_velocity[EAST]  - speed_compensator_wind[EAST])
+	  + SQR( gnss_velocity[DOWN]))
 	  * ONE_DIV_BY_GRAVITY_TIMES_2;
 
       // speed-compensation type 1 = scalar product( air_velocity , acceleration) / g;
@@ -94,14 +94,14 @@ void variometer_t::update_at_100Hz (
 
       // speed-compensation type 4 is the product of acceleration and velocity, both calculated along the heading axis
       float3vector kalman_air_velocity;
-      kalman_air_velocity.e[NORTH] = Kalman_v_a_observer_N.get_x ( Kalman_V_A_Aoff_observer_t::VELOCITY);
-      kalman_air_velocity.e[EAST]  = Kalman_v_a_observer_E.get_x ( Kalman_V_A_Aoff_observer_t::VELOCITY);
-      kalman_air_velocity.e[DOWN]  = KalmanVario_GNSS.get_x (  	   KalmanVario_PVA_t::VARIO);
+      kalman_air_velocity[NORTH] = Kalman_v_a_observer_N.get_x ( Kalman_V_A_Aoff_observer_t::VELOCITY);
+      kalman_air_velocity[EAST]  = Kalman_v_a_observer_E.get_x ( Kalman_V_A_Aoff_observer_t::VELOCITY);
+      kalman_air_velocity[DOWN]  = KalmanVario_GNSS.get_x (  	   KalmanVario_PVA_t::VARIO);
       float air_velocity_projected = kalman_air_velocity * heading_vector;
 
-      acceleration.e[NORTH] = Kalman_v_a_observer_N.get_x ( Kalman_V_A_Aoff_observer_t::ACCELERATION);
-      acceleration.e[EAST]  = Kalman_v_a_observer_E.get_x ( Kalman_V_A_Aoff_observer_t::ACCELERATION);
-      acceleration.e[DOWN]  = KalmanVario_GNSS.get_x (	    KalmanVario_PVA_t::ACCELERATION_OBSERVED);
+      acceleration[NORTH] = Kalman_v_a_observer_N.get_x ( Kalman_V_A_Aoff_observer_t::ACCELERATION);
+      acceleration[EAST]  = Kalman_v_a_observer_E.get_x ( Kalman_V_A_Aoff_observer_t::ACCELERATION);
+      acceleration[DOWN]  = KalmanVario_GNSS.get_x (	    KalmanVario_PVA_t::ACCELERATION_OBSERVED);
       float acceleration_projected = acceleration * heading_vector;
 
       speed_compensation_projected_4 = air_velocity_projected * acceleration_projected * RECIP_GRAVITY;

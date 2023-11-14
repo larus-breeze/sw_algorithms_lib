@@ -108,10 +108,10 @@ typedef struct
   float HeadingDifferenceAhrsDgnss;
   float QFF;
   float satfix;
-  float headwind;
-  float crosswind;
   float inst_wind_N;
   float inst_wind_E;
+  float headwind;
+  float crosswind;
   float inst_wind_corrected_N;
   float inst_wind_corrected_E;
   float speed_compensation[4];

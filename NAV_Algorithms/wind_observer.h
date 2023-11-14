@@ -54,46 +54,23 @@ public:
     wind_correction_nav()
   {}
 
-  float3vector report_instant_value( void) const
+  // wind reported to the user
+  float3vector get_instant_value( void) const
   {
     if( circling_state != STRAIGHT_FLIGHT)
-      return wind_average_observer.get_value(); // report last circle mean
+      return wind_average_observer.get_output(); // report last circle mean
     else
       return instant_wind_averager.get_output(); // report short-term average
   }
 
-  float3vector report_average_value( void) const
+  float3vector get_average_value( void) const
   {
     if( circling_state == CIRCLING)
       return circling_wind_averager.get_average();
     else
-      return wind_average_observer.get_value();
+      return wind_average_observer.get_output();
   }
 
-  float report_crosswind( void) const
-  {
-    return wind_correction_nav.e[RIGHT];
-  }
-
-  float report_headwind( void) const
-  {
-    return wind_correction_nav.e[FRONT];
-  }
-
-  float3vector report_corrected_wind( void) const
-  {
-    return corrected_wind_averager.get_output();
-  }
-
-  float3vector report_speed_compensator_wind( void) const
-  {
-    return wind_average_observer.get_value();
-  }
-#if 0
-  float3vector report_average_wind( void) const
-  {
-  }
-#endif
   void process_at_100_Hz( const float3vector &instant_wind)
   {
     instant_wind_averager.respond( instant_wind);
@@ -103,35 +80,61 @@ public:
   {
     circling_state = ahrs.get_circling_state ();
     wind_average_observer.update(
-	instant_wind_averager.get_output(), // do this here because of the update rate 10Hz
+	instant_wind_averager.get_output(),
     	ahrs.get_euler ().y,
 	circling_state);
 
-    float3vector relative_wind_NAV  = instant_wind_averager.get_output() - wind_average_observer.get_value();
+    float3vector relative_wind_NAV  = instant_wind_averager.get_output() - wind_average_observer.get_output();
     float3vector relative_wind_BODY =  ahrs.get_body2nav().reverse_map(relative_wind_NAV);
 
     if( circling_state == STRAIGHT_FLIGHT && old_circling_state == TRANSITION)
       relative_wind_observer.reset({0});
-    else
-      relative_wind_observer.update( relative_wind_BODY, ahrs.get_euler ().y, ahrs.get_circling_state ());
 
     if(( circling_state == CIRCLING))
       {
         if( old_circling_state == TRANSITION) // when starting to circle
   	{
-  	  circling_wind_averager.reset( wind_average_observer.get_value(), 100);
+  	  circling_wind_averager.reset( wind_average_observer.get_output(), 100);
   	  relative_wind_observer.reset({0});
   	}
+        else
+          relative_wind_observer.update( relative_wind_BODY, ahrs.get_euler ().y, ahrs.get_circling_state ());
       }
 
-    wind_correction_nav = ahrs.get_body2nav() * relative_wind_observer.get_value();
-    wind_correction_nav.e[DOWN]=0.0f;
+    wind_correction_nav = ahrs.get_body2nav() * relative_wind_observer.get_output();
+    wind_correction_nav[DOWN]=0.0f;
 
     corrected_wind_averager.respond( instant_wind_averager.get_output() - wind_correction_nav);
     circling_wind_averager.update( instant_wind_averager.get_output() - wind_correction_nav);
 
     old_circling_state = circling_state;
   }
+
+  float3vector get_measurement( void) const
+  {
+    return instant_wind_averager.get_output();
+  }
+
+  float get_crosswind( void) const
+  {
+    return relative_wind_observer.get_output()[RIGHT];
+  }
+
+  float get_headwind( void) const
+  {
+    return relative_wind_observer.get_output()[FRONT];
+  }
+
+  float3vector get_corrected_wind( void) const
+  {
+    return corrected_wind_averager.get_output();
+  }
+
+  float3vector get_speed_compensator_wind( void) const
+  {
+    return wind_average_observer.get_output();
+  }
+
 
 private:
   pt2<float3vector,float> instant_wind_averager;

@@ -56,7 +56,7 @@ void navigator_t::update_at_100Hz (
       atmosphere.get_negative_altitude(),
       TAS,
       IAS,
-      wind_observer.report_speed_compensator_wind(),
+      wind_observer.get_speed_compensator_wind(),
       (GNSS_fix_type != 0)
       );
 }
@@ -78,7 +78,7 @@ void navigator_t::update_GNSS_data( const coordinates_t &coordinates)
       GNSS_velocity = coordinates.velocity;
       GNSS_acceleration = coordinates.acceleration;
       GNSS_heading = coordinates.relPosHeading;
-      GNSS_negative_altitude = coordinates.position.e[DOWN];
+      GNSS_negative_altitude = coordinates.position[DOWN];
       GNSS_speed = coordinates.speed_motion;
     }
 }
@@ -114,11 +114,11 @@ void navigator_t::report_data( output_data_t &d)
 
     d.vario			= flight_observer.get_vario_GNSS(); // todo pick one vario
     d.vario_pressure		= flight_observer.get_vario_pressure();
-    d.integrator_vario		= vario_integrator.get_value();
+    d.integrator_vario		= vario_integrator.get_output();
     d.vario_uncompensated 	= flight_observer.get_vario_uncompensated_GNSS();
 
-    d.wind 			= wind_observer.report_instant_value();
-    d.wind_average		= wind_observer.report_average_value();
+    d.wind 			= wind_observer.get_instant_value();
+    d.wind_average		= wind_observer.get_average_value();
 
     d.speed_compensation_TAS 	= flight_observer.get_speed_compensation_IAS();
     d.speed_compensation_GNSS 	= flight_observer.get_speed_compensation_GNSS();
@@ -149,16 +149,16 @@ void navigator_t::report_data( output_data_t &d)
 
     d.HeadingDifferenceAhrsDgnss = ahrs.getHeadingDifferenceAhrsDgnss();
     d.satfix			= (float)(d.c.sat_fix_type);
-    d.inst_wind_N		= wind_observer.report_instant_value().e[NORTH];
-    d.inst_wind_E		= wind_observer.report_instant_value().e[EAST];
-    d.headwind 			= wind_observer.report_headwind();
-    d.crosswind			= wind_observer.report_crosswind();
-    d.inst_wind_corrected_N	= wind_observer.report_corrected_wind().e[NORTH];
-    d.inst_wind_corrected_E	= wind_observer.report_corrected_wind().e[EAST];
+    d.inst_wind_N		= wind_observer.get_measurement()[NORTH];
+    d.inst_wind_E		= wind_observer.get_measurement()[EAST];
+    d.headwind 			= wind_observer.get_headwind();
+    d.crosswind			= wind_observer.get_crosswind();
+    d.inst_wind_corrected_N	= wind_observer.get_corrected_wind()[NORTH];
+    d.inst_wind_corrected_E	= wind_observer.get_corrected_wind()[EAST];
     for( unsigned i=0; i<4; ++i)
       d.speed_compensation[i]  	= flight_observer.get_speed_compensation(i);
     d.cross_acc_correction 	= ahrs_magnetic.get_cross_acc_correction();
-    d.vario_wind_N		= wind_observer.report_speed_compensator_wind().e[NORTH];
-    d.vario_wind_E		= wind_observer.report_speed_compensator_wind().e[EAST];
+    d.vario_wind_N		= wind_observer.get_speed_compensator_wind()[NORTH];
+    d.vario_wind_E		= wind_observer.get_speed_compensator_wind()[EAST];
 #endif
 }

@@ -20,10 +20,10 @@ public:
   {
     if (right_turn)
 	for( unsigned i=0; i<3; ++i)
-	  induction_observer_right[i].feed (induction.e[i] * scale_factor);
+	  induction_observer_right[i].feed (induction[i] * scale_factor);
     else
 	for( unsigned i=0; i<3; ++i)
-	  induction_observer_left[i].feed (induction.e[i] * scale_factor);
+	  induction_observer_left[i].feed (induction[i] * scale_factor);
   }
   void
   reset (void)
@@ -44,7 +44,7 @@ public:
   {
     float3vector retv;
     for( unsigned i=0; i<3; ++i)
-      retv.e[i] = (induction_observer_right[i].get_mean() + induction_observer_left[i].get_mean()) * 0.5f / scale_factor;
+      retv[i] = (induction_observer_right[i].get_mean() + induction_observer_left[i].get_mean()) * 0.5f / scale_factor;
     return retv;
   }
   float get_variance( void ) const

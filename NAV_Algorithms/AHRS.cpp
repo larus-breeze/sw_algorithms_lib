@@ -64,9 +64,9 @@ AHRS_type::attitude_setup (const float3vector &acceleration,
 
   // create rotation matrix from unity direction vectors
   float fcoordinates[] =
-    { 	north.e[0], north.e[1], north.e[2],
-	east.e[0], east.e[1], east.e[2],
-	down.e[0], down.e[1], down.e[2] };
+    { 	north[0], north[1], north[2],
+	east[0], east[1], east[2],
+	down[0], down[1], down[2] };
 
   float3matrix coordinates (fcoordinates);
   attitude.from_rotation_matrix (coordinates);
@@ -111,9 +111,9 @@ void AHRS_type::feed_magnetic_induction_observer(const float3vector &mag_sensor)
 
   for (unsigned i = 0; i < 3; ++i)
     if( turning_right)
-      mag_calibration_data_collector_right_turn[i].add_value ( MAG_SCALE * expected_body_induction.e[i], MAG_SCALE * mag_sensor.e[i]);
+      mag_calibration_data_collector_right_turn[i].add_value ( MAG_SCALE * expected_body_induction[i], MAG_SCALE * mag_sensor[i]);
     else
-      mag_calibration_data_collector_left_turn[i].add_value ( MAG_SCALE * expected_body_induction.e[i], MAG_SCALE * mag_sensor.e[i]);
+      mag_calibration_data_collector_left_turn[i].add_value ( MAG_SCALE * expected_body_induction[i], MAG_SCALE * mag_sensor[i]);
 
   // measurement of earth induction to find the local earth field parameters
   earth_induction_data_collector.feed( induction_nav_frame, turning_right);
@@ -188,9 +188,9 @@ AHRS_type::update_attitude ( const float3vector &acc,
 			     const float3vector &gyro,
 			     const float3vector &mag)
 {
-  attitude.rotate (gyro.e[ROLL] * Ts_div_2,
-		   gyro.e[NICK] * Ts_div_2,
-		   gyro.e[YAW]  * Ts_div_2);
+  attitude.rotate (gyro[ROLL] * Ts_div_2,
+		   gyro[NICK] * Ts_div_2,
+		   gyro[YAW]  * Ts_div_2);
 
   attitude.normalize ();
 
@@ -204,8 +204,8 @@ AHRS_type::update_attitude ( const float3vector &acc,
   nav_rotation = body2nav * gyro;
   turn_rate_averager.respond( nav_rotation[DOWN]);
 
-  slip_angle_averager.respond( ATAN2( -acc.e[RIGHT], -acc.e[DOWN]));
-  nick_angle_averager.respond( ATAN2( +acc.e[FRONT], -acc.e[DOWN]));
+  slip_angle_averager.respond( ATAN2( -acc[RIGHT], -acc[DOWN]));
+  nick_angle_averager.respond( ATAN2( +acc[FRONT], -acc[DOWN]));
   G_load_averager.respond( acc.abs());
   magnetic_disturbance = (induction_nav_frame - expected_nav_induction).abs();
 }
@@ -245,12 +245,12 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 
   heading_difference_AHRS_DGNSS = heading_gnss_work;
 
-  nav_correction[NORTH] = - nav_acceleration.e[EAST]  + GNSS_acceleration.e[EAST];
-  nav_correction[EAST]  = + nav_acceleration.e[NORTH] - GNSS_acceleration.e[NORTH];
+  nav_correction[NORTH] = - nav_acceleration[EAST]  + GNSS_acceleration[EAST];
+  nav_correction[EAST]  = + nav_acceleration[NORTH] - GNSS_acceleration[NORTH];
 
   cross_acc_correction = // vector cross product GNSS-acc und INS-acc -> heading error
-	   + nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
-	   - nav_acceleration.e[EAST]  * GNSS_acceleration.e[NORTH];
+	   + nav_acceleration[NORTH] * GNSS_acceleration[EAST]
+	   - nav_acceleration[EAST]  * GNSS_acceleration[NORTH];
 
   if( circling_state == CIRCLING) // heading correction using acceleration cross product GNSS * INS
     {
@@ -304,9 +304,8 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   float3vector nav_induction = body2nav * mag;
 
   // calculate horizontal leveling error
-  nav_correction[NORTH] = -nav_acceleration.e[EAST] + GNSS_acceleration.e[EAST];
-  nav_correction[EAST] = +nav_acceleration.e[NORTH]
-      - GNSS_acceleration.e[NORTH];
+  nav_correction[NORTH] = -nav_acceleration[EAST] + GNSS_acceleration[EAST];
+  nav_correction[EAST] = +nav_acceleration[NORTH] - GNSS_acceleration[NORTH];
 
   // *******************************************************************************************************
   // calculate heading error depending on the present circling state
@@ -319,8 +318,8 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
       - nav_induction[EAST] * expected_nav_induction[NORTH];
 
   cross_acc_correction = // vector cross product GNSS-acc und INS-acc -> heading error
-	   + nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
-	   - nav_acceleration.e[EAST]  * GNSS_acceleration.e[NORTH];
+	   + nav_acceleration[NORTH] * GNSS_acceleration[EAST]
+	   - nav_acceleration[EAST]  * GNSS_acceleration[NORTH];
 
   switch (circling_state)
     {
@@ -374,15 +373,14 @@ void AHRS_type::update_ACC_only (const float3vector &gyro, const float3vector &a
   float3vector nav_acceleration = body2nav * acc;
 
   // calculate horizontal leveling error
-  nav_correction[NORTH] = -nav_acceleration.e[EAST] + GNSS_acceleration.e[EAST];
-  nav_correction[EAST] = +nav_acceleration.e[NORTH]
-      - GNSS_acceleration.e[NORTH];
+  nav_correction[NORTH] = -nav_acceleration[EAST] + GNSS_acceleration[EAST];
+  nav_correction[EAST] = +nav_acceleration[NORTH] - GNSS_acceleration[NORTH];
 
   update_circling_state ();
 
   cross_acc_correction = // vector cross product GNSS-acc und INS-acc -> heading error
-      +nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
-      - nav_acceleration.e[EAST] * GNSS_acceleration.e[NORTH];
+      +nav_acceleration[NORTH] * GNSS_acceleration[EAST]
+      - nav_acceleration[EAST] * GNSS_acceleration[NORTH];
 
   if( circling_state == STRAIGHT_FLIGHT)
     // empirically tuned OM flight 2022 7 24
