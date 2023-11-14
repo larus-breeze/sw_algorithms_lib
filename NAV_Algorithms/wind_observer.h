@@ -38,10 +38,10 @@ public:
   wind_oberserver_t( float sampling_frequency)
     :instant_wind_averager( configuration( WIND_TC)  < 0.25f
      ? configuration( WIND_TC)
-     : (SLOW_SAMPLING_TIME / configuration( WIND_TC) ) ),
+     : (FAST_SAMPLING_TIME / configuration( WIND_TC) ) ),
     wind_average_observer( configuration( MEAN_WIND_TC) < 0.25f
      ? configuration( MEAN_WIND_TC)
-     : (FAST_SAMPLING_TIME / configuration( MEAN_WIND_TC) ) ),
+     : (SLOW_SAMPLING_TIME / configuration( MEAN_WIND_TC) ) ),
     relative_wind_observer( configuration( MEAN_WIND_TC) < 0.25f
      ? configuration( MEAN_WIND_TC) * 10.0f
      : (SLOW_SAMPLING_TIME / configuration( MEAN_WIND_TC) ) ),
