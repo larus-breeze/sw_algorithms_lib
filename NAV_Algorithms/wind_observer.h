@@ -29,7 +29,6 @@
 #include "pt2.h"
 #include "soaring_flight_averager.h"
 #include "accumulating_averager.h"
-#include "EEPROM_emulation.h"
 #include "persistent_data.h"
 
 class wind_oberserver_t
