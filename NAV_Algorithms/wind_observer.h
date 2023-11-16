@@ -35,7 +35,8 @@ class wind_oberserver_t
 {
 public:
   wind_oberserver_t( float sampling_frequency)
-    :instant_wind_averager( configuration( WIND_TC)  < 0.25f
+    :wind_resampler_100_10Hz(0.04f),
+     instant_wind_averager( configuration( WIND_TC)  < 0.25f
      ? configuration( WIND_TC)
      : (FAST_SAMPLING_TIME / configuration( WIND_TC) ) ),
     wind_average_observer( configuration( MEAN_WIND_TC) < 0.25f
@@ -72,6 +73,7 @@ public:
 
   void process_at_100_Hz( const float3vector &instant_wind)
   {
+    wind_resampler_100_10Hz.respond( instant_wind);
     instant_wind_averager.respond( instant_wind);
   }
 
@@ -79,11 +81,11 @@ public:
   {
     circling_state = ahrs.get_circling_state ();
     wind_average_observer.update(
-	instant_wind_averager.get_output(),
+	wind_resampler_100_10Hz.get_output(),
     	ahrs.get_euler ().y,
 	circling_state);
 
-    float3vector relative_wind_NAV  = instant_wind_averager.get_output() - wind_average_observer.get_output();
+    float3vector relative_wind_NAV  = wind_resampler_100_10Hz.get_output() - wind_average_observer.get_output();
     float3vector relative_wind_BODY =  ahrs.get_body2nav().reverse_map(relative_wind_NAV);
 
     if( circling_state == STRAIGHT_FLIGHT && old_circling_state == TRANSITION)
@@ -103,15 +105,15 @@ public:
     wind_correction_nav = ahrs.get_body2nav() * relative_wind_observer.get_output();
     wind_correction_nav[DOWN]=0.0f;
 
-    corrected_wind_averager.respond( instant_wind_averager.get_output() - wind_correction_nav);
-    circling_wind_averager.update( instant_wind_averager.get_output() - wind_correction_nav);
+    corrected_wind_averager.respond( wind_resampler_100_10Hz.get_output() - wind_correction_nav);
+    circling_wind_averager.update( wind_resampler_100_10Hz.get_output() - wind_correction_nav);
 
     old_circling_state = circling_state;
   }
 
   float3vector get_measurement( void) const
   {
-    return instant_wind_averager.get_output();
+    return wind_resampler_100_10Hz.get_output();
   }
 
   float get_crosswind( void) const
@@ -136,6 +138,7 @@ public:
 
 
 private:
+  pt2<float3vector,float> wind_resampler_100_10Hz;
   pt2<float3vector,float> instant_wind_averager;
   soaring_flight_averager< float3vector, true> wind_average_observer; // configure wind average clamping on first circle
   soaring_flight_averager< float3vector, false, false> relative_wind_observer;
