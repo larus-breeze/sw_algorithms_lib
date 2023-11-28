@@ -64,8 +64,8 @@ air_data_result air_density_observer::feed_metering( float pressure, float MSL_a
 
  if( result.variance_slope < MAX_ALLOWED_VARIANCE)
     {
-      air_data.QFF = result.y_offset;
-      float density = 100.0f * result.slope * -0.10194f; // div by -9.81f;
+      air_data.QFF = (float)(result.y_offset);
+      float density = 100.0f * (float)(result.slope) * -0.10194f; // div by -9.81f;
 
 #if DENSITY_MEASURMENT_COLLECTS_INTEGER
       float pressure = density_QFF_calculator.get_mean_y();

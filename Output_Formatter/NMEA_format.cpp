@@ -101,7 +101,7 @@ char * angle_format ( double angle, char * p, char posc, char negc)
 
   minutes -= min;
   minutes *= 100000;
-  min = (int) (minutes + 0.5f);
+  min = (int) round(minutes);
 
   p[4] = min % 10 + '0';
   min /= 10;
@@ -164,7 +164,7 @@ void format_RMC (const coordinates_t &coordinates, char *p)
   float value = coordinates.speed_motion * MPS_TO_NMPH;
 
   //Clipping to realistic values for a glider. Some ASCII functions crash if given to high values. TODO: fix
-  value = CLIP<float>(value, 0, (100.0 * MPS_TO_NMPH));
+  value = CLIP<float>(value, 0, (100.0f * MPS_TO_NMPH));
 
   unsigned knots = (unsigned)(value * 10.0f + 0.5f);
   *p++ = knots / 1000 + '0';
@@ -179,7 +179,7 @@ void format_RMC (const coordinates_t &coordinates, char *p)
   float true_track = coordinates.heading_motion;
   if( true_track < 0.0f)
     true_track += 360.0f;
-  int angle_10 = true_track * 10.0 + 0.5;
+  int angle_10 = round(true_track * 10.0f);
 
   *p++ = angle_10 / 1000 + '0';
   angle_10 %= 1000;
@@ -216,7 +216,7 @@ char *format_GGA( const coordinates_t &coordinates, char *p)
   p = angle_format (coordinates.longitude, p, 'E', 'W');
   *p++ = ',';
 
-  *p++ = coordinates.sat_fix_type  >= 0 ? '1' : '0';
+  *p++ = coordinates.sat_fix_type  > 0 ? '1' : '0';
   *p++ = ',';
 
   *p++ = (coordinates.SATS_number) / 10 + '0';

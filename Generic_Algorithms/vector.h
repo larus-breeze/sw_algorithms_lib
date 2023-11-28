@@ -129,7 +129,7 @@ public:
 	void normalize( void)
 	{
 		datatype norm = abs();
-		norm = 1.0 / norm;
+		norm = ONE / norm;
 		*this *= norm;
 	}
 

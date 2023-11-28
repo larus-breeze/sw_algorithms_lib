@@ -26,9 +26,9 @@
 
 ROM float Kalman_V_A_Aoff_observer_t::Gain[N][L]= //!< Kalman Gain for 100Hz sampling rate
     {
-	   0.045525746461218,   0.005179336297606,
-	   0.102816402740272,   0.906791781469036,
-	  -0.097637066442666,   0.001591461803718
+	   0.045525746461218f,   0.005179336297606f,
+	   0.102816402740272f,   0.906791781469036f,
+	  -0.097637066442666f,   0.001591461803718f
     };
 
 void Kalman_V_A_Aoff_observer_t::update( const float velocity, const float acceleration)
