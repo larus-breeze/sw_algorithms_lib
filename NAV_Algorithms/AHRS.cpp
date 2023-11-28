@@ -326,6 +326,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
     {
     case STRAIGHT_FLIGHT:
     case TRANSITION:
+    default:
       {
 	nav_correction[DOWN] = magnetic_control_gain * mag_correction;
 	gyro_correction = body2nav.reverse_map (nav_correction);

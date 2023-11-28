@@ -48,7 +48,7 @@ public:
 #endif
 	 atmosphere (101325.0f),
 	 flight_observer(),
-	 wind_observer( FAST_SAMPLING_TIME),
+	 wind_observer(),
 	 airborne_detector(),
 	 air_pressure_resampler_100Hz_10Hz(0.04f), // f / fcutoff = 80% * 0.5 * 0.1
 	 pitot_pressure(0.0f),
@@ -152,7 +152,7 @@ public:
      * to be called @ 10 Hz
      * calculate wind data and vario average for "vario integrator"
      */
-  void update_at_10Hz( const coordinates_t &coordinates);
+  void update_at_10Hz();
 
     /**
        * @brief update on new navigation data from GNSS

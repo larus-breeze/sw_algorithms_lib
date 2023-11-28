@@ -49,12 +49,10 @@ void navigator_t::update_at_100Hz (
 
   flight_observer.update_at_100Hz (
       GNSS_velocity,
-      GNSS_acceleration,
       ahrs.get_nav_acceleration (),
       heading_vector,
       GNSS_negative_altitude,
       atmosphere.get_negative_altitude(),
-      TAS,
       IAS,
       wind_observer.get_speed_compensator_wind(),
       (GNSS_fix_type != 0)
@@ -84,7 +82,7 @@ void navigator_t::update_GNSS_data( const coordinates_t &coordinates)
 }
 
 // to be called at 10 Hz
-void navigator_t::update_at_10Hz (const coordinates_t &coordinates)
+void navigator_t::update_at_10Hz ()
 {
   atmosphere.feed_QFF_density_metering(
 	air_pressure_resampler_100Hz_10Hz.get_output(),

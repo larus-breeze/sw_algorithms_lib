@@ -34,7 +34,7 @@
 class wind_oberserver_t
 {
 public:
-  wind_oberserver_t( float sampling_frequency)
+  wind_oberserver_t()
     :wind_resampler_100_10Hz(0.04f),
      instant_wind_averager( configuration( WIND_TC)  < 0.25f
      ? configuration( WIND_TC)

@@ -84,7 +84,7 @@ public:
 
   void update_every_100ms( output_data_t & output_data)
   {
-    navigator.update_at_10Hz ( output_data.c);
+    navigator.update_at_10Hz ();
     navigator.feed_QFF_density_metering( output_data.m.static_pressure - QNH_offset, -output_data.c.position[DOWN]);
   }
 

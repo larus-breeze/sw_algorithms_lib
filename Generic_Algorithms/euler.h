@@ -12,7 +12,7 @@ template <class datatype> class eulerangle
 {
 public:
 	eulerangle( datatype ir=0, datatype in=0, datatype iy=0)
-	: r(ir), n(in), y(in)
+	: r(ir), n(in), y(iy)
 	{}
 	datatype r,n,y;
 };

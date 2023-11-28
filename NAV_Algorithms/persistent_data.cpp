@@ -172,7 +172,7 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
 	    value += 2.0f * M_PI_F;
 	  if( value >= M_PI_F)
 	    value -= 2 * M_PI_F;
-	  int ivalue = round(value * 32768.0f / M_PI_F);
+	  int ivalue = (int) round(value * 32768.0f / M_PI_F);
 	  if( ivalue >= 32768)
 	    ivalue = 32767;
 	  EEPROM_value.i16 = (int16_t)ivalue;
@@ -192,7 +192,7 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
 	value = (float)(EEPROM_value.u16) / 65536.0f;
       else
 	{
-	  unsigned uvalue = round( value * 65536.0f);
+	  unsigned uvalue = (unsigned) round( value * 65536.0f);
 	  if( uvalue >= 65536)
 	    uvalue = 65535;
 	  EEPROM_value.u16 = (uint16_t)uvalue;
@@ -200,6 +200,7 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
       break;
     case EEPROM_PARAMETER_ID_END:
     default:
+	value = 0.0f; // just to be sure ...
 	return true; // error
       break;
   }

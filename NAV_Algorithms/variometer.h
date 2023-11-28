@@ -73,12 +73,10 @@ public:
     void update_at_100Hz
     (
 	const float3vector &gnss_velocity,
-	const float3vector &gnss_acceleration,
 	const float3vector &ahrs_acceleration,
 	const float3vector &heading_vector,
 	float GNSS_altitude,
 	float pressure_altitude,
-	float TAS,
 	float IAS,
 	const float3vector &wind_average,
 	bool GNSS_fix_avaliable
