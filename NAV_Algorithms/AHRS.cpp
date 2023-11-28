@@ -230,7 +230,6 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
       mag = mag_sensor;
 
   float3vector nav_acceleration = body2nav * acc;
-  float3vector nav_induction    = body2nav * mag;
 
   float heading_gnss_work = GNSS_heading	// correct for antenna alignment
       + antenna_DOWN_correction  * SIN (euler.r)
@@ -255,9 +254,10 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   if( circling_state == CIRCLING) // heading correction using acceleration cross product GNSS * INS
     {
 
-#if CROSS_GAIN_ONLY
+#if USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING
       nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
 #else
+      float3vector nav_induction    = body2nav * mag;
       float mag_correction =
     	+ nav_induction[NORTH] * expected_nav_induction[EAST]
     	- nav_induction[EAST]  * expected_nav_induction[NORTH];
@@ -314,8 +314,9 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   circle_state_t old_circle_state = circling_state;
   update_circling_state ();
 
-  float mag_correction = +nav_induction[NORTH] * expected_nav_induction[EAST]
-      - nav_induction[EAST] * expected_nav_induction[NORTH];
+  float mag_correction =
+      + nav_induction[NORTH] * expected_nav_induction[EAST]
+      - nav_induction[EAST]  * expected_nav_induction[NORTH];
 
   cross_acc_correction = // vector cross product GNSS-acc und INS-acc -> heading error
 	   + nav_acceleration[NORTH] * GNSS_acceleration[EAST]
@@ -335,7 +336,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
       // *******************************************************************************************************
     case CIRCLING:
       {
-#if CROSS_GAIN_ONLY
+#if USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING
 	    nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN; // no MAG or D-GNSS use here ! (old version)
 #else
 	nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN

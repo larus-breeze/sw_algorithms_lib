@@ -55,7 +55,7 @@
 #define LOW_TURN_RATE  1.0*M_PI/180.0f	//!< turn rate low limit
 #define SPEED_COMPENSATION_FUSIONER_FEEDBACK 0.998f // empirically tuned alpha
 
-#define CROSS_GAIN_ONLY			1 	//!< if 1: do not use induction to control attitude while circling
+#define USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING 1 	//!< if 1: do not use induction to control attitude while circling
 #define DISABLE_CIRCLING_STATE		0	//!< for tests only: never use circling AHRS algorithm
 #define INDUCTION_STD_DEVIATION_LIMIT	0.03 	//!< results outperforming this number will be used further on
 
