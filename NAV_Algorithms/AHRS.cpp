@@ -256,7 +256,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
     {
 
 #if CROSS_GAIN_ONLY
-      nav_correction[DOWN] = cross_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
+      nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
 #else
       float mag_correction =
     	+ nav_induction[NORTH] * expected_nav_induction[EAST]
@@ -336,7 +336,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
     case CIRCLING:
       {
 #if CROSS_GAIN_ONLY
-	    nav_correction[DOWN] = cross_correction * CROSS_GAIN; // no MAG or D-GNSS use here ! (old version)
+	    nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN; // no MAG or D-GNSS use here ! (old version)
 #else
 	nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN
 	    + mag_correction * M_H_GAIN; // use cross-acceleration and induction: better !
