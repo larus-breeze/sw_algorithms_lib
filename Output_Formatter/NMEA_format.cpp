@@ -88,6 +88,7 @@ char * angle_format ( double angle, char * p, char posc, char negc)
     angle = -angle;
 
   int degree = (int) angle;
+  double minutes = (angle - (double)degree) * 60.0;
 
   // add 3rd digit if required
   if( degree >= 100)
@@ -100,7 +101,6 @@ char * angle_format ( double angle, char * p, char posc, char negc)
   *p++ = (char)(degree / 10 + '0');
   *p++ = (char)(degree % 10 + '0');
 
-  double minutes = (angle - (double) degree) * 60.0;
   int min = (int) minutes;
   *p++ = (char)(min / 10 + '0');
   *p++ = (char)(min % 10 + '0');
