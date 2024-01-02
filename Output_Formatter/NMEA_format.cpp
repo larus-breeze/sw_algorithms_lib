@@ -89,6 +89,14 @@ char * angle_format ( double angle, char * p, char posc, char negc)
 
   int degree = (int) angle;
 
+  // add 3rd digit if required
+  if( degree >= 100)
+    {
+      *p++ = (char)(degree / 100 + '0');
+      degree %= 100;
+    }
+
+  // otherwise 2 digits fixed
   *p++ = (char)(degree / 10 + '0');
   *p++ = (char)(degree % 10 + '0');
 
