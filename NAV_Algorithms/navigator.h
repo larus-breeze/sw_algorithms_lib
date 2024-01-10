@@ -67,6 +67,11 @@ public:
 	 IAS_averager(1.0f / 1.0f / 100.0f)
   {};
 
+  void update_magnetic_induction_data( float declination, float inclination)
+  {
+    ahrs.update_magnetic_induction_data( declination, inclination);
+  }
+
   void set_density_data( float temperature, float humidity)
   {
     if( ! isnan( temperature) && ! isnan( humidity) )

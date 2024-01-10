@@ -52,6 +52,17 @@ public:
 	AHRS_type(float sampling_time);
 	void attitude_setup( const float3vector & acceleration, const float3vector & induction);
 
+	void update_magnetic_induction_data( float declination, float inclination)
+	{
+	  declination *= (M_PI_F / 180.0f); // degrees to radiant
+	  inclination *= (M_PI_F / 180.0f);
+
+	  expected_nav_induction[NORTH] = COS( inclination);
+	  expected_nav_induction[EAST]  = COS( inclination) * SIN( declination);
+	  expected_nav_induction[DOWN]  = SIN( inclination);
+	  update_magnetic_loop_gain(); // adapt to magnetic inclination
+	}
+
 	void update( const float3vector &gyro, const float3vector &acc, const float3vector &mag,
 		const float3vector &GNSS_acceleration,
 		float GNSS_heading,

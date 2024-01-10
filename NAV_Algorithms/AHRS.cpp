@@ -156,8 +156,9 @@ AHRS_type::AHRS_type (float sampling_time)
   expected_nav_induction[EAST]  = COS( inclination) * SIN( declination);
   expected_nav_induction[DOWN]  = SIN( inclination);
   update_magnetic_loop_gain(); // adapt to magnetic inclination
+
   bool fail = compass_calibration.read_from_EEPROM();
-  assert( ! fail);
+  assert( ! fail); // todo get rid of this assertment
 }
 
 void

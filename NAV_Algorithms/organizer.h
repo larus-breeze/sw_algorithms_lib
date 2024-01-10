@@ -28,6 +28,7 @@
 #include <variometer.h>
 #include "data_structures.h"
 #include "navigator.h"
+#include "earth_induction_model.h"
 
 //! set of algorithms and data to be used by Larus flight sensor
 class organizer_t
@@ -56,6 +57,14 @@ public:
         q.get_rotation_matrix (sensor_mapping);
       }
 
+  }
+
+  void update_after_first_position_fix( output_data_t & output_data)
+  {
+    induction_values induction_data;
+    induction_data = earth_induction_model.get_induction_data_at( output_data.c.longitude, output_data.c.latitude);
+    if( induction_data.valid)
+      navigator.update_magnetic_induction_data( induction_data.declination, induction_data.inclination);
   }
 
   void initialize_after_first_measurement( output_data_t & output_data)
