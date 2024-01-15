@@ -11,7 +11,7 @@ The algorithms include:
 - A **Kalman-filter** fusioning altitude, vertical speed and vertical acceleration for an **ultra-fast variometer**
 - A **GNSS / INS-based speed-compensation** for the variometer
 - A **D-GNSS-based satellite-compass** with sub-degree accuracy (optional)
-- A self-calibrating **3d magnetic compass** with automatic detection of magnetic inclination and declination.
+- A self-calibrating **3d magnetic compass** using a worldwide NOAA magnetic induction model
 - **Air-density measurement** by observing pressure over GNSS-altitude 
 - **NMEA-stream output** for flight-management systems like [XCsoar](https://github.com/XCSoar/)
 - Output of application-specific data to a **CAN-bus** to feed cockpit-instruments 
