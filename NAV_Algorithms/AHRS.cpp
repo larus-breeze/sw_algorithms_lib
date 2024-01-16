@@ -370,9 +370,15 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
  * @brief  update attitude from IMU data NOT using magnetometer of D-GNSS
  */
 void AHRS_type::update_ACC_only (const float3vector &gyro, const float3vector &acc,
-			   const float3vector &mag,
+			   const float3vector &mag_sensor,
 			   const float3vector &GNSS_acceleration)
 {
+  float3vector mag;
+  if (compass_calibration.isCalibrationDone ()) // use calibration if available
+    mag = compass_calibration.calibrate (mag_sensor);
+  else
+    mag = mag_sensor;
+
   float3vector nav_acceleration = body2nav * acc;
 
   // calculate horizontal leveling error

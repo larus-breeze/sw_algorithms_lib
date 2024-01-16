@@ -62,6 +62,10 @@ typedef struct
 typedef struct
 {
   measurement_data_t m;
+#if WITH_DENSITY_DUMMY
+  float dummy1;
+  float dummy2;
+#endif
   coordinates_t c;
 } observations_type;
 
