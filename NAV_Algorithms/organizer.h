@@ -59,7 +59,7 @@ public:
 
   }
 
-  void update_magnetic_induction_data( output_data_t & output_data)
+  void update_after_first_position_fix( output_data_t & output_data)
   {
     induction_values induction_data;
     induction_data = earth_induction_model.get_induction_data_at( output_data.c.longitude, output_data.c.latitude);
