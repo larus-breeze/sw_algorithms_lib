@@ -231,7 +231,7 @@ private:
   float magnetic_disturbance; //!< abs( observed_induction - expected_induction)
   float magnetic_control_gain; //!< declination-dependent magnetic control loop gain
   bool automatic_magnetic_calibration;
-  bool automatic_earth_field_parameters;
+  bool automatic_earth_field_parameters; // todo unused, remove me some day
   bool magnetic_calibration_updated;
 };
 

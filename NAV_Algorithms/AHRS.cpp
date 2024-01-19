@@ -147,14 +147,9 @@ AHRS_type::AHRS_type (float sampling_time)
   magnetic_disturbance(0.0f),
   magnetic_control_gain(1.0f),
   automatic_magnetic_calibration(configuration(MAG_AUTO_CALIB)),
-  automatic_earth_field_parameters(configuration(MAG_EARTH_AUTO)),
+  automatic_earth_field_parameters( false),
   magnetic_calibration_updated( false)
 {
-  float inclination=configuration(INCLINATION);
-  float declination=configuration(DECLINATION);
-  expected_nav_induction[NORTH] = COS( inclination);
-  expected_nav_induction[EAST]  = COS( inclination) * SIN( declination);
-  expected_nav_induction[DOWN]  = SIN( inclination);
   update_magnetic_loop_gain(); // adapt to magnetic inclination
 
   bool fail = compass_calibration.read_from_EEPROM();
@@ -414,6 +409,7 @@ void AHRS_type::write_calibration_into_EEPROM( void)
 
   EEPROM_initialize();
 
+#if 0 // todo unused, remove me some day
   if ( automatic_earth_field_parameters)
     {
       float inclination=ATAN2(expected_nav_induction[DOWN], expected_nav_induction[NORTH]);
@@ -422,6 +418,7 @@ void AHRS_type::write_calibration_into_EEPROM( void)
       write_EEPROM_value( (EEPROM_PARAMETER_ID)DECLINATION, declination);
       write_EEPROM_value( (EEPROM_PARAMETER_ID)INCLINATION, inclination);
     }
+#endif
   compass_calibration.write_into_EEPROM();
   magnetic_calibration_updated = false; // done ...
 }
