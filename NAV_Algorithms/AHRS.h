@@ -190,10 +190,16 @@ public:
 
 private:
   void handle_magnetic_calibration( char type);
+
   void update_magnetic_loop_gain( void)
   {
-    magnetic_control_gain = M_H_GAIN / SQRT( SQR(expected_nav_induction[EAST])+SQR(expected_nav_induction[NORTH]));
+    float expected_horizontal_induction = SQRT( SQR(expected_nav_induction[EAST])+SQR(expected_nav_induction[NORTH]));
+    if( expected_horizontal_induction < 0.001f) // fail-safe default
+      magnetic_control_gain = M_H_GAIN;
+    else
+      magnetic_control_gain = M_H_GAIN / expected_horizontal_induction;
   }
+
   void feed_magnetic_induction_observer(const float3vector &mag_sensor);
   circle_state_t update_circling_state( void);
 

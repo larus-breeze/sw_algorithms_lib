@@ -153,7 +153,8 @@ AHRS_type::AHRS_type (float sampling_time)
   update_magnetic_loop_gain(); // adapt to magnetic inclination
 
   bool fail = compass_calibration.read_from_EEPROM();
-  assert( ! fail); // todo get rid of this assertment
+  if( fail)
+    compass_calibration.set_default();
 }
 
 void
