@@ -88,30 +88,38 @@ char * angle_format ( double angle, char * p, char posc, char negc)
     angle = -angle;
 
   int degree = (int) angle;
+  double minutes = (angle - (double)degree) * 60.0;
 
-  *p++ = degree / 10 + '0';
-  *p++ = degree % 10 + '0';
+  // add 3rd digit if required
+  if( degree >= 100)
+    {
+      *p++ = (char)(degree / 100 + '0');
+      degree %= 100;
+    }
 
-  double minutes = (angle - (double) degree) * 60.0;
+  // otherwise 2 digits fixed
+  *p++ = (char)(degree / 10 + '0');
+  *p++ = (char)(degree % 10 + '0');
+
   int min = (int) minutes;
-  *p++ = min / 10 + '0';
-  *p++ = min % 10 + '0';
+  *p++ = (char)(min / 10 + '0');
+  *p++ = (char)(min % 10 + '0');
 
   *p++ = '.';
 
   minutes -= min;
   minutes *= 100000;
-  min = (int) (minutes + 0.5f);
+  min = (int) round(minutes);
 
-  p[4] = min % 10 + '0';
+  p[4] = (char)(min % 10 + '0');
   min /= 10;
-  p[3] = min % 10 + '0';
+  p[3] = (char)(min % 10 + '0');
   min /= 10;
-  p[2] = min % 10 + '0';
+  p[2] = (char)(min % 10 + '0');
   min /= 10;
-  p[1] = min % 10 + '0';
+  p[1] = (char)(min % 10 + '0');
   min /= 10;
-  p[0] = min % 10 + '0';
+  p[0] = (char)(min % 10 + '0');
 
   p += 5;
 
@@ -137,8 +145,8 @@ char * format_GNSS_timestamp(const coordinates_t &coordinates, char *p)
   *p++ = (coordinates.second) / 10 + '0';
   *p++ = (coordinates.second) % 10 + '0';
   *p++ = '.';
-  *p++ = hundredth_seconds / 10 +'0';
-  *p++ = hundredth_seconds % 10 +'0';
+  *p++ = (char)(hundredth_seconds / 10 +'0');
+  *p++ = (char)(hundredth_seconds % 10 +'0');
   *p++ = ',';
 
   return p;
@@ -164,30 +172,30 @@ void format_RMC (const coordinates_t &coordinates, char *p)
   float value = coordinates.speed_motion * MPS_TO_NMPH;
 
   //Clipping to realistic values for a glider. Some ASCII functions crash if given to high values. TODO: fix
-  value = CLIP<float>(value, 0, (100.0 * MPS_TO_NMPH));
+  value = CLIP<float>(value, 0, (100.0f * MPS_TO_NMPH));
 
   unsigned knots = (unsigned)(value * 10.0f + 0.5f);
-  *p++ = knots / 1000 + '0';
+  *p++ = (char)(knots / 1000 + '0');
   knots %= 1000;
-  *p++ = knots / 100 + '0';
+  *p++ = (char)(knots / 100 + '0');
   knots %= 100;
-  *p++ = knots / 10 + '0';
+  *p++ = (char)(knots / 10 + '0');
   *p++ = '.';
-  *p++ = knots % 10 + '0';
+  *p++ = (char)(knots % 10 + '0');
   *p++ = ',';
 
   float true_track = coordinates.heading_motion;
   if( true_track < 0.0f)
     true_track += 360.0f;
-  int angle_10 = true_track * 10.0 + 0.5;
+  int angle_10 = (int) round(true_track * 10.0f);
 
-  *p++ = angle_10 / 1000 + '0';
+  *p++ = (char)(angle_10 / 1000 + '0');
   angle_10 %= 1000;
-  *p++ = angle_10 / 100 + '0';
+  *p++ = (char)(angle_10 / 100 + '0');
   angle_10 %= 100;
-  *p++ = angle_10 / 10 + '0';
+  *p++ = (char)(angle_10 / 10 + '0');
   *p++ = '.';
-  *p++ = angle_10 % 10 + '0';
+  *p++ = (char)(angle_10 % 10 + '0');
 
   *p++ = ',';
 
@@ -216,7 +224,7 @@ char *format_GGA( const coordinates_t &coordinates, char *p)
   p = angle_format (coordinates.longitude, p, 'E', 'W');
   *p++ = ',';
 
-  *p++ = coordinates.sat_fix_type  >= 0 ? '1' : '0';
+  *p++ = coordinates.sat_fix_type  > 0 ? '1' : '0';
   *p++ = ',';
 
   *p++ = (coordinates.SATS_number) / 10 + '0';
@@ -228,7 +236,7 @@ char *format_GGA( const coordinates_t &coordinates, char *p)
   *p++ = '0';
   *p++ = ',';
 
-  int32_t altitude_msl_dm = coordinates.position.e[DOWN] * -10.0f;
+  int32_t altitude_msl_dm = (int32_t)(coordinates.position[DOWN] * -10.0f);
   p = to_ascii_1_decimal( altitude_msl_dm, p);
   *p++ = ',';
   *p++ = 'M';
@@ -265,7 +273,7 @@ char *format_MWV ( float wind_north, float wind_east, char *p)
   float direction = ATAN2( -wind_east, -wind_north);
   if( direction < 0.0f)
     direction += 360.0f;
-  int32_t angle_10 = round( direction * RAD_TO_DEGREE_10);
+  int32_t angle_10 = (int32_t) round( direction * RAD_TO_DEGREE_10);
   p=to_ascii_1_decimal( angle_10, p);
   *p++ = ',';
   *p++ = 'T'; // true direction
@@ -273,7 +281,7 @@ char *format_MWV ( float wind_north, float wind_east, char *p)
 
   float value = SQRT( SQR( wind_north) + SQR( wind_east));
 
-  int32_t wind_10 = value * 10.0f;
+  int32_t wind_10 = (int32_t)(value * 10.0f);
   p=to_ascii_1_decimal( wind_10, p);
   *p++ = ',';
   *p++ = 'M'; // m/s
@@ -289,7 +297,7 @@ ROM char HCHDT[]="$HCHDT,";
 //! create HCHDM sentence to report true heading
 void format_HCHDT( float true_heading, char *p) // report magnetic heading
 {
-  int32_t heading = round(true_heading * 573.0f); // -> 1/10 degree
+  int32_t heading = (int32_t) round(true_heading * 573.0f); // -> 1/10 degree
   if( heading < 0)
     heading += 3600;
 
@@ -359,13 +367,13 @@ void format_PLARW ( float wind_north, float wind_east, char windtype, char *p)
     float direction = ATAN2( -wind_east, -wind_north);
 
     // map to 0..359 degrees
-    int angle = round( direction * RAD_TO_DEGREE);
+    int angle = (int) round( direction * RAD_TO_DEGREE);
     if( angle < 0)
         angle += 360;
     p=format_integer( p, angle);
     *p++ = ',';
 
-    int speed = round( MPS_TO_KMPH * SQRT( SQR( wind_north) + SQR( wind_east)));
+    int speed = (int) round( MPS_TO_KMPH * SQRT( SQR( wind_north) + SQR( wind_east)));
     p=format_integer( p, speed);
     *p++ = ',';
 
@@ -393,10 +401,10 @@ void format_PLARV ( float variometer, float avg_variometer, float pressure_altit
   p=to_ascii_2_decimals( round( avg_variometer * 100.0f), p);
   *p++ = ',';
 
-  p=format_integer( p, round( pressure_altitude));
+  p=format_integer( p, (int) round( pressure_altitude));
   *p++ = ',';
 
-  p=format_integer( p, round( TAS * MPS_TO_KMPH));
+  p=format_integer( p, (int) round( TAS * MPS_TO_KMPH));
 
   *p++ = 0;
 }
@@ -478,11 +486,11 @@ void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA
   next = NMEA_append_tail (next);
 
   // instant wind
-  format_PLARW (output_data.wind.e[NORTH], output_data.wind.e[EAST], 'I', next);
+  format_PLARW (output_data.wind[NORTH], output_data.wind[EAST], 'I', next);
   next = NMEA_append_tail (next);
 
   // average wind
-  format_PLARW (output_data.wind_average.e[NORTH], output_data.wind_average.e[EAST], 'A', next);
+  format_PLARW (output_data.wind_average[NORTH], output_data.wind_average[EAST], 'A', next);
   next = NMEA_append_tail (next);
 
 //  assert(   next - NMEA_buf.string < string_buffer_t::BUFLEN);

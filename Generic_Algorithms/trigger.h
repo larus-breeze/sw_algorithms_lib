@@ -30,11 +30,14 @@ class trigger
 {
 public:
   trigger( float _hysteresis)
-  : hysteresis( _hysteresis)
+  : hysteresis( _hysteresis),
+    minimax(ZERO),
+    going_up(true)
   {}
   bool initialize( float value, bool _going_up=true)
   {
     minimax = value;
+    going_up=_going_up;
     return true;
   }
   bool process( float value)

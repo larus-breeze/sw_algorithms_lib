@@ -62,6 +62,10 @@ typedef struct
 typedef struct
 {
   measurement_data_t m;
+#if WITH_DENSITY_DUMMY
+  float dummy1;
+  float dummy2;
+#endif
   coordinates_t c;
 } observations_type;
 
@@ -108,14 +112,16 @@ typedef struct
   float HeadingDifferenceAhrsDgnss;
   float QFF;
   float satfix;
-  float headwind;
-  float crosswind;
   float inst_wind_N;
   float inst_wind_E;
+  float headwind;
+  float crosswind;
   float inst_wind_corrected_N;
   float inst_wind_corrected_E;
   float speed_compensation[4];
-
+  float cross_acc_correction;
+  float vario_wind_N;
+  float vario_wind_E;
 #endif
 
 } output_data_t;

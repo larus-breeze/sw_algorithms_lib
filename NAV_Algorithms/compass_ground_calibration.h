@@ -31,7 +31,7 @@ public:
 	     min[axis] = mean_value[axis];
       }
      }
-  void get_calibration_result( calibration_t * calibration_3d)
+  void get_calibration_result( single_axis_calibration_t * calibration_3d)
     {
       for( unsigned axis = X; axis <= Z; ++axis)
 	{

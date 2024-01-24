@@ -146,7 +146,6 @@ public:
     latitude_reference = 0; // will be updated on next fix
   }
 
-  coordinates_t &coordinates;
   FIX_TYPE get_fix_type( void) const
   {
     return fix_type;
@@ -159,8 +158,14 @@ public:
   {
     return FAT_time;
   }
-  FIX_TYPE fix_type;
+  void clear_sat_fix_type( void)
+  {
+    coordinates.sat_fix_type = SAT_FIX_NONE;
+  }
+
 private:
+  coordinates_t &coordinates;
+  FIX_TYPE fix_type;
   inline bool checkSumCheck ( const uint8_t *buffer, uint8_t length)
   {
     if( (buffer[2] != length) && (buffer[3] !=0))

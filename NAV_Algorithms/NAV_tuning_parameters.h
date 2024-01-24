@@ -26,12 +26,10 @@
 #define NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_
 
 #define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
-#define MAG_CALIBRATION_CHANGE_LIMIT 6.0e-4f //!< variance average of changes: 3 * { offset, scale }
-//this means an average change of all 6 parameters of 1 % STD-deviation (= 1e-4 variance)
+#define MAG_OFFSET_CHANGE_LIMIT 0.01f
+#define MAG_SCALE_CHANGE_LIMIT 0.01f
 
 #define CIRCLE_LIMIT (10 * 100) //!< 10 * 1/100 s delay into / out of circling state
-
-#define VARIO_USE_SQUARED_VELOCITY 1 // use squared absolute air velocity for speed-compensation
 
 // filters for CAN information (turn-coordinator, G-load ...)
 #define ANGLE_F_BY_FS  ( 1.0f / 0.5f / 100.0f) 			// 0.5s
@@ -51,23 +49,19 @@
 #define H_GAIN 38.0f			//!< Attitude controller: horizontal gain
 #define M_H_GAIN 6.0f			//!< Attitude controller: horizontal gain magnetic
 #define CROSS_GAIN 0.05f		//!< Attitude controller: cross-product gain
-#define INDUCTION_ERROR	0.03		//!< Maximum std deviation to update earth induction parameters
+#define INDUCTION_ERROR	0.015		//!< Maximum std deviation to update earth induction parameters
 #define NAV_CORRECTION_LIMIT 5.0f	//!< limit for "low AHRS correcting variable"
 #define HIGH_TURN_RATE 8.0*M_PI/180.0f	//!< turn rate high limit
-#define LOW_TURN_RATE  4.0*M_PI/180.0f	//!< turn rate low limit
+#define LOW_TURN_RATE  1.0*M_PI/180.0f	//!< turn rate low limit
 #define SPEED_COMPENSATION_FUSIONER_FEEDBACK 0.998f // empirically tuned alpha
 
-#define CROSS_GAIN_ONLY			0 	//!< if 1: do not use induction to control attitude while circling
+#define USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING 1 	//!< if 1: do not use induction to control attitude while circling
 #define DISABLE_CIRCLING_STATE		0	//!< for tests only: never use circling AHRS algorithm
 #define INDUCTION_STD_DEVIATION_LIMIT	0.03 	//!< results outperforming this number will be used further on
 
-#define MAG_HIGH_PRECISION		1
-#if MAG_HIGH_PRECISION
-#define MAG_SCALE			10000.0f //!< scale factor for high-precision integer statistics
-#else
-#define MAG_SCALE			1.0f
-#endif
+#define AIRBORNE_TRIGGER_SPEED		0.5f //!< speed-compensator vario value m/s
 
+#define MAG_SCALE			10000.0f //!< scale factor for high-precision integer statistics
 #define FAST_SAMPLING_REQUENCY 		100.0f
 #define FAST_SAMPLING_TIME 		0.01f
 #define SLOW_SAMPLING_REQUENCY 		10.0f

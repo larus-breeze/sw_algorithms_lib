@@ -7,6 +7,7 @@
 #define APPLICATION_NMEA_FORMAT_H_
 
 #include "data_structures.h"
+#include "embedded_math.h"
 
 //! contains a string including it's length
 class string_buffer_t

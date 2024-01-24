@@ -51,7 +51,7 @@ template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false, bool SOFT_TAKEOF
 	  }
     };
 
-    const value_t & get_value (void) const
+    const value_t & get_output (void) const
     {
       return present_output;
     }

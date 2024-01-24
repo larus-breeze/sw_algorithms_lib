@@ -20,10 +20,10 @@ public:
   {
     if (right_turn)
 	for( unsigned i=0; i<3; ++i)
-	  induction_observer_right[i].feed (induction.e[i] * scale_factor);
+	  induction_observer_right[i].feed (induction[i] * scale_factor);
     else
 	for( unsigned i=0; i<3; ++i)
-	  induction_observer_left[i].feed (induction.e[i] * scale_factor);
+	  induction_observer_left[i].feed (induction[i] * scale_factor);
   }
   void
   reset (void)
@@ -37,14 +37,14 @@ public:
   bool data_valid( void) const
   {
     return (
-	(induction_observer_right[0].get_samples() > MINIMUM_SAMPLES) &&
-	(induction_observer_left[0].get_samples() > MINIMUM_SAMPLES) );
+	(induction_observer_right[0].get_samples() > MINIMUM_MAG_CALIBRATION_SAMPLES) &&
+	(induction_observer_left[0].get_samples() > MINIMUM_MAG_CALIBRATION_SAMPLES) );
   }
   float3vector get_estimated_induction( void) const
   {
     float3vector retv;
     for( unsigned i=0; i<3; ++i)
-      retv.e[i] = (induction_observer_right[i].get_mean() + induction_observer_left[i].get_mean()) * 0.5f / scale_factor;
+      retv[i] = (induction_observer_right[i].get_mean() + induction_observer_left[i].get_mean()) * 0.5f / scale_factor;
     return retv;
   }
   float get_variance( void ) const

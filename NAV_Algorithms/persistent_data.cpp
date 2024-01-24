@@ -48,10 +48,6 @@ ROM persistent_data_t PERSISTENT_DATA[]=
 	{MAG_STD_DEVIATION, "Mag_Calib_Err",	false,  1e-2f, 0},	//! Magnetic calibration STD deviation / ( 1 % / 65536 )
 	{MAG_AUTO_CALIB, "Mag_Auto_Calib",	false,  1.0f, 0},	//! Magnetic calibration adjusted automatically
 
-	{DECLINATION,	"Mag_Declination",	true,  0.05f, 0}, 	//! Magnetic declination (east positive) signed / ( 180° / 32768)
-	{INCLINATION,	"Mag_Inclination",	true,  1.13f, 0}, 	//! Magnetic inclination (down positive) signed / ( 180° / 32768)
-	{MAG_EARTH_AUTO, "Mag_Earth_Auto",	false,  0.0f, 0},	//! Earth magnetic field recognized automatically
-
 	{VARIO_TC,	"Vario_TC",		false, 2.0f, 0}, 	//! Vario time constant unsigned s / ( 100.0f / 65536 )
 	{VARIO_INT_TC,	"Vario_Int_TC",		false, 30.0f, 0},	//! Vario integrator time constant unsigned s / ( 100.0f / 65536 )
 	{WIND_TC,	"Wind_TC",		false, 5.0f, 0}, 	//! Wind fast time constant unsigned s / ( 100.0f / 65536 )
@@ -102,7 +98,6 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
     case BOARD_ID:
     case GNSS_CONFIGURATION:
     case MAG_AUTO_CALIB:
-    case MAG_EARTH_AUTO:
       if( read)
 	value = (float)(EEPROM_value.u16);
       else
@@ -159,8 +154,6 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
 	EEPROM_value.i16 = (int16_t)(value * 1000.0f);
       break;
       break;
-    case DECLINATION:
-    case INCLINATION:
     case SENS_TILT_ROLL:
     case SENS_TILT_NICK:
     case SENS_TILT_YAW:
@@ -172,7 +165,7 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
 	    value += 2.0f * M_PI_F;
 	  if( value >= M_PI_F)
 	    value -= 2 * M_PI_F;
-	  int ivalue = round(value * 32768.0f / M_PI_F);
+	  int ivalue = (int) round(value * 32768.0f / M_PI_F);
 	  if( ivalue >= 32768)
 	    ivalue = 32767;
 	  EEPROM_value.i16 = (int16_t)ivalue;
@@ -192,7 +185,7 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
 	value = (float)(EEPROM_value.u16) / 65536.0f;
       else
 	{
-	  unsigned uvalue = round( value * 65536.0f);
+	  unsigned uvalue = (unsigned) round( value * 65536.0f);
 	  if( uvalue >= 65536)
 	    uvalue = 65535;
 	  EEPROM_value.u16 = (uint16_t)uvalue;
@@ -200,6 +193,7 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
       break;
     case EEPROM_PARAMETER_ID_END:
     default:
+	value = 0.0f; // just to be sure ...
 	return true; // error
       break;
   }

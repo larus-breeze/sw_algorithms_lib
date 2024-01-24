@@ -52,9 +52,13 @@ template<typename sample_type, typename evaluation_type=sample_type>
   {
   public:
     linear_least_square_fit (void)
-    {
-      reset ();
-    }
+    : sum_x(ZERO),
+      sum_y(ZERO),
+      sum_xx(ZERO),
+      sum_yy(ZERO),
+      sum_xy(ZERO),
+      n(ZERO)
+    {}
     void
     add_value (const sample_type x, const sample_type y)
     {

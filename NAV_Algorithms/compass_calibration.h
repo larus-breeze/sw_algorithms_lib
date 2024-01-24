@@ -32,10 +32,10 @@
 #include "NAV_tuning_parameters.h"
 
 //! maintain offset and slope data for one sensor axis
-class calibration_t
+class single_axis_calibration_t
 {
 public:
-  calibration_t( float _offset=0.0f, float slope=1.0f)
+  single_axis_calibration_t( float _offset=0.0f, float slope=1.0f)
   : offset( _offset),
     scale( 1.0f / slope),
     variance ( 1.0e10f)
@@ -73,8 +73,7 @@ template <class sample_type, class evaluation_type> class compass_calibration_t
 {
 public:
   compass_calibration_t( void)
-    : calibration_done( false),
-      completeness( HAVE_NONE)
+    : calibration_done( false)
   {}
 
   float3vector calibrate( const float3vector &in)
@@ -86,7 +85,7 @@ public:
       return in;
 
     for( unsigned i=0; i<3; ++i)
-      out.e[i]=calibration[i].calibrate( in.e[i]);
+      out[i]=calibration[i].calibrate( in[i]);
     return out;
   }
 
@@ -106,51 +105,44 @@ public:
   }
 
 
-  bool set_calibration_if_changed( linear_least_square_fit<sample_type, evaluation_type> mag_calibrator[3], float scale_factor, bool turning_right)
+  bool set_calibration_if_changed(
+      linear_least_square_fit<sample_type, evaluation_type> mag_calibrator_right[3],
+      linear_least_square_fit<sample_type, evaluation_type> mag_calibrator_left[3],
+      float scale_factor)
   {
-    if( turning_right)
-      completeness |= HAVE_RIGHT;
-    else
-      completeness |= HAVE_LEFT;
-
-    if( false == (completeness == HAVE_BOTH))
+    if( ( mag_calibrator_right[0].get_count() < MINIMUM_MAG_CALIBRATION_SAMPLES) )
       return false;
-
-    if( ( mag_calibrator[0].get_count() < MINIMUM_MAG_CALIBRATION_SAMPLES) )
+    if( ( mag_calibrator_left[0].get_count() < MINIMUM_MAG_CALIBRATION_SAMPLES) )
       return false;
 
     // now we have enough entropy and evaluate our result
-    linear_least_square_result< float> new_calibration[3];
-
-    float variance = 0;
-    for (unsigned i = 0; i < 3; ++i)
-      {
-	mag_calibrator[i].evaluate( new_calibration[i]);
-	variance += new_calibration[i].variance_offset / SQR( scale_factor);
-	variance += new_calibration[i].variance_slope;
-        mag_calibrator[i].reset();
-      }
-
-    variance *= 0.1666666f; // gives us the mean value
-
-#if MAGNETIC_DECISION_OVERRIDE == 0
-      if( SQRT( variance) > configuration(MAG_STD_DEVIATION))
-	return false; // measurement precision has not improved
-#endif
+    linear_least_square_result< float> new_calibration_data_right[3];
+    linear_least_square_result< float> new_calibration_data_left[3];
+    single_axis_calibration_t calibration_candidate[3];
 
     for (unsigned i = 0; i < 3; ++i)
-      calibration[i].refresh (
-	  new_calibration[i].y_offset / scale_factor,
-	  new_calibration[i].slope,
-	  new_calibration[i].variance_offset / SQR(scale_factor),
-	  new_calibration[i].variance_slope);
-
-    if( parameters_changed_significantly())
       {
-      write_into_EEPROM();
-      return true;
+	mag_calibrator_right[i].evaluate( new_calibration_data_right[i]);
+	mag_calibrator_left[i].evaluate( new_calibration_data_left[i]);
+
+	calibration_candidate[i].refresh(
+	    (new_calibration_data_right[i].y_offset + new_calibration_data_left[i].y_offset) / scale_factor / TWO,
+	    (new_calibration_data_right[i].slope    + new_calibration_data_left[i].slope)    /  TWO,
+	    (new_calibration_data_right[i].variance_offset + new_calibration_data_left[i].variance_offset) / SQR(scale_factor) / TWO,
+	    (new_calibration_data_right[i].variance_slope  + new_calibration_data_left[i].variance_slope)  / TWO);
+
+	mag_calibrator_right[i].reset();
+	mag_calibrator_left[i].reset();
       }
-    return false;
+
+    if( ! parameters_changed_significantly ( calibration_candidate))
+	return false; // we keep the old calibration
+
+    // now we take the new calibration
+    for (unsigned i = 0; i < 3; ++i)
+      calibration[i] = calibration_candidate[i];
+
+    return true;
   }
 
   bool isCalibrationDone () const
@@ -158,30 +150,25 @@ public:
     return calibration_done;
   }
 
-  float get_variance_average( void) const
-  {
-    float retv = 0.0f;
-    for( unsigned i=0; i < 3; ++i)
-      retv += calibration[i].variance;
-    return retv * 0.33333333f;
-  }
-
-  const calibration_t *get_calibration(void) const
+  const single_axis_calibration_t *get_calibration(void) const
   {
     return calibration_done ? calibration : 0;
   }
 
-  bool parameters_changed_significantly (void) const
+  bool parameters_changed_significantly ( single_axis_calibration_t const *new_calibration) const
   {
-    float parameter_change_variance = 0.0f;
     for( unsigned i=0; i<3; ++i)
       {
-        parameter_change_variance +=
-  	  SQR( configuration( (EEPROM_PARAMETER_ID)(MAG_X_OFF   + 2*i)) - calibration[i].offset) +
-  	  SQR( configuration( (EEPROM_PARAMETER_ID)(MAG_X_SCALE + 2*i)) - calibration[i].scale);
-      }
-    parameter_change_variance *= 0.166666667f; // => average
-    return parameter_change_variance > MAG_CALIBRATION_CHANGE_LIMIT;
+	if( fabs( new_calibration[i].offset - calibration[i].offset) > MAG_OFFSET_CHANGE_LIMIT)
+	  return true;
+
+	if( fabs( new_calibration[i].scale - calibration[i].scale) > MAG_SCALE_CHANGE_LIMIT)
+	  return true;
+
+	if( new_calibration[i].variance < calibration[i].variance)
+	  return true;
+}
+    return false;
   }
 
   void write_into_EEPROM (void) const
@@ -224,12 +211,8 @@ public:
     return false; // no error;
   }
 
-  calibration_t calibration[3];
+  single_axis_calibration_t calibration[3];
   bool calibration_done;
-
-private:
-  enum completeness_type { HAVE_NONE=0, HAVE_RIGHT=1, HAVE_LEFT=2, HAVE_BOTH=3};
-  unsigned completeness; // bits from completeness_type
 };
 
 #endif /* COMPASS_CALIBRATION_H_ */

@@ -71,7 +71,7 @@ public:
     uint16_t checksum = ~(p.id % 31);
     ID_checked |= checksum << 11;
 
-    checksum = ~(p.data_l % 4095);
+    checksum = (uint16_t) ~(p.data_l % 4095);
     DLC_checksum |= checksum << 4;
   }
 
