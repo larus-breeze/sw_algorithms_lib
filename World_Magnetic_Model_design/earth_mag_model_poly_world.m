@@ -1,5 +1,16 @@
 Poly_degree = 3;
 
+if 1 % pick sector DACH
+    inc=incdach;
+    dec=decldach;
+
+    left = 5;
+    right = 17;
+    bottom = 45.5;
+    top = 54.5;
+    north = 49.7; % test bensheim
+    east = 8.66;
+end
 if 0 % pick sector europe
     inc=inceur;
     dec=deceur;
@@ -88,7 +99,7 @@ if 0 % pick New Zealand
     east = 174.75;
 end
 
-if 1 % pick iceland
+if 0 % pick iceland
     inc=inciceland;
     dec=deciceland;
 
