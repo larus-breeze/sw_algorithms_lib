@@ -2,6 +2,34 @@
 
 ROM induction_model_area_t earth_induction_model_t::induction_model_area[N_AREAS]=
     {
+	{ // DACH
+	    5.0, 17.0,  // left, right
+	    45.5, 54.5, // bottom, top
+	    { // declination
+		 6.484968023424757e-05,
+		 3.604728604727705e-04,
+		 -1.336631317399705e-02,
+		 4.889050343589380e-05,
+		 -2.518514818513759e-02,
+		 7.773881035432078e-01,
+		 3.234265734262655e-05,
+		 -5.884959737228114e-03,
+		 6.761925158171979e-01,
+		 -1.258303844027981e+01
+	    },
+	    { // inclination
+		2.100890562426442e-04,
+		1.581751581705888e-05,
+		-4.628525320828570e-02,
+		1.761874489119027e-05,
+		-5.288711288658317e-03,
+		3.919445685819016e+00,
+		-2.156177156192702e-05,
+		8.834347472689526e-05,
+		2.775942807177114e-01,
+		-4.126846312074665e+01
+	    },
+	},
 	{ // europe
 	    -15.0, 30.0, // left, right
 	    25.0, 70,   // bottom, top
@@ -200,7 +228,7 @@ ROM induction_model_area_t earth_induction_model_t::induction_model_area[N_AREAS
 	}
     };
 
-induction_values earth_induction_model_t::get_induction_data_at( double longitude, double latitude)
+induction_values earth_induction_model_t::get_induction_data_at( double latitude, double longitude)
   {
     induction_values retv={ 0.0, 0.0, false};
 
