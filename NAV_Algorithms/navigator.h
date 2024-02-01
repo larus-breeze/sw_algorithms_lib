@@ -70,6 +70,9 @@ public:
   void update_magnetic_induction_data( float declination, float inclination)
   {
     ahrs.update_magnetic_induction_data( declination, inclination);
+#if DEVELOPMENT_ADDITIONS
+    ahrs_magnetic.update_magnetic_induction_data( declination, inclination);
+#endif
   }
 
   void set_density_data( float temperature, float humidity)
