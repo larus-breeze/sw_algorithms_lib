@@ -37,8 +37,8 @@ public:
   organizer_t( void)
     : pitot_offset(0.0f),
       pitot_span(0.0f),
-      QNH_offset(0.0f)
-
+      QNH_offset(0.0f),
+      magnetic_induction_update_counter(0)
   {
 
   }
@@ -59,10 +59,10 @@ public:
 
   }
 
-  void update_after_first_position_fix( output_data_t & output_data)
+  void update_magnetic_induction_data( double latitude, double longitude)
   {
     induction_values induction_data;
-    induction_data = earth_induction_model.get_induction_data_at( output_data.c.longitude, output_data.c.latitude);
+    induction_data = earth_induction_model.get_induction_data_at( latitude, longitude);
     if( induction_data.valid)
       navigator.update_magnetic_induction_data( induction_data.declination, induction_data.inclination);
   }
@@ -95,6 +95,12 @@ public:
   {
     navigator.update_at_10Hz ();
     navigator.feed_QFF_density_metering( output_data.m.static_pressure - QNH_offset, -output_data.c.position[DOWN]);
+
+    if( ++magnetic_induction_update_counter > 36000) // every hour
+      {
+	update_magnetic_induction_data( output_data.c.latitude, output_data.c.longitude);
+	magnetic_induction_update_counter=0;
+      }
   }
 
   void set_attitude ( float roll, float nick, float present_heading)
@@ -151,6 +157,7 @@ private:
   float pitot_offset; //!< pitot pressure sensor offset
   float pitot_span;   //!< pitot pressure sensor span factor
   float QNH_offset;   //!< static pressure sensor offset
+  unsigned magnetic_induction_update_counter;
 };
 
 #endif /* ORGANIZER_H_ */
