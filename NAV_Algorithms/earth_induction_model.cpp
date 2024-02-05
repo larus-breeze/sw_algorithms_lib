@@ -228,7 +228,7 @@ ROM induction_model_area_t earth_induction_model_t::induction_model_area[N_AREAS
 	}
     };
 
-induction_values earth_induction_model_t::get_induction_data_at( double longitude, double latitude)
+induction_values earth_induction_model_t::get_induction_data_at( double latitude, double longitude)
   {
     induction_values retv={ 0.0, 0.0, false};
 
