@@ -28,7 +28,7 @@
 #include "embedded_memory.h"
 #include "embedded_math.h"
 
-enum { N_AREAS=7, N_COEFFICIENTS=10};
+enum { N_AREAS=8, N_COEFFICIENTS=10};
 
 typedef struct
 {
