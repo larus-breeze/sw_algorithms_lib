@@ -122,6 +122,8 @@ typedef struct
   float cross_acc_correction;
   float vario_wind_N;
   float vario_wind_E;
+  float3vector body_induction;
+  float3vector body_induction_error;
 #endif
 
 } output_data_t;
