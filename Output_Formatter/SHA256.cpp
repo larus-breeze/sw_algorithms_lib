@@ -182,4 +182,18 @@ void SHA256::revert( uint8_t * hash)
 	  }
 }
 
+#if 0
+void test_SHA256( void)
+{
+  SHA256 sha;
+  sha.update((const uint8_t *)"string", 6);
+  uint8_t digest[32];
+  sha.make_digest(digest);
+// digest = 473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8
 
+  SHA256 sha2;
+  sha2.update((const uint8_t *)"string2", 7);
+  sha2.make_digest(digest);
+// digest = b993212a26658c9077096b804cdfb92ad21cf1e199e272c44eb028e45d07b6e0
+}
+#endif
