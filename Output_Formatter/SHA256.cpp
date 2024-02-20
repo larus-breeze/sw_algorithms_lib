@@ -1,3 +1,29 @@
+/***********************************************************************//**
+ * @file		SHA256.cpp
+ * @brief		SHA256 implementation
+ * @author		Jérémy LAMBERT
+ * @copyright 		Copyright (c) 2021 Jérémy LAMBERT (SystemGlitch)
+ * @license 		MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+ **************************************************************************/
 #include "SHA256.h"
 
 ROM uint32_t SHA256::K[64] =
@@ -132,14 +158,14 @@ void SHA256::pad() {
 
 	// Append to the padding the total message's length in bits and transform.
 	m_bitlen += m_blocklen * 8;
-	m_data[63] = m_bitlen;
-	m_data[62] = m_bitlen >> 8;
-	m_data[61] = m_bitlen >> 16;
-	m_data[60] = m_bitlen >> 24;
-	m_data[59] = m_bitlen >> 32;
-	m_data[58] = m_bitlen >> 40;
-	m_data[57] = m_bitlen >> 48;
-	m_data[56] = m_bitlen >> 56;
+	m_data[63] = (uint8_t)m_bitlen;
+	m_data[62] = (uint8_t)(m_bitlen >> 8);
+	m_data[61] = (uint8_t)(m_bitlen >> 16);
+	m_data[60] = (uint8_t)(m_bitlen >> 24);
+	m_data[59] = (uint8_t)(m_bitlen >> 32);
+	m_data[58] = (uint8_t)(m_bitlen >> 40);
+	m_data[57] = (uint8_t)(m_bitlen >> 48);
+	m_data[56] = (uint8_t)(m_bitlen >> 56);
 	transform();
 }
 
@@ -155,3 +181,5 @@ void SHA256::revert( uint8_t * hash)
 		  }
 	  }
 }
+
+
