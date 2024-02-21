@@ -84,7 +84,7 @@ void navigator_t::update_GNSS_data( const coordinates_t &coordinates)
 // to be called at 10 Hz
 bool navigator_t::update_at_10Hz ()
 {
-  bool landing_detected;
+  bool landing_detected=false;
   atmosphere.feed_QFF_density_metering(
 	air_pressure_resampler_100Hz_10Hz.get_output(),
 	flight_observer.get_filtered_GNSS_altitude());
