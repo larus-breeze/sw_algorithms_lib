@@ -445,7 +445,7 @@ char * NMEA_append_tail( char *p)
  }
 
 //! this procedure formats all our NMEA sequences
-void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA_buf)
+void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA_buf, bool horizon_available)
 {
   char *next = NMEA_buf.string;
 
@@ -460,14 +460,13 @@ void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA
   format_HCHDT( output_data.euler.y, next);
   next = NMEA_append_tail (next);
 
-#if  HORIZON_DATA_SECRET == 1
   // aircraft attitude
-  format_PLARA( ZERO, ZERO, output_data.euler.y, next);
+  if( horizon_available)
+    format_PLARA(output_data.euler.r, output_data.euler.n, output_data.euler.y, next);
+  else
+    format_PLARA( ZERO, ZERO, output_data.euler.y, next);
+
   next = NMEA_append_tail(next);
-#else
-  format_PLARA(output_data.euler.r, output_data.euler.n, output_data.euler.y, next);
-  next = NMEA_append_tail(next);
-#endif
 
   // battery_voltage
   format_PLARB( output_data.m.supply_voltage, next);

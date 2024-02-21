@@ -46,15 +46,22 @@ ROM uint32_t SHA256::K[64] =
 	0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
     };
 
-SHA256::SHA256(): m_blocklen(0), m_bitlen(0) {
-	m_state[0] = 0x6a09e667;
-	m_state[1] = 0xbb67ae85;
-	m_state[2] = 0x3c6ef372;
-	m_state[3] = 0xa54ff53a;
-	m_state[4] = 0x510e527f;
-	m_state[5] = 0x9b05688c;
-	m_state[6] = 0x1f83d9ab;
-	m_state[7] = 0x5be0cd19;
+SHA256::SHA256(void)
+{
+  reset();
+}
+void SHA256::reset(void)
+{
+  m_blocklen=0,
+  m_bitlen=0;
+  m_state[0] = 0x6a09e667;
+  m_state[1] = 0xbb67ae85;
+  m_state[2] = 0x3c6ef372;
+  m_state[3] = 0xa54ff53a;
+  m_state[4] = 0x510e527f;
+  m_state[5] = 0x9b05688c;
+  m_state[6] = 0x1f83d9ab;
+  m_state[7] = 0x5be0cd19;
 }
 
 void SHA256::update(const uint8_t * data, size_t length) {
@@ -191,9 +198,9 @@ void test_SHA256( void)
   sha.make_digest(digest);
 // digest = 473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8
 
-  SHA256 sha2;
-  sha2.update((const uint8_t *)"string2", 7);
-  sha2.make_digest(digest);
+  sha.reset();
+  sha.update((const uint8_t *)"string2", 7);
+  sha.make_digest(digest);
 // digest = b993212a26658c9077096b804cdfb92ad21cf1e199e272c44eb028e45d07b6e0
 }
 #endif

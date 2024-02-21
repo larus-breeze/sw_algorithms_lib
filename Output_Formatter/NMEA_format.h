@@ -19,7 +19,7 @@ public:
 };
 
 //! combine all data to be output to the NMEA port
-void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA_buf);
+void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA_buf, bool horizon_available);
 char * to_ascii_2_decimals( int32_t number, char *s);
 char * to_ascii_1_decimal( int32_t number, char *s);
 inline char * to_ascii_2_decimals( float32_t number, char *s)

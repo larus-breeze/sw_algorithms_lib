@@ -11,6 +11,7 @@ public:
 	SHA256();
 	void update(const uint8_t * data, size_t length);
 	void make_digest( uint8_t * hash);
+	void reset(void);
 private:
 	uint8_t  m_data[64];
 	uint32_t m_blocklen;
