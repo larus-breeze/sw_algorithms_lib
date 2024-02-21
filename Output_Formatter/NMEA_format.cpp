@@ -35,6 +35,27 @@
 
 ROM char HEX[]="0123456789ABCDEF";
 
+// ********* Generic stuff ************************************************
+inline char hex4( uint8_t data)
+{
+  return HEX[data];
+}
+
+//! add end delimiter, evaluate and add checksum and add CR+LF
+char * NMEA_append_tail( char *p)
+ {
+ 	uint8_t checksum = 0;
+ 	assert( p[0] =='$');
+ 	for( p=p+1; *p && *p !='*'; ++p)
+ 		checksum ^= *p;
+ 	p[0] = '*';
+ 	p[1] = hex4(checksum >> 4);
+ 	p[2] = hex4(checksum & 0x0f);
+ 	p[3] = '\r';
+ 	p[4] = '\n';
+ 	p[5] = 0;
+ 	return p + 5;
+ }
 
 //! format an integer into ASCII with exactly two digits after the decimal point
 //! @param number value * 100
@@ -81,7 +102,7 @@ char * to_ascii_1_decimal( int32_t number, char *s)
 }
 
 //! append an angle in ASCII into a NMEA string
-char * angle_format ( double angle, char * p, char posc, char negc)
+void angle_format ( double angle, char posc, char negc, char * &p)
 {
   bool pos = angle > 0.0f;
   if (!pos)
@@ -125,18 +146,15 @@ char * angle_format ( double angle, char * p, char posc, char negc)
 
   *p++ = ',';
   *p++ = pos ? posc : negc;
-  return p;
 }
 
-char * format_GNSS_timestamp(const coordinates_t &coordinates, char *p)
+void format_GNSS_timestamp(const coordinates_t &coordinates, char * &p)
 {
   unsigned hundredth_seconds;
   if( coordinates.nano < 0)
-      hundredth_seconds=0; // just ignore any (small) negative idfference
+      hundredth_seconds=0; // just ignore any (small) negative difference
   else
       hundredth_seconds=coordinates.nano / 10000000;
-
-//  assert( hundredth_seconds < 100);
 
   *p++ = (coordinates.hour)   / 10 + '0';
   *p++ = (coordinates.hour)   % 10 + '0';
@@ -148,25 +166,24 @@ char * format_GNSS_timestamp(const coordinates_t &coordinates, char *p)
   *p++ = (char)(hundredth_seconds / 10 +'0');
   *p++ = (char)(hundredth_seconds % 10 +'0');
   *p++ = ',';
-
-  return p;
 }
 
 ROM char GPRMC[]="$GPRMC,";
 
 //! NMEA-format time, position, groundspeed, track data
-void format_RMC (const coordinates_t &coordinates, char *p)
+void format_RMC (const coordinates_t &coordinates, char * &p)
 {
+  char * line_start = p;
   p = append_string( p, GPRMC);
-  p = format_GNSS_timestamp( coordinates, p);
+  format_GNSS_timestamp( coordinates, p);
 
   *p++ = coordinates.sat_fix_type != 0 ? 'A' : 'V';
   *p++ = ',';
 
-  p = angle_format (coordinates.latitude, p, 'N', 'S');
+  angle_format (coordinates.latitude, 'N', 'S', p);
   *p++ = ',';
 
-  p = angle_format (coordinates.longitude, p, 'E', 'W');
+  angle_format (coordinates.longitude, 'E', 'W', p);
   *p++ = ',';
 
   float value = coordinates.speed_motion * MPS_TO_NMPH;
@@ -207,21 +224,22 @@ void format_RMC (const coordinates_t &coordinates, char *p)
   *p++ = ((coordinates.year)%100) % 10 + '0';
 
   p=append_string( p, ",,,A");
-  *p = 0;
+  p = NMEA_append_tail ( line_start);
 }
 
 ROM char GPGGA[]="$GPGGA,";
 
 //! NMEA-format position report, sat number and GEO separation
-char *format_GGA( const coordinates_t &coordinates, char *p)
+void format_GGA( const coordinates_t &coordinates, char * &p)
 {
+  char * line_start = p;
   p = append_string( p, GPGGA);
-  p = format_GNSS_timestamp( coordinates, p);
+  format_GNSS_timestamp( coordinates, p);
 
-  p = angle_format (coordinates.latitude, p, 'N', 'S');
+  angle_format (coordinates.latitude, 'N', 'S', p);
   *p++ = ',';
 
-  p = angle_format (coordinates.longitude, p, 'E', 'W');
+  angle_format (coordinates.longitude, 'E', 'W', p);
   *p++ = ',';
 
   *p++ = coordinates.sat_fix_type  > 0 ? '1' : '0';
@@ -248,55 +266,15 @@ char *format_GGA( const coordinates_t &coordinates, char *p)
   *p++ = 'M';
   *p++ = ','; // no DGPS
   *p++ = ',';
-  *p++ = 0;
-
-  return p;
-}
-
-ROM char GPMWV[]="$GPMWV,";
-
-//! format wind reporting, standard  NMEA sequence
-char *format_MWV ( float wind_north, float wind_east, char *p)
-{
-  p = append_string( p, GPMWV);
-
-  //Clipping to realistic values for a glider. Some ASCII functions crash if given to high values. TODO: fix
-  wind_north = CLIP<float>(wind_north, -50.0, 50.0);
-  wind_east = CLIP<float>(wind_east, -50.0, 50.0);
-
-//  wind_north = 3.0; // this setting reports 18km/h from 53 degrees
-//  wind_east = 4.0;
-
-  while (*p)
-    ++p;
-
-  float direction = ATAN2( -wind_east, -wind_north);
-  if( direction < 0.0f)
-    direction += 360.0f;
-  int32_t angle_10 = (int32_t) round( direction * RAD_TO_DEGREE_10);
-  p=to_ascii_1_decimal( angle_10, p);
-  *p++ = ',';
-  *p++ = 'T'; // true direction
-  *p++ = ',';
-
-  float value = SQRT( SQR( wind_north) + SQR( wind_east));
-
-  int32_t wind_10 = (int32_t)(value * 10.0f);
-  p=to_ascii_1_decimal( wind_10, p);
-  *p++ = ',';
-  *p++ = 'M'; // m/s
-  *p++ = ',';
-  *p++ = 'A'; // valid
-  *p++ = 0;
-
-  return p;
+  p = NMEA_append_tail ( line_start);
 }
 
 ROM char HCHDT[]="$HCHDT,";
 
 //! create HCHDM sentence to report true heading
-void format_HCHDT( float true_heading, char *p) // report magnetic heading
+void format_HCHDT( float true_heading, char * &p) // report magnetic heading
 {
+  char * line_start = p;
   int32_t heading = (int32_t) round(true_heading * 573.0f); // -> 1/10 degree
   if( heading < 0)
     heading += 3600;
@@ -305,89 +283,95 @@ void format_HCHDT( float true_heading, char *p) // report magnetic heading
   p = to_ascii_1_decimal( heading, p);
   *p++ = ',';
   *p++ = 'T';
-
-  *p = 0;
+  p = NMEA_append_tail ( line_start);
 }
 
 // ********* Larus-specific protocols *************************************
 
 ROM char PLARD[]="$PLARD,";
 
-void format_PLARD ( float density, char type, char *p)
+void format_PLARD ( float density, char type, char * &p)
 {
-    p = append_string( p, PLARD);
-    p = to_ascii_2_decimals( round( density * 1e5f), p); // units = g / m^3, * 100 to get 2 decimals
-    *p++ = ',';
-    *p++ = type;
-    *p = 0;
+  char * line_start = p;
+  p = append_string( p, PLARD);
+  p = to_ascii_2_decimals( round( density * 1e5f), p); // units = g / m^3, * 100 to get 2 decimals
+  *p++ = ',';
+  *p++ = type;
+  p = NMEA_append_tail ( line_start);
 }
 
 ROM char PLARB[]="$PLARB,";
 
-void format_PLARB ( float voltage, char *p)
+void format_PLARB ( float voltage, char * &p)
 {
-    p = append_string( p, PLARB);
-    p = to_ascii_2_decimals( round( voltage * 100.0f), p);
-    *p = 0;
+  char * line_start = p;
+  p = append_string( p, PLARB);
+  p = to_ascii_2_decimals( round( voltage * 100.0f), p);
+  p = NMEA_append_tail ( line_start);
 }
 
 ROM char PLARA[]="$PLARA,";
 
-void format_PLARA ( float roll, float nick, float yaw, char *p)
+void format_PLARA ( float roll, float nick, float yaw, char * &p)
 {
-    p = append_string( p, PLARA);
+  char * line_start = p;
+  p = append_string( p, PLARA);
 
-    p = to_ascii_1_decimal( round(roll * RAD_TO_DEGREE_10), p);
+  p = to_ascii_1_decimal( round(roll * RAD_TO_DEGREE_10), p);
 
-    p = append_string( p, ",");
-    p = to_ascii_1_decimal( round(nick * RAD_TO_DEGREE_10), p);
+  p = append_string( p, ",");
+  p = to_ascii_1_decimal( round(nick * RAD_TO_DEGREE_10), p);
 
-    if( yaw < 0.0f)
-        yaw += 6.2832f;
-    p = append_string( p, ",");
-    p = to_ascii_1_decimal( round(yaw * RAD_TO_DEGREE_10), p);
+  if( yaw < 0.0f)
+    yaw += 6.2832f;
+  p = append_string( p, ",");
+  p = to_ascii_1_decimal( round(yaw * RAD_TO_DEGREE_10), p);
 
-    *p = 0;
+  p = NMEA_append_tail ( line_start);
 }
 
 ROM char PLARW[]="$PLARW,";
 
 //! format wind reporting NMEA sequence
-void format_PLARW ( float wind_north, float wind_east, char windtype, char *p)
+void format_PLARW ( float wind_north, float wind_east, char windtype, char * &p)
 {
-    p = append_string( p, PLARW);
+  char * line_start = p;
+  p = append_string( p, PLARW);
 
-    //Clipping to realistic values for a glider. Some ASCII functions crash if given to high values. TODO: fix
-    wind_north = CLIP<float>(wind_north, -50.0, 50.0);
-    wind_east = CLIP<float>(wind_east, -50.0, 50.0);
-    //wind_north = 3.0; // this setting reports 18km/h from 53 degrees
-    //wind_east = 4.0;
+  //Clipping to realistic values for a glider. Some ASCII functions crash if given to high values. TODO: fix
+  wind_north = CLIP<float>(wind_north, -50.0, 50.0);
+  wind_east = CLIP<float>(wind_east, -50.0, 50.0);
 
-    // report WHERE the wind the comes from, instead of our wind speed vector, so negative sign
-    float direction = ATAN2( -wind_east, -wind_north);
+  float direction;
+  // report WHERE the wind the comes from, instead of our wind speed vector, so negative sign
+  if( (wind_east < 0.1f) && wind_north < 0.1f)
+    direction = 0.0f;
+  else
+    direction = ATAN2( -wind_east, -wind_north);
 
-    // map to 0..359 degrees
-    int angle = (int) round( direction * RAD_TO_DEGREE);
-    if( angle < 0)
-        angle += 360;
-    p=format_integer( p, angle);
-    *p++ = ',';
+  // map to 0..359 degrees
+  int angle = (int) round( direction * RAD_TO_DEGREE);
+  if( angle < 0)
+      angle += 360;
+  p=format_integer( p, angle);
+  *p++ = ',';
 
-    int speed = (int) round( MPS_TO_KMPH * SQRT( SQR( wind_north) + SQR( wind_east)));
-    p=format_integer( p, speed);
-    *p++ = ',';
+  int speed = (int) round( MPS_TO_KMPH * SQRT( SQR( wind_north) + SQR( wind_east)));
+  p=format_integer( p, speed);
+  *p++ = ',';
 
-    *p++ = windtype;
+  *p++ = windtype;
 
-    p = append_string( p, ",A"); // always report "valid" for the moment
-    *p=0;
+  p = append_string( p, ",A"); // always report "valid" for the moment
+  p = NMEA_append_tail ( line_start);
 }
 
 ROM char PLARV[]="$PLARV,";
 
 //! TEK vario, average vario, pressure altitude and speed (TAS)
-void format_PLARV ( float variometer, float avg_variometer, float pressure_altitude, float TAS, char *p)
+void format_PLARV ( float variometer, float avg_variometer, float pressure_altitude, float TAS, char * &p)
 {
+  char * line_start = p;
   p = append_string( p, PLARV);
 
   //Clipping to realistic values for a glider. Some ASCII functions crash if given to high values. TODO: fix
@@ -406,13 +390,7 @@ void format_PLARV ( float variometer, float avg_variometer, float pressure_altit
 
   p=format_integer( p, (int) round( TAS * MPS_TO_KMPH));
 
-  *p++ = 0;
-}
-
-// ********* Generic stuff ************************************************
-inline char hex4( uint8_t data)
-{
-  return HEX[data];
+  p = NMEA_append_tail ( line_start);
 }
 
 //! test a line for valid NMEA checksum
@@ -427,38 +405,10 @@ bool NMEA_checksum( const char *line)
  	return ( (p[0] == '*') && hex4( checksum >> 4) == p[1]) && ( hex4( checksum & 0x0f) == p[2]) && (p[3] == 0);
  }
 
-//! add end delimiter, evaluate and add checksum and add CR+LF
-char * NMEA_append_tail( char *p)
- {
- 	uint8_t checksum = 0;
- 	if( p[0]!='$')
- 		return 0;
- 	for( p=p+1; *p && *p !='*'; ++p)
- 		checksum ^= *p;
- 	p[0] = '*';
- 	p[1] = hex4(checksum >> 4);
- 	p[2] = hex4(checksum & 0x0f);
- 	p[3] = '\r';
- 	p[4] = '\n';
- 	p[5] = 0;
- 	return p+5;
- }
-
 //! this procedure formats all our NMEA sequences
-void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA_buf, bool horizon_available)
+void format_NMEA_string_fast( const output_data_t &output_data, string_buffer_t &NMEA_buf, bool horizon_available)
 {
-  char *next = NMEA_buf.string;
-
-  // NMEA-format time, position, groundspeed, track data
-  format_RMC ( output_data.c, next);
-  next = NMEA_append_tail ( next);
-
-  // NMEA-format position report, sat number and GEO separation
-  format_GGA ( output_data.c, next);
-  next = NMEA_append_tail (next);
-
-  format_HCHDT( output_data.euler.y, next);
-  next = NMEA_append_tail (next);
+  char *next = NMEA_buf.string + NMEA_buf.length;
 
   // aircraft attitude
   if( horizon_available)
@@ -466,33 +416,42 @@ void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA
   else
     format_PLARA( ZERO, ZERO, output_data.euler.y, next);
 
-  next = NMEA_append_tail(next);
-
-  // battery_voltage
-  format_PLARB( output_data.m.supply_voltage, next);
-  next = NMEA_append_tail(next);
-
-  // air density
-  format_PLARD( output_data.air_density, 'M', next); // todo: type presently a dummy
-  next = NMEA_append_tail(next);
-
   // report instant and average total-energy-compensated variometer, pressure altitude, TAS
   format_PLARV ( output_data.vario,
 		 output_data.integrator_vario,
 		 output_data.pressure_altitude,
 		 output_data.TAS,
 		 next);
-  next = NMEA_append_tail (next);
 
   // instant wind
   format_PLARW (output_data.wind[NORTH], output_data.wind[EAST], 'I', next);
-  next = NMEA_append_tail (next);
-
-  // average wind
-  format_PLARW (output_data.wind_average[NORTH], output_data.wind_average[EAST], 'A', next);
-  next = NMEA_append_tail (next);
 
 //  assert(   next - NMEA_buf.string < string_buffer_t::BUFLEN);
   NMEA_buf.length = next - NMEA_buf.string;
 }
 
+//! this procedure formats all our NMEA sequences
+void format_NMEA_string_slow( const output_data_t &output_data, string_buffer_t &NMEA_buf)
+{
+  char *next = NMEA_buf.string + NMEA_buf.length;
+
+  // NMEA-format time, position, groundspeed, track data
+  format_RMC ( output_data.c, next);
+
+  // NMEA-format position report, sat number and GEO separation
+  format_GGA ( output_data.c, next);
+
+  format_HCHDT( output_data.euler.y, next);
+
+  // battery_voltage
+  format_PLARB( output_data.m.supply_voltage, next);
+
+  // air density
+  format_PLARD( output_data.air_density, 'M', next);
+
+  // average wind
+  format_PLARW (output_data.wind_average[NORTH], output_data.wind_average[EAST], 'A', next);
+
+//  assert(   next - NMEA_buf.string < string_buffer_t::BUFLEN);
+  NMEA_buf.length = next - NMEA_buf.string;
+}

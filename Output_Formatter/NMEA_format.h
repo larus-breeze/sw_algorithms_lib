@@ -19,7 +19,8 @@ public:
 };
 
 //! combine all data to be output to the NMEA port
-void format_NMEA_string( const output_data_t &output_data, string_buffer_t &NMEA_buf, bool horizon_available);
+void format_NMEA_string_fast( const output_data_t &output_data, string_buffer_t &NMEA_buf, bool horizon_available);
+void format_NMEA_string_slow( const output_data_t &output_data, string_buffer_t &NMEA_buf);
 char * to_ascii_2_decimals( int32_t number, char *s);
 char * to_ascii_1_decimal( int32_t number, char *s);
 inline char * to_ascii_2_decimals( float32_t number, char *s)
@@ -30,8 +31,7 @@ inline char * to_ascii_1_decimal( float32_t number, char *s)
 {
   return to_ascii_1_decimal( (int32_t)( number + 0.5f), s);
 }
-void format_PLARV ( float variometer, float avg_variometer, float pressure_altitude, float TAS, char *p);
-void format_RMC (const coordinates_t &coordinates, char *p);
-char * NMEA_append_tail( char *p);
+void format_PLARV ( float variometer, float avg_variometer, float pressure_altitude, float TAS, char * &p);
+void format_RMC (const coordinates_t &coordinates, char * &p);
 
 #endif /* APPLICATION_NMEA_FORMAT_H_ */
