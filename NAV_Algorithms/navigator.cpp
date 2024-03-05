@@ -82,8 +82,9 @@ void navigator_t::update_GNSS_data( const coordinates_t &coordinates)
 }
 
 // to be called at 10 Hz
-void navigator_t::update_at_10Hz ()
+bool navigator_t::update_at_10Hz ()
 {
+  bool landing_detected=false;
   atmosphere.feed_QFF_density_metering(
 	air_pressure_resampler_100Hz_10Hz.get_output(),
 	flight_observer.get_filtered_GNSS_altitude());
@@ -98,7 +99,11 @@ void navigator_t::update_at_10Hz ()
 
   airborne_detector.report_to_be_airborne( abs( flight_observer.get_speed_compensation_GNSS()) > AIRBORNE_TRIGGER_SPEED);
   if( airborne_detector.detect_just_landed())
-    ahrs.write_calibration_into_EEPROM();
+    {
+      ahrs.write_calibration_into_EEPROM();
+      landing_detected = true;
+    }
+  return landing_detected;
 }
 
 //! copy all navigator data into output_data structure

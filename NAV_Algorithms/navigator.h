@@ -159,8 +159,9 @@ public:
      *
      * to be called @ 10 Hz
      * calculate wind data and vario average for "vario integrator"
+     * @return true if a landing has just been detected
      */
-  void update_at_10Hz();
+  bool update_at_10Hz();
 
     /**
        * @brief update on new navigation data from GNSS

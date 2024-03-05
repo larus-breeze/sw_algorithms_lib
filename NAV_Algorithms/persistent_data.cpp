@@ -53,6 +53,7 @@ ROM persistent_data_t PERSISTENT_DATA[]=
 	{WIND_TC,	"Wind_TC",		false, 5.0f, 0}, 	//! Wind fast time constant unsigned s / ( 100.0f / 65536 )
 	{MEAN_WIND_TC,	"Mean_Wind_TC",		false, 30.0f, 0},	//! Wind slow time constant unsigned s / ( 100.0f / 65536 )
 	{VETF,		"VrtclEnrgTuning",	false, 1.0f, 0},	//! Vertical Energy tuning factor s / ( 1.0f / 65536 )
+	{HORIZON,	"Horizon_active",	false, 1.0f, 0},	//! Horizon output is available
 
 	{GNSS_CONFIGURATION, "GNSS_CONFIG",	false, 1.0f, 0},	//! type of GNSS system
 	{ANT_BASELENGTH, "ANT_BASELEN",		false, 1.0f, 0},	//! Slave DGNSS antenna baselength / mm
@@ -98,6 +99,7 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
     case BOARD_ID:
     case GNSS_CONFIGURATION:
     case MAG_AUTO_CALIB:
+    case HORIZON:
       if( read)
 	value = (float)(EEPROM_value.u16);
       else

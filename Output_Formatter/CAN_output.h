@@ -27,6 +27,6 @@
 
 #include "data_structures.h"
 
-void CAN_output ( const output_data_t &);
+void CAN_output ( const output_data_t &x, bool horizon_activated);
 
 #endif /* SRC_CAN_OUTPUT_H_ */

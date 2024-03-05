@@ -91,9 +91,9 @@ public:
     navigator.update_pitot ( (output_data.m.pitot_pressure - pitot_offset) * pitot_span);
   }
 
-  void update_every_100ms( output_data_t & output_data)
+  bool update_every_100ms( output_data_t & output_data)
   {
-    navigator.update_at_10Hz ();
+    bool landing_detected = navigator.update_at_10Hz ();
     navigator.feed_QFF_density_metering( output_data.m.static_pressure - QNH_offset, -output_data.c.position[DOWN]);
 
     if( ++magnetic_induction_update_counter > 36000) // every hour
@@ -101,6 +101,7 @@ public:
 	update_magnetic_induction_data( output_data.c.latitude, output_data.c.longitude);
 	magnetic_induction_update_counter=0;
       }
+    return landing_detected;
   }
 
   void set_attitude ( float roll, float nick, float present_heading)
