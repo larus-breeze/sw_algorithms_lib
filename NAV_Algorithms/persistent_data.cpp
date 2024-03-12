@@ -32,7 +32,7 @@ ROM persistent_data_t PERSISTENT_DATA[]=
 	{BOARD_ID, 	"Board_ID",		false, 0.0f, 0},	//! Board ID Hash to avoid board confusion
 
 	{SENS_TILT_ROLL,"SensTilt_Roll",	true,  0.0f, 0}, 	//! IMU Sensor tilt angle signed / degrees front right down frame
-	{SENS_TILT_NICK,"SensTilt_Nick",	true,  0.0f, 0}, 	//! IMU Sensor tilt angle signed
+	{SENS_TILT_PITCH,"SensTilt_Nick",	true,  0.0f, 0}, 	//! IMU Sensor tilt angle signed
 	{SENS_TILT_YAW, "SensTilt_Yaw",		true,  0.0f, 0},  	//! IMU Sensor tilt angle signed
 
 	{PITOT_OFFSET,	"Pitot_Offset",		false,  0.0f, 0},	//! Pitot offset signed / Pa
@@ -157,7 +157,7 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
       break;
       break;
     case SENS_TILT_ROLL:
-    case SENS_TILT_NICK:
+    case SENS_TILT_PITCH:
     case SENS_TILT_YAW:
       if( read)
 	value = (float)(EEPROM_value.i16) / 32768.0f * M_PI_F;
