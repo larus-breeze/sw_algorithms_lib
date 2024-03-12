@@ -90,7 +90,7 @@ typedef struct
   float effective_vertical_acceleration;
   float turn_rate;
   float slip_angle;
-  float nick_angle;
+  float pitch_angle;
   float G_load;
   float pressure_altitude;
   float air_density;

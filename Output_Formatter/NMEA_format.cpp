@@ -312,7 +312,7 @@ void format_PLARB ( float voltage, char * &p)
 
 ROM char PLARA[]="$PLARA,";
 
-void format_PLARA ( float roll, float nick, float yaw, char * &p)
+void format_PLARA ( float roll, float pitch, float yaw, char * &p)
 {
   char * line_start = p;
   p = append_string( p, PLARA);
@@ -320,7 +320,7 @@ void format_PLARA ( float roll, float nick, float yaw, char * &p)
   p = to_ascii_1_decimal( round(roll * RAD_TO_DEGREE_10), p);
 
   p = append_string( p, ",");
-  p = to_ascii_1_decimal( round(nick * RAD_TO_DEGREE_10), p);
+  p = to_ascii_1_decimal( round(pitch * RAD_TO_DEGREE_10), p);
 
   if( yaw < 0.0f)
     yaw += 6.2832f;

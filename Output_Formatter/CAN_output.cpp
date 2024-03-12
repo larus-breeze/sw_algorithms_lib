@@ -144,7 +144,7 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
 
   p.id=c_CAN_Id_Acceleration;		// 0x10b
   p.dlc=7;
-  p.data_sh[0] = (int16_t)(round(x.G_load * 1000.0f));	// G-Belastung mm/s^2 nach oben pos.
+  p.data_sh[0] = (int16_t)(round(x.G_load * 1000.0f));	// G-load mm/s^2
   p.data_sh[1] = (int16_t)(round(x.effective_vertical_acceleration * -1000.0f)); // mm/s^2
   p.data_sh[2] = (int16_t)(round(x.vario_uncompensated * -1000.0f)); // mm/s
   p.data_sb[6] = (int8_t)(x.circle_mode);
@@ -159,7 +159,7 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
   p.dlc=6;
   p.data_sh[0] = (int16_t)(round(x.slip_angle * 1000.0f));	// slip angle in radiant from body acceleration
   p.data_sh[1] = (int16_t)(round(x.turn_rate  * 1000.0f)); 	// turn rate rad/s
-  p.data_sh[2] = (int16_t)(round(x.nick_angle * 1000.0f));	// nick angle in radiant from body acceleration
+  p.data_sh[2] = (int16_t)(round(x.pitch_angle * 1000.0f));	// nick angle in radiant from body acceleration
   if( CAN_send(p, 1)) // check CAN for timeout this time
     system_state |= CAN_OUTPUT_ACTIVE;
   else
