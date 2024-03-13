@@ -32,7 +32,7 @@ ROM persistent_data_t PERSISTENT_DATA[]=
 	{BOARD_ID, 	"Board_ID",		false, 0.0f, 0},	//! Board ID Hash to avoid board confusion
 
 	{SENS_TILT_ROLL,"SensTilt_Roll",	true,  0.0f, 0}, 	//! IMU Sensor tilt angle signed / degrees front right down frame
-	{SENS_TILT_PITCH,"SensTilt_Nick",	true,  0.0f, 0}, 	//! IMU Sensor tilt angle signed
+	{SENS_TILT_PITCH,"SensTilt_Pitch",	true,  0.0f, 0}, 	//! IMU Sensor tilt angle signed
 	{SENS_TILT_YAW, "SensTilt_Yaw",		true,  0.0f, 0},  	//! IMU Sensor tilt angle signed
 
 	{PITOT_OFFSET,	"Pitot_Offset",		false,  0.0f, 0},	//! Pitot offset signed / Pa
