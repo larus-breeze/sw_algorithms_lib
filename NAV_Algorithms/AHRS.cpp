@@ -408,20 +408,12 @@ void AHRS_type::write_calibration_into_EEPROM( void)
   if( !magnetic_calibration_updated)
     return;
 
-  EEPROM_initialize();
+  lock_EEPROM( false);
 
-#if 0 // todo unused, remove me some day
-  if ( automatic_earth_field_parameters)
-    {
-      float inclination=ATAN2(expected_nav_induction[DOWN], expected_nav_induction[NORTH]);
-      float declination=ATAN2(expected_nav_induction[EAST], expected_nav_induction[NORTH]);
-
-      write_EEPROM_value( (EEPROM_PARAMETER_ID)DECLINATION, declination);
-      write_EEPROM_value( (EEPROM_PARAMETER_ID)INCLINATION, inclination);
-    }
-#endif
   compass_calibration.write_into_EEPROM();
   magnetic_calibration_updated = false; // done ...
+
+  lock_EEPROM( true);
 }
 
 void AHRS_type::handle_magnetic_calibration ( char type)

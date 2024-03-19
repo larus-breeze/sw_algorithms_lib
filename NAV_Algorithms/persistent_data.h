@@ -68,7 +68,6 @@ enum EEPROM_PARAMETER_ID
   VARIO_INT_TC,
   WIND_TC,
   MEAN_WIND_TC,
-  VETF, // VERTICAL_ENERGY_TUNING_FACTOR
   HORIZON,
 
   GNSS_CONFIGURATION=40,
@@ -98,7 +97,7 @@ bool write_EEPROM_value( EEPROM_PARAMETER_ID id, float value);
 bool read_EEPROM_value( EEPROM_PARAMETER_ID id, float &value);
 bool lock_EEPROM( bool lockit);
 bool EEPROM_initialize( void);
-bool all_EEPROM_parameters_existing( void);
+void ensure_EEPROM_parameter_integrity(void);
 
 extern const persistent_data_t PERSISTENT_DATA[];
 extern const unsigned PERSISTENT_DATA_ENTRIES;
