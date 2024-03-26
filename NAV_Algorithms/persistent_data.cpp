@@ -29,10 +29,8 @@
 
 ROM persistent_data_t PERSISTENT_DATA[]=
     {
-	{BOARD_ID, 	"Board_ID",		false, 0.0f, 0},	//! Board ID Hash to avoid board confusion
-
 	{SENS_TILT_ROLL,"SensTilt_Roll",	true,  0.0f, 0}, 	//! IMU Sensor tilt angle signed / degrees front right down frame
-	{SENS_TILT_NICK,"SensTilt_Nick",	true,  0.0f, 0}, 	//! IMU Sensor tilt angle signed
+	{SENS_TILT_PITCH,"SensTilt_Pitch",	true,  0.0f, 0}, 	//! IMU Sensor tilt angle signed
 	{SENS_TILT_YAW, "SensTilt_Yaw",		true,  0.0f, 0},  	//! IMU Sensor tilt angle signed
 
 	{PITOT_OFFSET,	"Pitot_Offset",		false,  0.0f, 0},	//! Pitot offset signed / Pa
@@ -52,7 +50,6 @@ ROM persistent_data_t PERSISTENT_DATA[]=
 	{VARIO_INT_TC,	"Vario_Int_TC",		false, 30.0f, 0},	//! Vario integrator time constant unsigned s / ( 100.0f / 65536 )
 	{WIND_TC,	"Wind_TC",		false, 5.0f, 0}, 	//! Wind fast time constant unsigned s / ( 100.0f / 65536 )
 	{MEAN_WIND_TC,	"Mean_Wind_TC",		false, 30.0f, 0},	//! Wind slow time constant unsigned s / ( 100.0f / 65536 )
-	{VETF,		"VrtclEnrgTuning",	false, 1.0f, 0},	//! Vertical Energy tuning factor s / ( 1.0f / 65536 )
 	{HORIZON,	"Horizon_active",	false, 1.0f, 0},	//! Horizon output is available
 
 	{GNSS_CONFIGURATION, "GNSS_CONFIG",	false, 1.0f, 0},	//! type of GNSS system
@@ -63,17 +60,26 @@ ROM persistent_data_t PERSISTENT_DATA[]=
 
 ROM unsigned PERSISTENT_DATA_ENTRIES = sizeof(PERSISTENT_DATA) / sizeof(persistent_data_t);
 
-bool all_EEPROM_parameters_existing( void)
+void ensure_EEPROM_parameter_integrity( void)
 {
+  bool EEPROM_has_been_unlocked = false;
   float dummy;
-  const persistent_data_t * parameter = PERSISTENT_DATA + 1; // skip BOARD_ID
+  const persistent_data_t * parameter = PERSISTENT_DATA;
   while( parameter < PERSISTENT_DATA + PERSISTENT_DATA_ENTRIES)
     {
-      if( true == read_EEPROM_value( parameter->id, dummy))
-	return false; // read error
+      if( true == read_EEPROM_value( parameter->id, dummy)) // parameter missing
+	{
+	  if( EEPROM_has_been_unlocked == false)
+	    {
+	      lock_EEPROM( false);
+	      EEPROM_has_been_unlocked = true;
+	    }
+	  (void) write_EEPROM_value( parameter->id, parameter->default_value);
+	}
       ++parameter;
     }
-  return true;
+  if( EEPROM_has_been_unlocked)
+    lock_EEPROM( true);
 }
 
 const persistent_data_t * find_parameter_from_ID( EEPROM_PARAMETER_ID id)
@@ -157,7 +163,7 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
       break;
       break;
     case SENS_TILT_ROLL:
-    case SENS_TILT_NICK:
+    case SENS_TILT_PITCH:
     case SENS_TILT_YAW:
       if( read)
 	value = (float)(EEPROM_value.i16) / 32768.0f * M_PI_F;
@@ -181,17 +187,6 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
 	value = (float)(EEPROM_value.u16) / 655.36f;
       else
 	EEPROM_value.u16 = (uint16_t)(value * 655.36f);
-      break;
-    case VETF:
-      if( read)
-	value = (float)(EEPROM_value.u16) / 65536.0f;
-      else
-	{
-	  unsigned uvalue = (unsigned) round( value * 65536.0f);
-	  if( uvalue >= 65536)
-	    uvalue = 65535;
-	  EEPROM_value.u16 = (uint16_t)uvalue;
-	}
       break;
     case EEPROM_PARAMETER_ID_END:
     default:

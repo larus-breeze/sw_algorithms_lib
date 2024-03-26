@@ -52,7 +52,7 @@ public:
       {
         quaternion<float> q;
         q.from_euler (configuration (SENS_TILT_ROLL),
-  		      configuration (SENS_TILT_NICK),
+  		      configuration (SENS_TILT_PITCH),
   		      configuration (SENS_TILT_YAW));
         q.get_rotation_matrix (sensor_mapping);
       }

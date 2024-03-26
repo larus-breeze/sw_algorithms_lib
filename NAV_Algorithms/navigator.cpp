@@ -131,7 +131,7 @@ void navigator_t::report_data( output_data_t &d)
     d.circle_mode 		= ahrs.get_circling_state();
     d.turn_rate			= ahrs.get_turn_rate();
     d.slip_angle		= ahrs.getSlipAngle();
-    d.nick_angle		= ahrs.getNickAngle();
+    d.pitch_angle		= ahrs.getPitchAngle();
     d.G_load			= ahrs.get_G_load();
     d.pressure_altitude		= - atmosphere.get_negative_altitude();
     d.magnetic_disturbance	= ahrs.getMagneticDisturbance();

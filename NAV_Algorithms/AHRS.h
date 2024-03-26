@@ -37,7 +37,7 @@
 
 extern float3vector nav_induction;
 
-enum { ROLL, NICK, YAW};
+enum { ROLL, PITCH, YAW};
 enum { FRONT, RIGHT, BOTTOM};
 enum { NORTH, EAST, DOWN};
 
@@ -155,9 +155,9 @@ public:
   }
 
   float
-  getNickAngle () const
+  getPitchAngle () const
   {
-    return nick_angle_averager.get_output();
+    return pitch_angle_averager.get_output();
   }
 
   float get_turn_rate( void ) const
@@ -223,7 +223,7 @@ private:
   float3matrix body2nav;
   eulerangle<ftype> euler;
   pt2<float,float> slip_angle_averager;
-  pt2<float,float> nick_angle_averager;
+  pt2<float,float> pitch_angle_averager;
   pt2<float,float> turn_rate_averager;
   pt2<float,float> G_load_averager;
   linear_least_square_fit<int64_t, float> mag_calibration_data_collector_right_turn[3];

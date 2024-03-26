@@ -135,7 +135,7 @@ AHRS_type::AHRS_type (float sampling_time)
   body2nav(),
   euler(),
   slip_angle_averager( ANGLE_F_BY_FS),
-  nick_angle_averager( ANGLE_F_BY_FS),
+  pitch_angle_averager( ANGLE_F_BY_FS),
   turn_rate_averager( ANGLE_F_BY_FS),
   G_load_averager(     G_LOAD_F_BY_FS),
   compass_calibration(),
@@ -186,7 +186,7 @@ AHRS_type::update_attitude ( const float3vector &acc,
 			     const float3vector &mag)
 {
   attitude.rotate (gyro[ROLL] * Ts_div_2,
-		   gyro[NICK] * Ts_div_2,
+		   gyro[PITCH] * Ts_div_2,
 		   gyro[YAW]  * Ts_div_2);
 
   attitude.normalize ();
@@ -202,7 +202,7 @@ AHRS_type::update_attitude ( const float3vector &acc,
   turn_rate_averager.respond( nav_rotation[DOWN]);
 
   slip_angle_averager.respond( ATAN2( -acc[RIGHT], -acc[DOWN]));
-  nick_angle_averager.respond( ATAN2( +acc[FRONT], -acc[DOWN]));
+  pitch_angle_averager.respond( ATAN2( +acc[FRONT], -acc[DOWN]));
   G_load_averager.respond( acc.abs());
   magnetic_disturbance = (induction_nav_frame - expected_nav_induction).abs();
 }
@@ -408,20 +408,12 @@ void AHRS_type::write_calibration_into_EEPROM( void)
   if( !magnetic_calibration_updated)
     return;
 
-  EEPROM_initialize();
+  lock_EEPROM( false);
 
-#if 0 // todo unused, remove me some day
-  if ( automatic_earth_field_parameters)
-    {
-      float inclination=ATAN2(expected_nav_induction[DOWN], expected_nav_induction[NORTH]);
-      float declination=ATAN2(expected_nav_induction[EAST], expected_nav_induction[NORTH]);
-
-      write_EEPROM_value( (EEPROM_PARAMETER_ID)DECLINATION, declination);
-      write_EEPROM_value( (EEPROM_PARAMETER_ID)INCLINATION, inclination);
-    }
-#endif
   compass_calibration.write_into_EEPROM();
   magnetic_calibration_updated = false; // done ...
+
+  lock_EEPROM( true);
 }
 
 void AHRS_type::handle_magnetic_calibration ( char type)
