@@ -2,7 +2,7 @@
 clear figures;
 format long;
 
-var_meas_v = 0.10 ^2; % velocity measurement variance 
+var_meas_v = 0.075 ^2; % velocity measurement variance 
 var_meas_a = 0.1 ^2;  % acceleration measurement variance
 
 header_length = 100;
@@ -16,6 +16,9 @@ T = 0.01;               % sampling time
 acceleration_process_noise = 0.05;
 acceleration = 1; 
 
+synth = 0
+
+if synth
 if 0 % test signal
     acc = [ zeros(1,header_length) acceleration * ones(1,100) zeros(1,500) -acceleration * ones(1,100) zeros(1,500)];
     acc = [ acc -acc];
@@ -24,6 +27,8 @@ else % just noise
 end
 
 vel = cumtrapz( acc) * T;
+
+end
 
 A=[ 1 T 0; 
     0 1 0;
@@ -37,7 +42,9 @@ C=[ 1 0 0;
 
 size = length(vel);
 
+if synth
 acc_offset = [ linspace( 0, 1, size/2) ones( 1, size/2)];  
+end
 
 vpa = 3.0^2; % acceleration process variance / (m/s²)²
 
@@ -50,8 +57,13 @@ Q = [
      0     0      vaoff];    % process noise covariance matrix
 
  % add measurement noise
+if synth
 acc_m = acc_offset + acc + sqrt( var_meas_a) * randn( 1, size);
 vel_m = vel + sqrt( var_meas_v) * randn( 1, size);
+else
+    acc_m = acc;
+    vel_m = vel;
+end
 
 R=[ var_meas_v 0;
     0 var_meas_a];    % measurement noise covariance matrix
@@ -63,9 +75,9 @@ vel_est = zeros( 1, size);
 acc_est   = zeros( 1, size);
 acc_est_x   = zeros( 1, size);
 acc_off_est = zeros( 1, size);
-gain1  = zeros( size);
-gain2  = zeros( size);
-gain3  = zeros( size);
+gain1  = zeros( 1,size);
+gain2  = zeros( 1,size);
+gain3  = zeros( 1,size);
 
 for i = 1 : size
     P = A * P * A' + Q;
@@ -91,7 +103,7 @@ hold;
 plot(acc,'g');
 plot(acc_m, '+');
 plot(acc_est_x);
-plot(acc_offset);
+%plot(acc_offset);
 legend('Estimated Acc.','True Acc.','Acc.Measurement','Acc. Offset est.','Acc. Offset');
 title('Kalmanfilter Movement Estimation');
 ylabel('Accel. / m/s/s');
