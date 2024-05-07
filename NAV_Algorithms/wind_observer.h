@@ -73,8 +73,16 @@ public:
 
   void process_at_100_Hz( const float3vector &instant_wind)
   {
-    wind_resampler_100_10Hz.respond( instant_wind);
-    instant_wind_averager.respond( instant_wind);
+    if( instant_wind.abs() < 0.1f) // avoid float instability
+      {
+	 wind_resampler_100_10Hz.settle({0});
+	 instant_wind_averager.settle({0});
+      }
+    else
+      {
+	wind_resampler_100_10Hz.respond( instant_wind);
+	instant_wind_averager.respond( instant_wind);
+      }
   }
 
   void process_at_10_Hz( const AHRS_type & ahrs)
