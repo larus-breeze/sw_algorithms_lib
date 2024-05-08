@@ -147,6 +147,11 @@ template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false, bool SOFT_TAKEOF
       return true;
     }
 
+    void relax( void)
+    {
+      averager.settle({0});
+    }
+
   private:
 
     value_t get_boxcar_average( void)

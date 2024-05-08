@@ -88,10 +88,15 @@ public:
   void process_at_10_Hz( const AHRS_type & ahrs)
   {
     circling_state = ahrs.get_circling_state ();
-    wind_average_observer.update(
-	wind_resampler_100_10Hz.get_output(),
-    	ahrs.get_euler ().y,
-	circling_state);
+
+    float3vector instant_wind = wind_resampler_100_10Hz.get_output();
+    if( instant_wind.abs() < NEGLECTABLE_WIND) // avoid float instability
+	wind_average_observer.relax();
+    else
+      wind_average_observer.update(
+	  instant_wind,
+	  ahrs.get_euler ().y,
+	  circling_state);
 
     float3vector relative_wind_NAV  = wind_resampler_100_10Hz.get_output() - wind_average_observer.get_output();
     float3vector relative_wind_BODY =  ahrs.get_body2nav().reverse_map(relative_wind_NAV);
@@ -107,14 +112,15 @@ public:
   	  relative_wind_observer.reset({0});
   	}
         else
-          relative_wind_observer.update( relative_wind_BODY, ahrs.get_euler ().y, ahrs.get_circling_state ());
+          {
+	    relative_wind_observer.update( relative_wind_BODY, ahrs.get_euler ().y, ahrs.get_circling_state ());
+	    wind_correction_nav = ahrs.get_body2nav() * relative_wind_observer.get_output();
+	    wind_correction_nav[DOWN]=0.0f;
+
+	    corrected_wind_averager.respond( wind_resampler_100_10Hz.get_output() - wind_correction_nav);
+	    circling_wind_averager.update( wind_resampler_100_10Hz.get_output() - wind_correction_nav);
+          }
       }
-
-    wind_correction_nav = ahrs.get_body2nav() * relative_wind_observer.get_output();
-    wind_correction_nav[DOWN]=0.0f;
-
-    corrected_wind_averager.respond( wind_resampler_100_10Hz.get_output() - wind_correction_nav);
-    circling_wind_averager.update( wind_resampler_100_10Hz.get_output() - wind_correction_nav);
 
     old_circling_state = circling_state;
   }
