@@ -453,8 +453,10 @@ void AHRS_type::handle_magnetic_calibration ( char type)
       for( unsigned i=0; i<3; ++i)
 	magnetic_induction_report.calibration[i] = (compass_calibration.get_calibration())[i];
 
+#if USE_EARTH_INDUCTION_DATA_COLLECTOR
       magnetic_induction_report.nav_induction=new_induction_estimate;
       magnetic_induction_report.nav_induction_std_deviation = induction_error;
+#endif
 
       report_magnetic_calibration_has_changed( &magnetic_induction_report, type);
       magnetic_calibration_updated = true;
