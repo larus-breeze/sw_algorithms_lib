@@ -42,6 +42,7 @@
 #define DEFAULT_AVG_VARIO_TC 	30.0f
 #define DEFAULT_WIND_TC 	5.0f
 #define DEFAULT_WIND_AVG_TC 	30.0f
+#define NEGLECTABLE_WIND	0.1f
 
 // AHRS tuning parameters:
 // These parameters have been tuned for the flight-dynamics of gliders
