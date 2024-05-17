@@ -115,8 +115,10 @@ void AHRS_type::feed_magnetic_induction_observer(const float3vector &mag_sensor)
     else
       mag_calibration_data_collector_left_turn[i].add_value ( MAG_SCALE * expected_body_induction[i], MAG_SCALE * mag_sensor[i]);
 
+#if USE_EARTH_INDUCTION_DATA_COLLECTOR
   // measurement of earth induction to find the local earth field parameters
   earth_induction_data_collector.feed( induction_nav_frame, turning_right);
+#endif
 }
 
 AHRS_type::AHRS_type (float sampling_time)
@@ -139,7 +141,9 @@ AHRS_type::AHRS_type (float sampling_time)
   turn_rate_averager( ANGLE_F_BY_FS),
   G_load_averager(     G_LOAD_F_BY_FS),
   compass_calibration(),
+#if USE_EARTH_INDUCTION_DATA_COLLECTOR
   earth_induction_data_collector( MAG_SCALE),
+#endif
   antenna_DOWN_correction(  configuration( ANT_SLAVE_DOWN)  / configuration( ANT_BASELENGTH)),
   antenna_RIGHT_correction( configuration( ANT_SLAVE_RIGHT) / configuration( ANT_BASELENGTH)),
   heading_difference_AHRS_DGNSS(0.0f),
@@ -424,6 +428,8 @@ void AHRS_type::handle_magnetic_calibration ( char type)
 
   float3vector new_induction_estimate;
 
+#if USE_EARTH_INDUCTION_DATA_COLLECTOR
+
   if (earth_induction_data_collector.data_valid ())
 	{
 	  new_induction_estimate = earth_induction_data_collector.get_estimated_induction();
@@ -439,6 +445,7 @@ void AHRS_type::handle_magnetic_calibration ( char type)
 	    }
 	  earth_induction_data_collector.reset ();
 	}
+#endif
 
   if( calibration_changed)
     {

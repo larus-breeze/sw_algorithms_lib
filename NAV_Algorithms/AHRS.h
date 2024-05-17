@@ -229,7 +229,9 @@ private:
   linear_least_square_fit<int64_t, float> mag_calibration_data_collector_right_turn[3];
   linear_least_square_fit<int64_t, float> mag_calibration_data_collector_left_turn[3];
   compass_calibration_t <int64_t, float> compass_calibration;
+#if USE_EARTH_INDUCTION_DATA_COLLECTOR
   induction_observer_t <int64_t> earth_induction_data_collector;
+#endif
   float antenna_DOWN_correction;  //!< slave antenna lower / DGNSS base length
   float antenna_RIGHT_correction; //!< slave antenna more right / DGNSS base length
   float heading_difference_AHRS_DGNSS;
