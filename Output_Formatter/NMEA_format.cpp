@@ -266,23 +266,8 @@ void format_GGA( const coordinates_t &coordinates, char * &p)
   *p++ = 'M';
   *p++ = ','; // no DGPS
   *p++ = ',';
-  p = NMEA_append_tail ( line_start);
-}
+  *p=0;
 
-ROM char HCHDT[]="$HCHDT,";
-
-//! create HCHDM sentence to report true heading
-void format_HCHDT( float true_heading, char * &p) // report magnetic heading
-{
-  char * line_start = p;
-  int32_t heading = (int32_t) round(true_heading * 573.0f); // -> 1/10 degree
-  if( heading < 0)
-    heading += 3600;
-
-  p = append_string( p, HCHDT);
-  p = to_ascii_1_decimal( heading, p);
-  *p++ = ',';
-  *p++ = 'T';
   p = NMEA_append_tail ( line_start);
 }
 
@@ -297,6 +282,8 @@ void format_PLARD ( float density, char type, char * &p)
   p = to_ascii_2_decimals( round( density * 1e5f), p); // units = g / m^3, * 100 to get 2 decimals
   *p++ = ',';
   *p++ = type;
+  *p=0;
+
   p = NMEA_append_tail ( line_start);
 }
 
@@ -440,8 +427,6 @@ void format_NMEA_string_slow( const output_data_t &output_data, string_buffer_t 
 
   // NMEA-format position report, sat number and GEO separation
   format_GGA ( output_data.c, next);
-
-  format_HCHDT( output_data.euler.y, next);
 
   // battery_voltage
   format_PLARB( output_data.m.supply_voltage, next);

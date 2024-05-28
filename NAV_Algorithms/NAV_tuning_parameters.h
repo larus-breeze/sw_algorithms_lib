@@ -25,6 +25,8 @@
 #ifndef NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_
 #define NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_
 
+#define USE_EARTH_INDUCTION_DATA_COLLECTOR 0
+
 #define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
 #define MAG_OFFSET_CHANGE_LIMIT 0.01f
 #define MAG_SCALE_CHANGE_LIMIT 0.01f
@@ -40,6 +42,7 @@
 #define DEFAULT_AVG_VARIO_TC 	30.0f
 #define DEFAULT_WIND_TC 	5.0f
 #define DEFAULT_WIND_AVG_TC 	30.0f
+#define NEGLECTABLE_WIND	0.1f
 
 // AHRS tuning parameters:
 // These parameters have been tuned for the flight-dynamics of gliders
