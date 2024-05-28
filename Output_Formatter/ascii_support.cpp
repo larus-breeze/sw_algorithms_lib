@@ -108,7 +108,7 @@ char * my_ftoa( char * target, float value)
  		*target++='0';
  		*target++='.';
  		*target++='0';
- 		*target++=0;
+ 		*target=0;
  		return target;
  	}
 

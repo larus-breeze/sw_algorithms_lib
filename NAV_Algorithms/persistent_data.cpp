@@ -82,6 +82,14 @@ void ensure_EEPROM_parameter_integrity( void)
     lock_EEPROM( true);
 }
 
+const persistent_data_t * find_parameter_from_name( char * name)
+{
+  for( const persistent_data_t *parameter = PERSISTENT_DATA; parameter < (PERSISTENT_DATA+PERSISTENT_DATA_ENTRIES); ++parameter )
+    if( 0 == strncmp( parameter->mnemonic, name, strlen( parameter->mnemonic)))
+      return parameter;
+  return 0;
+}
+
 const persistent_data_t * find_parameter_from_ID( EEPROM_PARAMETER_ID id)
 {
   for( const persistent_data_t *parameter = PERSISTENT_DATA; parameter < (PERSISTENT_DATA+PERSISTENT_DATA_ENTRIES); ++parameter )
