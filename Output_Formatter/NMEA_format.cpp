@@ -395,22 +395,22 @@ void format_PLARS ( float value, PLARS_TYPES option, char * &p)
   switch (type) {
     case MC:   //MC MacCready m/s (0.0 - 9.9)
       p = append_string( p, PLARS_MC);
-      p=to_ascii_1_decimal(value, p);
+      p=to_ascii_1_decimal(float32_t(value * 10.0), p);
 
       break;
     case BAL:  //BAL Ballast (fraction of water ballast 0.000 - 1.000)
       p = append_string( p, PLARS_BAL);
-      p=to_ascii_2_decimals(value, p);
+      p=to_ascii_2_decimals(float32_t(value * 100.0), p);
 
       break;
     case BUGS:  //BUGS Bugs in % (0 - 50)
       p = append_string( p, PLARS_BUGS);
-      p=to_ascii_2_decimals(value, p);
+      p=to_ascii_2_decimals(float32_t(value * 100.0), p);
 
         break;
     case QNH:  //QNH QNH in hPa
       p = append_string( p, PLARS_QNH);
-      p=to_ascii_2_decimals(value, p);
+      p=to_ascii_2_decimals(float32_t(value * 100.0), p);
 
         break;
     default:
