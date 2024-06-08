@@ -41,6 +41,6 @@ inline char * to_ascii_1_decimal( float32_t number, char *s)
 void format_PLARV ( float variometer, float avg_variometer, float pressure_altitude, float TAS, char * &p);
 void format_RMC (const coordinates_t &coordinates, char * &p);
 void format_PLARS ( float value, PLARS_TYPES type, char * &p) ;
-
+bool NMEA_checksum( const char *line);
 
 #endif /* APPLICATION_NMEA_FORMAT_H_ */
