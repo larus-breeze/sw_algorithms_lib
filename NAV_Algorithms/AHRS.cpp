@@ -224,12 +224,12 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   circle_state_t old_circle_state = circling_state;
   update_circling_state ();
 
-  float3vector mag;
   if( compass_calibration.isCalibrationDone()) // use calibration if available
-      mag = compass_calibration.calibrate(mag_sensor);
+      body_induction = compass_calibration.calibrate(mag_sensor);
   else
-      mag = mag_sensor;
+      body_induction = mag_sensor;
 
+  body_induction_error = body_induction - body2nav.reverse_map( expected_nav_induction);
   float3vector nav_acceleration = body2nav * acc;
 
   float heading_gnss_work = GNSS_heading	// correct for antenna alignment
@@ -258,7 +258,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 #if USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING
       nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
 #else
-      float3vector nav_induction    = body2nav * mag;
+      float3vector nav_induction    = body2nav * body_induction;
       float mag_correction =
     	+ nav_induction[NORTH] * expected_nav_induction[EAST]
     	- nav_induction[EAST]  * expected_nav_induction[NORTH];
@@ -275,7 +275,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
       gyro_integrator += gyro_correction; // update integrator
 
   gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
-  update_attitude (acc, gyro + gyro_correction, mag);
+  update_attitude (acc, gyro + gyro_correction, body_induction);
 
   // only here we get fresh magnetic entropy
   // and: wait for low control loop error
@@ -295,14 +295,15 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 			   const float3vector &mag_sensor,
 			   const float3vector &GNSS_acceleration)
 {
-  float3vector mag;
-  if (compass_calibration.isCalibrationDone ()) // use calibration if available
-    mag = compass_calibration.calibrate (mag_sensor);
+  if( compass_calibration.isCalibrationDone()) // use calibration if available
+      body_induction = compass_calibration.calibrate(mag_sensor);
   else
-    mag = mag_sensor;
+    body_induction = mag_sensor;
+
+  body_induction_error = body_induction - body2nav.reverse_map( expected_nav_induction);
 
   float3vector nav_acceleration = body2nav * acc;
-  float3vector nav_induction = body2nav * mag;
+  float3vector nav_induction = body2nav * body_induction;
 
   // calculate horizontal leveling error
   nav_correction[NORTH] = -nav_acceleration[EAST] + GNSS_acceleration[EAST];
@@ -353,7 +354,9 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
 
   // feed quaternion update with corrected sensor readings
-  update_attitude (acc, gyro + gyro_correction, mag);
+  update_attitude (acc, gyro + gyro_correction, body_induction);
+
+  body_induction_error = mag_sensor - body2nav.reverse_map( expected_nav_induction);
 
   // only here we get fresh magnetic entropy
   // and: wait for low control loop error

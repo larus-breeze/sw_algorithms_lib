@@ -188,6 +188,16 @@ public:
     return magnetic_disturbance;
   }
 
+  float3vector getBodyInductionError () const
+  {
+    return body_induction_error;
+  }
+
+  float3vector getBodyInduction () const
+  {
+    return body_induction;
+  }
+
 private:
   void handle_magnetic_calibration( char type);
 
@@ -241,6 +251,8 @@ private:
   bool automatic_magnetic_calibration;
   bool automatic_earth_field_parameters; // todo unused, remove me some day
   bool magnetic_calibration_updated;
+  float3vector body_induction;
+  float3vector body_induction_error;
 };
 
 #endif /* AHRS_H_ */
