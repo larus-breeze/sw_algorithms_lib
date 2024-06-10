@@ -27,6 +27,16 @@
 
 #include "data_structures.h"
 
+/* Larus CAN definitions */
+#define  SYSWIDECONFIG_ITEM_ID_VOLUME 		0
+#define  SYSWIDECONFIG_ITEM_ID_MC 		1
+#define  SYSWIDECONFIG_ITEM_ID_BALLAST 		2
+#define  SYSWIDECONFIG_ITEM_ID_BUGS 		3
+#define  SYSWIDECONFIG_ITEM_ID_QNH 		4
+#define  SYSWIDECONFIG_ITEM_ID_PILOT_KG 	5
+#define  SYSWIDECONFIG_ITEM_ID_VARIO_MODE	6
+
+
 void CAN_output ( const output_data_t &x, bool horizon_activated);
 
 #endif /* SRC_CAN_OUTPUT_H_ */

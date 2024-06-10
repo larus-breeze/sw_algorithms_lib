@@ -41,6 +41,8 @@ extern "C"
 
 char* ftoa( char* Buffer, float Value);
 
+float my_atof(const char *s);
+
 inline char * format_2_digits( char * target, uint32_t data)
 {
   data %= 100;
