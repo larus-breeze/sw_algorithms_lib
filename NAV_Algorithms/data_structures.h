@@ -118,7 +118,7 @@ typedef struct
   float crosswind;
   float inst_wind_corrected_N;
   float inst_wind_corrected_E;
-  float speed_compensation[4];
+  float speed_compensation[3];
   float cross_acc_correction;
   float vario_wind_N;
   float vario_wind_E;
