@@ -25,6 +25,7 @@
 #include "system_configuration.h"
 #include "generic_CAN_driver.h"
 #include "CAN_output.h"
+#include "NMEA_listener.h"
 #include "data_structures.h"
 #include "system_state.h"
 
@@ -168,7 +169,10 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
 #ifndef GIT_TAG_DEC
 #define GIT_TAG_DEC 0xffffffff
 #endif
-  
+
+  while( MC_et_al_queue.receive( p, NO_WAIT) )
+    CAN_send(p,1);
+
   p.id=c_CAN_Id_SystemState;				// 0x10d
   p.dlc=8;
   p.data_w[0] = system_state;
