@@ -66,8 +66,7 @@ public:
     specific_energy(0.0f),
     speed_compensation_INS_GNSS_1(0.0f),
     speed_compensation_kalman_2(0.0f),
-    speed_compensation_energy_3(0.0f),
-    speed_compensation_projected_4(0.0f)
+    speed_compensation_energy_3(0.0f)
   {
   };
     void update_at_100Hz
@@ -98,11 +97,8 @@ public:
 	return speed_compensation_kalman_2;
 	break;
 
-      case 2:
-	return speed_compensation_energy_3;
-	break;
       default:
-	return speed_compensation_projected_4;
+	return speed_compensation_energy_3;
 	break;
       }
   }
@@ -165,7 +161,6 @@ private:
 	float speed_compensation_INS_GNSS_1;
 	float speed_compensation_kalman_2;
 	float speed_compensation_energy_3;
-	float speed_compensation_projected_4;
 };
 
 #endif /* VARIOMETER_H_ */
