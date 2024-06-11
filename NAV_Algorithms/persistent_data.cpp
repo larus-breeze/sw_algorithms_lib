@@ -26,6 +26,7 @@
 #include "embedded_memory.h"
 #include "embedded_math.h"
 #include "persistent_data.h"
+#include "string.h"
 
 ROM persistent_data_t PERSISTENT_DATA[]=
     {
