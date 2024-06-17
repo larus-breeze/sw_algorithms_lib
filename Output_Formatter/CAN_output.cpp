@@ -25,9 +25,9 @@
 #include "system_configuration.h"
 #include "generic_CAN_driver.h"
 #include "CAN_output.h"
-#include "NMEA_listener.h"
 #include "data_structures.h"
 #include "system_state.h"
+#include "CAN_gateway.h"
 
 #define DEGREE_2_RAD 1.7453292e-2f
 
@@ -170,7 +170,7 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
 #define GIT_TAG_DEC 0xffffffff
 #endif
 
-  while( MC_et_al_queue.receive( p, NO_WAIT) )
+  while( CAN_gateway_poll( p, 0) )
     CAN_send(p,1);
 
   p.id=c_CAN_Id_SystemState;				// 0x10d
