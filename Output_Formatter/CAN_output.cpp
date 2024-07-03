@@ -27,6 +27,7 @@
 #include "CAN_output.h"
 #include "data_structures.h"
 #include "system_state.h"
+#include "CAN_gateway.h"
 
 #define DEGREE_2_RAD 1.7453292e-2f
 
@@ -59,7 +60,7 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
       p.id=c_CAN_Id_EulerAngles;		// 0x101
       p.dlc=6;
       p.data_sh[0] = (int16_t)(round(x.euler.r * 1000.0f)); 	// unit = 1/1000 RAD
-      p.data_sh[1] = (int16_t)(round(x.euler.n * 1000.0f));
+      p.data_sh[1] = (int16_t)(round(x.euler.p * 1000.0f));
       p.data_sh[2] = (int16_t)(round(x.euler.y * 1000.0f));
       CAN_send(p, 1);
     }
@@ -168,7 +169,10 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
 #ifndef GIT_TAG_DEC
 #define GIT_TAG_DEC 0xffffffff
 #endif
-  
+
+  while( CAN_gateway_poll( p, 0) )
+    CAN_send(p,1);
+
   p.id=c_CAN_Id_SystemState;				// 0x10d
   p.dlc=8;
   p.data_w[0] = system_state;

@@ -158,10 +158,12 @@ void navigator_t::report_data( output_data_t &d)
     d.crosswind			= wind_observer.get_crosswind();
     d.inst_wind_corrected_N	= wind_observer.get_corrected_wind()[NORTH];
     d.inst_wind_corrected_E	= wind_observer.get_corrected_wind()[EAST];
-    for( unsigned i=0; i<4; ++i)
+    for( unsigned i=0; i<3; ++i)
       d.speed_compensation[i]  	= flight_observer.get_speed_compensation(i);
     d.cross_acc_correction 	= ahrs_magnetic.get_cross_acc_correction();
     d.vario_wind_N		= wind_observer.get_speed_compensator_wind()[NORTH];
     d.vario_wind_E		= wind_observer.get_speed_compensator_wind()[EAST];
+    d.body_induction		= ahrs.getBodyInduction();
+    d.body_induction_error	= ahrs.getBodyInductionError();
 #endif
 }
