@@ -331,7 +331,7 @@ void format_PLARW ( float wind_north, float wind_east, char windtype, char * &p)
 
   float direction;
   // report WHERE the wind the comes from, instead of our wind speed vector, so negative sign
-  if( (wind_east < 0.1f) && wind_north < 0.1f)
+  if( ( SQR(wind_east) + SQR( wind_north)) < SQR( NEGLECTABLE_WIND)) // avoid circling of neglectable wind
     direction = 0.0f;
   else
     direction = ATAN2( -wind_east, -wind_north);
