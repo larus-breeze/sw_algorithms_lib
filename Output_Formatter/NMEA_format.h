@@ -13,7 +13,7 @@
 class string_buffer_t
 {
 public:
-  enum{ BUFLEN = 500};
+  enum{ BUFLEN = 1024-sizeof(uint32_t)};
   char string[BUFLEN];
   uint32_t length;
 };
