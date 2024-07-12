@@ -67,7 +67,9 @@ typedef struct
   float dummy2;
 #endif
   coordinates_t c;
+#if RUN_MICROPHONE
   float sound_intensity;
+#endif
 } observations_type;
 
 //! combination of all input and output data in one structure
@@ -75,7 +77,9 @@ typedef struct
 {
   measurement_data_t m;
   coordinates_t c;
+#if RUN_MICROPHONE
   float sound_intensity;
+#endif
   float IAS;
   float TAS;
   float vario_uncompensated;
