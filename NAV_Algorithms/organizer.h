@@ -115,6 +115,7 @@ public:
 
   void update_every_10ms( output_data_t & output_data, float *tweaks)
   {
+#if 0 // modify many parameters
     // rotate sensor coordinates into airframe coordinates
     float3vector acc_mod = output_data.m.acc;
 
@@ -125,21 +126,32 @@ public:
     acc_mod[2] += tweaks[4];
     acc_mod[2] *= 1.0f + tweaks[5];
 
+    float3vector mag_mod = output_data.m.mag;
+        
+    mag_mod[0] += tweaks[9] * output_data.m.mag[1] + tweaks[10] * output_data.m.mag[2];
+    mag_mod[1] += tweaks[11] * output_data.m.mag[0] + tweaks[12] * output_data.m.mag[2];
+    mag_mod[2] += tweaks[13] * output_data.m.mag[0] + tweaks[14] * output_data.m.mag[1];
+
     float3vector gyro_mod = output_data.m.gyro;
 
     gyro_mod[0] *= 1.0f + tweaks[6];
     gyro_mod[1] *= 1.0f + tweaks[7];
     gyro_mod[2] *= 1.0f + tweaks[8];
 
-    float3vector mag_mod = output_data.m.mag;
-    mag_mod[0] += tweaks[9] * output_data.m.mag[1] + tweaks[10] * output_data.m.mag[2];
-    mag_mod[1] += tweaks[11] * output_data.m.mag[0] + tweaks[12] * output_data.m.mag[2];
-    mag_mod[2] += tweaks[13] * output_data.m.mag[0] + tweaks[14] * output_data.m.mag[1];
-
     acc  = sensor_mapping * acc_mod;
     mag  = sensor_mapping * mag_mod;
     gyro = sensor_mapping * gyro_mod;
+#else
+    float3vector gyro_mod;
 
+    gyro_mod[0] = (1.0f + tweaks[0]) * output_data.m.gyro[0] + tweaks[1] * output_data.m.gyro[1] + tweaks[2] * output_data.m.gyro[2];
+    gyro_mod[1] = tweaks[3] * output_data.m.gyro[0] + (1.0f + tweaks[4]) * output_data.m.gyro[1] + tweaks[5] * output_data.m.gyro[2];
+    gyro_mod[2] = tweaks[6] * output_data.m.gyro[0] + tweaks[7] * output_data.m.gyro[1] + (1.0f + tweaks[8]) * output_data.m.gyro[2];
+
+    acc  = sensor_mapping * output_data.m.acc;
+    mag  = sensor_mapping * output_data.m.mag;
+    gyro = sensor_mapping * gyro_mod;
+#endif
 #if DEVELOPMENT_ADDITIONS
     output_data.body_acc  = acc;
     output_data.body_gyro = gyro;

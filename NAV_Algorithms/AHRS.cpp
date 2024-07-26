@@ -351,6 +351,8 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
       break;
     }
 
+  gyro_correction_power = SQR( gyro_correction[0]) + SQR( gyro_correction[1]) +SQR( gyro_correction[2]);
+
   gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
 
   // feed quaternion update with corrected sensor readings

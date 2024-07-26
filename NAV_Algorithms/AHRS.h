@@ -198,6 +198,11 @@ public:
     return body_induction;
   }
 
+  float getGyro_correction_Power () const
+  {
+    return gyro_correction_power;
+  }
+
 private:
   void handle_magnetic_calibration( char type);
 
@@ -253,6 +258,7 @@ private:
   bool magnetic_calibration_updated;
   float3vector body_induction;
   float3vector body_induction_error;
+  float gyro_correction_power;
 };
 
 #endif /* AHRS_H_ */

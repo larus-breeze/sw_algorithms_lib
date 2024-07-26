@@ -130,6 +130,7 @@ typedef struct
   float vario_wind_E;
   float3vector body_induction;
   float3vector body_induction_error;
+  float gyro_correction_power;
 #endif
 
 } output_data_t;
