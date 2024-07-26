@@ -113,18 +113,32 @@ public:
     navigator.update_GNSS_data(coordinates);
   }
 
-  void update_every_10ms( output_data_t & output_data)
+  void update_every_10ms( output_data_t & output_data, float *tweaks)
   {
     // rotate sensor coordinates into airframe coordinates
-#if USE_LOWCOST_IMU == 1
-    acc  = sensor_mapping * output_data.m.lowcost_acc;
-    mag  = sensor_mapping * output_data.m.lowcost_mag;
-    gyro = sensor_mapping * output_data.m.lowcost_gyro;
-#else
-    acc  = sensor_mapping * output_data.m.acc;
-    mag  = sensor_mapping * output_data.m.mag;
-    gyro = sensor_mapping * output_data.m.gyro;
-#endif
+    float3vector acc_mod = output_data.m.acc;
+
+    acc_mod[0] += tweaks[0];
+    acc_mod[0] *= 1.0f + tweaks[1];
+    acc_mod[1] += tweaks[2];
+    acc_mod[1] *= 1.0f + tweaks[3];
+    acc_mod[2] += tweaks[4];
+    acc_mod[2] *= 1.0f + tweaks[5];
+
+    float3vector gyro_mod = output_data.m.gyro;
+
+    gyro_mod[0] *= 1.0f + tweaks[6];
+    gyro_mod[1] *= 1.0f + tweaks[7];
+    gyro_mod[2] *= 1.0f + tweaks[8];
+
+    float3vector mag_mod = output_data.m.mag;
+    mag_mod[0] += tweaks[9] * output_data.m.mag[1] + tweaks[10] * output_data.m.mag[2];
+    mag_mod[1] += tweaks[11] * output_data.m.mag[0] + tweaks[12] * output_data.m.mag[2];
+    mag_mod[2] += tweaks[13] * output_data.m.mag[0] + tweaks[14] * output_data.m.mag[1];
+
+    acc  = sensor_mapping * acc_mod;
+    mag  = sensor_mapping * mag_mod;
+    gyro = sensor_mapping * gyro_mod;
 
 #if DEVELOPMENT_ADDITIONS
     output_data.body_acc  = acc;
