@@ -275,6 +275,8 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
       gyro_integrator += gyro_correction; // update integrator
 
   gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
+  gyro_correction_power = SQR( gyro_correction[0]) + SQR( gyro_correction[1]) +SQR( gyro_correction[2]);
+
   update_attitude (acc, gyro + gyro_correction, body_induction);
 
   // only here we get fresh magnetic entropy
@@ -351,9 +353,8 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
       break;
     }
 
-  gyro_correction_power = SQR( gyro_correction[0]) + SQR( gyro_correction[1]) +SQR( gyro_correction[2]);
-
   gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
+  gyro_correction_power = SQR( gyro_correction[0]) + SQR( gyro_correction[1]) +SQR( gyro_correction[2]);
 
   // feed quaternion update with corrected sensor readings
   update_attitude (acc, gyro + gyro_correction, body_induction);
