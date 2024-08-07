@@ -359,8 +359,6 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   // feed quaternion update with corrected sensor readings
   update_attitude (acc, gyro + gyro_correction, body_induction);
 
-  body_induction_error = mag_sensor - body2nav.reverse_map( expected_nav_induction);
-
   // only here we get fresh magnetic entropy
   // and: wait for low control loop error
   if ( (circling_state == CIRCLING) && ( nav_correction.abs() < NAV_CORRECTION_LIMIT))
