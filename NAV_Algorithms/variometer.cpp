@@ -91,7 +91,8 @@ void variometer_t::update_at_100Hz (
       speed_compensation_energy_3 = specific_energy_differentiator.respond ( specific_energy);
 
       // blending of three mechanisms for speed-compensation
-      speed_compensation_GNSS = GNSS_INS_speedcomp_fusioner.respond( 0.5f * (speed_compensation_INS_GNSS_1 + speed_compensation_kalman_2), speed_compensation_energy_3);
+//    speed_compensation_GNSS = GNSS_INS_speedcomp_fusioner.respond( 0.5f * (speed_compensation_INS_GNSS_1 + speed_compensation_kalman_2), speed_compensation_energy_3);
+      speed_compensation_GNSS = GNSS_INS_speedcomp_fusioner.respond( speed_compensation_kalman_2, speed_compensation_energy_3);
       vario_averager_GNSS.respond ( vario_uncompensated_GNSS + speed_compensation_GNSS);
     }
 }
