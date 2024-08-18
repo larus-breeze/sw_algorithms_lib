@@ -31,6 +31,7 @@
 
 #pragma pack(push, 1)
 
+
 //! contains all calibrated data from the sensors
 typedef struct
 {
