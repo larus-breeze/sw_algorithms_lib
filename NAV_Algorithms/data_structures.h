@@ -37,20 +37,9 @@ typedef struct
   float3vector acc;   //XSENSE MTi1 IMU
   float3vector gyro;  //XSENSE MTi1 IMU
   float3vector mag;   //XSENSE MTi1 IMU
-#if WITH_LOWCOST_SENSORS
-  float3vector lowcost_acc;
-  float3vector lowcost_gyro;
-  float3vector lowcost_mag;
-#endif
   float pitot_pressure;
   float static_pressure;
-#if WITH_LOWCOST_SENSORS
-  float absolute_pressure;  //this is the second ms5611 on the PCB.
-#endif
   float static_sensor_temperature;  //log temperature to monitor temperature in enclosure
-#if WITH_LOWCOST_SENSORS
-  float absolute_sensor_temperature;
-#endif
   float supply_voltage;  //Measuring the supply voltage. Might be related to sensor noise.
 #if WITH_DENSITY_DATA
   float outside_air_temperature; //!< OAT from external sensor if installed
