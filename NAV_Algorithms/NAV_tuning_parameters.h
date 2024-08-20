@@ -51,7 +51,7 @@
 #define I_GAIN 0.00006f 		//!< Attitude controller: integral gain
 #define H_GAIN 38.0f			//!< Attitude controller: horizontal gain
 #define M_H_GAIN 6.0f			//!< Attitude controller: horizontal gain magnetic
-#define CROSS_GAIN 0.05f		//!< Attitude controller: cross-product gain
+#define CROSS_GAIN 0.05			//!< Attitude controller: cross-product gain
 #define INDUCTION_ERROR	0.015		//!< Maximum std deviation to update earth induction parameters
 #define NAV_CORRECTION_LIMIT 5.0f	//!< limit for "low AHRS correcting variable"
 #define HIGH_TURN_RATE 8.0*M_PI/180.0f	//!< turn rate high limit
