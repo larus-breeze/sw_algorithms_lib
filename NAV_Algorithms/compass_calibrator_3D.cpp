@@ -1,22 +1,82 @@
 #include "compass_calibrator_3D.h"
+#include "embedded_math.h"
 
-ROM float compass_calibrator_3D::c[3][11]=
+#define __PROGRAM_START 0
+#include "arm_math.h"
+
+bool compass_calibrator_3D::learn (const float3vector &observed_induction,const float3vector &expected_induction, const quaternion<float> &q)
+{
+  if( next_populated_observation >= DIM)
+    return false;
+
+  for( unsigned axis = 0; axis < AXES; ++axis)
     {
-	{
-	    -0.409396745799227, 0.982881454928131, -7.123619923431471e-04, 1.784528993282075,
-	    -0.049351074269907, 0.020451708066318, -0.065464349144836, -1.791292086803612,
-	    0.807823990066434, -0.001609169368078, 0.818044330557523
-	},
-	{
-	    -0.025675435782662, 1.020666477403734, -1.858654877880343, -0.002540615393049,
-	    0.846205339751731,  0.043814518900213, -0.841006279830856, 0.001185486748864,
-	    -0.009962394148845, -1.855285841808065, 0.053120439210188
-	},
-	{
-	    -0.799759406150713, 0.879003806195990, 0.045184413653664, -0.726791353207916,
-	    0.001107758829176, 1.613668415192955, -4.701834801570731e-04, -0.729801386610739,
-	    1.581406935604173, -0.047756259345698, 3.532149702376362e-04
-	}
-    };
+      target_vector[axis] = expected_induction[axis];
 
+      observation_matrix[axis][next_populated_observation][0] = 1.0f;
+      observation_matrix[axis][next_populated_observation][1] = observed_induction[axis];
+      observation_matrix[axis][next_populated_observation][2] = q[0] * q[1];
+      observation_matrix[axis][next_populated_observation][3] = q[0] * q[2];
+      observation_matrix[axis][next_populated_observation][4] = q[0] * q[3];
+      observation_matrix[axis][next_populated_observation][5] = q[1] * q[1];
+      observation_matrix[axis][next_populated_observation][6] = q[1] * q[2];
+      observation_matrix[axis][next_populated_observation][7] = q[1] * q[3];
+      observation_matrix[axis][next_populated_observation][8] = q[2] * q[2];
+      observation_matrix[axis][next_populated_observation][9] = q[2] * q[3];
+      observation_matrix[axis][next_populated_observation][10]= q[3] * q[3];
+    }
 
+  ++next_populated_observation;
+  return next_populated_observation < DIM;
+}
+
+bool compass_calibrator_3D::calculate( float *temporary_solution_matrix)
+{
+  if( next_populated_observation >= DIM)
+    return 0.0f;
+
+  arm_matrix_instance_f32 source;
+  source.numCols=DIM;
+  source.numRows=DIM;
+
+  arm_matrix_instance_f32 destination;
+  destination.numCols=DIM;
+  destination.numRows=DIM;
+  destination.pData=temporary_solution_matrix;
+
+  for( unsigned axis = 0; axis < AXES; ++axis)
+    {
+      source.pData = &(observation_matrix[axis][0][0]);
+      arm_status result = arm_mat_inverse_f32( &source, &destination);
+      if( result != ARM_MATH_SUCCESS)
+	return false;
+
+      arm_matrix_instance_f32 target_vector_inst;
+      target_vector_inst.numCols=1;
+      target_vector_inst.numRows=DIM;
+      target_vector_inst.pData=target_vector;
+
+      arm_matrix_instance_f32 solution_inst;
+      solution_inst.numCols=1;
+      solution_inst.numRows=DIM;
+      solution_inst.pData=&(c[axis][0]);
+
+      result = arm_mat_mult_f32( &destination, &target_vector_inst, &solution_inst);
+    }
+  calibration_successful = true;
+  return true;
+}
+
+float3vector compass_calibrator_3D::calibrate( const float3vector &induction, const quaternion<float> &q)
+  {
+    float3vector retv;
+    for( int i = 0; i < 3; ++i)
+      {
+	retv[i] =
+	    c[i][0] + c[i][1] * induction[i] +
+	    c[i][2] * q[0] * q[1] + c[i][3] * q[0] * q[2] + c[i][4] * q[0] * q[3] +
+	    c[i][5] * q[1] * q[1] + c[i][6] * q[1] * q[2] + c[i][7] * q[1] * q[3] +
+	    c[i][8] * q[2] * q[2] + c[i][9] * q[2] * q[3] + c[i][10]* q[3] * q[3] ;
+      }
+    return retv;
+  }

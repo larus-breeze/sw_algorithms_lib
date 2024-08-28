@@ -155,7 +155,7 @@ AHRS_type::AHRS_type (float sampling_time)
   cross_acc_correction(0.0f),
   magnetic_disturbance(0.0f),
   magnetic_control_gain(1.0f),
-  automatic_magnetic_calibration(false /* configuration(MAG_AUTO_CALIB) */),
+  automatic_magnetic_calibration( configuration(MAG_AUTO_CALIB)),
   automatic_earth_field_parameters( false),
   magnetic_calibration_updated( false)
 {
@@ -234,7 +234,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   else
       body_induction = mag_sensor;
 
-  body_induction -= calib3d.calibrate( body_induction, attitude);
+//  body_induction -= calib3d.calibrate( body_induction, attitude);
 
   body_induction_error = body_induction - body2nav.reverse_map( expected_nav_induction);
   float3vector nav_acceleration = body2nav * acc;
@@ -309,7 +309,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   else
     body_induction = mag_sensor;
 
-  body_induction -= calib3d.calibrate( body_induction, attitude);
+//  body_induction -= calib3d.calibrate( body_induction, attitude);
 
   body_induction_error = body_induction - body2nav.reverse_map( expected_nav_induction);
 
