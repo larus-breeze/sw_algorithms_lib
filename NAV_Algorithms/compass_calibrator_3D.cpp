@@ -6,14 +6,14 @@
 
 bool compass_calibrator_3D::learn (const float3vector &observed_induction,const float3vector &expected_induction, const quaternion<float> &q)
 {
-  if( calibration_successful)
-    return false;
+//  if( calibration_successful)
+//    return false;
 
   float present_heading = q.get_heading();
   if( present_heading <0.0f)
     present_heading += M_PI_F * TWO;
 
-  unsigned sector_index = present_heading * 1.7507044f; // 2 * pi / DIM
+  unsigned sector_index = present_heading / TWO / M_PI_F * DIM;
 
   if ( (covered_heading_sectors & (1 << sector_index)) != 0) // sector data already collected
     return false;
@@ -25,16 +25,18 @@ bool compass_calibrator_3D::learn (const float3vector &observed_induction,const 
       target_vector[axis][next_populated_observation] = expected_induction[axis];
 
       observation_matrix[axis][next_populated_observation][0] = 1.0f;
-      observation_matrix[axis][next_populated_observation][1] = observed_induction[axis];
-      observation_matrix[axis][next_populated_observation][2] = q[0] * q[1];
-      observation_matrix[axis][next_populated_observation][3] = q[0] * q[2];
-      observation_matrix[axis][next_populated_observation][4] = q[0] * q[3];
-      observation_matrix[axis][next_populated_observation][5] = q[1] * q[1];
-      observation_matrix[axis][next_populated_observation][6] = q[1] * q[2];
-      observation_matrix[axis][next_populated_observation][7] = q[1] * q[3];
-      observation_matrix[axis][next_populated_observation][8] = q[2] * q[2];
-      observation_matrix[axis][next_populated_observation][9] = q[2] * q[3];
-      observation_matrix[axis][next_populated_observation][10]= q[3] * q[3];
+      observation_matrix[axis][next_populated_observation][1] = observed_induction[0];
+      observation_matrix[axis][next_populated_observation][2] = observed_induction[1];
+      observation_matrix[axis][next_populated_observation][3] = observed_induction[2];
+      observation_matrix[axis][next_populated_observation][4] = q[0] * q[1];
+      observation_matrix[axis][next_populated_observation][5] = q[0] * q[2];
+      observation_matrix[axis][next_populated_observation][6] = q[0] * q[3];
+      observation_matrix[axis][next_populated_observation][7] = q[1] * q[1];
+      observation_matrix[axis][next_populated_observation][8] = q[1] * q[2];
+      observation_matrix[axis][next_populated_observation][9] = q[1] * q[3];
+      observation_matrix[axis][next_populated_observation][10]= q[2] * q[2];
+      observation_matrix[axis][next_populated_observation][11]= q[2] * q[3];
+      observation_matrix[axis][next_populated_observation][12]= q[3] * q[3];
     }
 
   ++next_populated_observation;
@@ -89,10 +91,13 @@ float3vector compass_calibrator_3D::calibrate( const float3vector &induction, co
     for( int i = 0; i < 3; ++i)
       {
 	retv[i] =
-	    c[i][0] + c[i][1] * induction[i] +
-	    c[i][2] * q[0] * q[1] + c[i][3] * q[0] * q[2] + c[i][4] * q[0] * q[3] +
-	    c[i][5] * q[1] * q[1] + c[i][6] * q[1] * q[2] + c[i][7] * q[1] * q[3] +
-	    c[i][8] * q[2] * q[2] + c[i][9] * q[2] * q[3] + c[i][10]* q[3] * q[3] ;
+	    c[i][0] +
+	    c[i][1] * induction[0] +
+	    c[i][2] * induction[1] +
+	    c[i][3] * induction[2] +
+	    c[i][4] * q[0] * q[1] + c[i][5] * q[0] * q[2] + c[i][6] * q[0] * q[3] +
+	    c[i][7] * q[1] * q[1] + c[i][8] * q[1] * q[2] + c[i][9] * q[1] * q[3] +
+	    c[i][10] * q[2] * q[2] + c[i][11] * q[2] * q[3] + c[i][12]* q[3] * q[3] ;
       }
     return retv;
   }

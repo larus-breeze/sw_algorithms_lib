@@ -92,18 +92,6 @@ public:
 	{
 		return induction_nav_frame;
 	}
-	inline float get_lin_e0(void) const
-	{
-		return attitude.lin_e0();
-	}
-	inline float get_lin_e1(void) const
-	{
-		return attitude.lin_e1();
-	}
-	inline float get_e2(void) const
-	{
-		return attitude.get_e2();
-	}
 	inline float get_north(void) const
 	{
 		return attitude.get_north();

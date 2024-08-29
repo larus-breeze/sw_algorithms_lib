@@ -122,12 +122,15 @@ void AHRS_type::feed_magnetic_induction_observer(const float3vector &mag_sensor)
     else
       mag_calibration_data_collector_left_turn[i].add_value ( MAG_SCALE * expected_body_induction[i], MAG_SCALE * mag_sensor[i]);
 
-  bool calibration_data_complete = calib_3D.learn( mag_sensor, expected_body_induction, attitude);
+#if USE_3D_CALIBRATION
+
+  bool calibration_data_complete = calib_3D.learn( mag_sensor, mag_sensor-expected_body_induction, attitude);
   if( calibration_data_complete)
     {
       float temp_matrix[compass_calibrator_3D::DIM][compass_calibrator_3D::DIM];
       calib_3D.calculate( temp_matrix);
     }
+#endif
 
 #if USE_EARTH_INDUCTION_DATA_COLLECTOR
   // measurement of earth induction to find the local earth field parameters
@@ -240,7 +243,8 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   update_circling_state ();
 
 #if USE_3D_CALIBRATION
-  body_induction = calib_3D.calibrate( mag_sensor, attitude);
+  float3vector mag_correction = calib_3D.calibrate( mag_sensor, attitude);
+  body_induction = mag_sensor - mag_correction;
 #else
   if( compass_calibration.isCalibrationDone()) // use calibration if available
       body_induction = compass_calibration.calibrate(mag_sensor);
@@ -318,7 +322,8 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 			   const float3vector &GNSS_acceleration)
 {
 #if USE_3D_CALIBRATION
-  body_induction = calib_3D.calibrate( mag_sensor, attitude);
+  float3vector mag_correction_3d = calib_3D.calibrate( mag_sensor, attitude);
+  body_induction = mag_sensor - mag_correction_3d;
 #else
   if( compass_calibration.isCalibrationDone()) // use calibration if available
       body_induction = compass_calibration.calibrate(mag_sensor);

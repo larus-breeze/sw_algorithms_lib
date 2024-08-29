@@ -16,7 +16,7 @@
 class compass_calibrator_3D
 {
 public:
-  enum { AXES=3, DIM=11};
+  enum { AXES=3, DIM=13};
 
   compass_calibrator_3D( void)
   : next_populated_observation(0),
