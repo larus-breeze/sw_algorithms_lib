@@ -35,7 +35,7 @@
 template <class datatype > class quaternion: public vector <datatype, 4>
 {
 public:
-	//! constructor from eulerwinkel
+	//! constructor from euler angle
 	quaternion( vector <datatype, 3> &init)
 	{
 		from_euler( init[0], init[1], init[2]);
@@ -134,6 +134,17 @@ public:
 		datatype e2 = this->e[2];
 		datatype e3 = this->e[3];
 		return TWO * (e1*e3-e0*e2);
+	}
+
+	//! get heading component of attitude
+	datatype get_heading( void) const
+	{
+		datatype e0 = vector<datatype, 4>::e[0];
+		datatype e1 = vector<datatype, 4>::e[1];
+		datatype e2 = vector<datatype, 4>::e[2];
+		datatype e3 = vector<datatype, 4>::e[3];
+
+		return ATAN2(  TWO * (e0*e3 + e1*e2) , e0*e0 + e1*e1 - e2*e2 - e3*e3 );
 	}
 
 	//! quaternion update using rotation vector
