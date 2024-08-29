@@ -31,6 +31,7 @@
 #include "float3matrix.h"
 #include "integrator.h"
 #include "compass_calibration.h"
+#include "compass_calibrator_3D.h"
 #include "HP_LP_fusion.h"
 #include "induction_observer.h"
 #include "pt2.h"
@@ -235,6 +236,7 @@ private:
   float3vector acceleration_nav_frame;
   float3vector induction_nav_frame; 	//!< observed NAV induction
   float3vector expected_nav_induction;	//!< expected NAV induction
+  float3vector expected_body_induction;	//!< expected body frame induction
   float3matrix body2nav;
   eulerangle<ftype> euler;
   pt2<float,float> slip_angle_averager;
@@ -244,6 +246,8 @@ private:
   linear_least_square_fit<int64_t, float> mag_calibration_data_collector_right_turn[3];
   linear_least_square_fit<int64_t, float> mag_calibration_data_collector_left_turn[3];
   compass_calibration_t <int64_t, float> compass_calibration;
+  compass_calibrator_3D calib_3D;
+
 #if USE_EARTH_INDUCTION_DATA_COLLECTOR
   induction_observer_t <int64_t> earth_induction_data_collector;
 #endif
