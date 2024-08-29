@@ -77,35 +77,6 @@ public:
 		_euler.y = ATAN2(  TWO * (e0*e3 + e1*e2) , e0*e0 + e1*e1 - e2*e2 - e3*e3 );
 		return _euler;
 	}
-	//! linearized euler component e0 (approximate nick angle / rad)
-	inline datatype lin_e0( void) const
-	{
-		datatype e0 = vector<datatype, 4>::e[0];
-		datatype e1 = vector<datatype, 4>::e[1];
-		datatype e2 = vector<datatype, 4>::e[2];
-		datatype e3 = vector<datatype, 4>::e[3];
-		return TWO * (e0*e1 + e2*e3) / ( e0*e0 - e1*e1 - e2*e2 + e3*e3);
-
-	}
-	//! linearized euler component e1 (approximate roll angle / rad)
-	inline datatype lin_e1( void) const
-	{
-		datatype e0 = vector<datatype, 4>::e[0];
-		datatype e1 = vector<datatype, 4>::e[1];
-		datatype e2 = vector<datatype, 4>::e[2];
-		datatype e3 = vector<datatype, 4>::e[3];
-		return TWO * (e0*e2 - e3*e1);
-	}
-	//! euler component e2
-	inline datatype get_e2( void) const
-	{
-		datatype e0 = vector<datatype, 4>::e[0];
-		datatype e1 = vector<datatype, 4>::e[1];
-		datatype e2 = vector<datatype, 4>::e[2];
-		datatype e3 = vector<datatype, 4>::e[3];
-		return ATAN2(  TWO * (e0*e3 + e1*e2) , e0*e0 + e1*e1 - e2*e2 - e3*e3 );
-	}
-
 	//! get north component of attitude
 	inline datatype get_north( void) const
 	{
