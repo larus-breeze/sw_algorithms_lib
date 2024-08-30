@@ -124,7 +124,7 @@ void AHRS_type::feed_magnetic_induction_observer(const float3vector &mag_sensor)
 
 #if USE_3D_CALIBRATION
 
-  bool calibration_data_complete = calib_3D.learn( mag_sensor, mag_sensor-expected_body_induction, attitude);
+  bool calibration_data_complete = calib_3D.learn( mag_sensor, expected_body_induction, attitude);
   if( calibration_data_complete)
     {
       float temp_matrix[compass_calibrator_3D::DIM][compass_calibrator_3D::DIM];
@@ -242,9 +242,10 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   circle_state_t old_circle_state = circling_state;
   update_circling_state ();
 
+  expected_body_induction = body2nav.reverse_map( expected_nav_induction);
+
 #if USE_3D_CALIBRATION
-  float3vector mag_correction = calib_3D.calibrate( mag_sensor, attitude);
-  body_induction = mag_sensor - mag_correction;
+  body_induction = calib_3D.calibrate( mag_sensor, attitude);
 #else
   if( compass_calibration.isCalibrationDone()) // use calibration if available
       body_induction = compass_calibration.calibrate(mag_sensor);
@@ -252,8 +253,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
       body_induction = mag_sensor;
 #endif
 
-  expected_body_induction = body2nav.reverse_map( expected_nav_induction);
-  body_induction_error = body_induction - expected_body_induction;
+//  body_induction_error = body_induction - expected_body_induction;
   float3vector nav_acceleration = body2nav * acc;
 
   float heading_gnss_work = GNSS_heading	// correct for antenna alignment
@@ -321,9 +321,10 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 			   const float3vector &mag_sensor,
 			   const float3vector &GNSS_acceleration)
 {
+  expected_body_induction = body2nav.reverse_map( expected_nav_induction);
+
 #if USE_3D_CALIBRATION
-  float3vector mag_correction_3d = calib_3D.calibrate( mag_sensor, attitude);
-  body_induction = mag_sensor - mag_correction_3d;
+  body_induction = calib_3D.calibrate( mag_sensor, attitude);
 #else
   if( compass_calibration.isCalibrationDone()) // use calibration if available
       body_induction = compass_calibration.calibrate(mag_sensor);
@@ -331,9 +332,6 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
     body_induction = mag_sensor;
 #endif
 
-//  body_induction -= calib3d.calibrate( body_induction, attitude);
-
-  expected_body_induction = body2nav.reverse_map( expected_nav_induction);
   body_induction_error = body_induction - expected_body_induction;
 
   float3vector nav_acceleration = body2nav * acc;

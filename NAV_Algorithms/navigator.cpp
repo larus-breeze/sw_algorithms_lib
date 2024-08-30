@@ -164,7 +164,8 @@ void navigator_t::report_data( output_data_t &d)
     d.vario_wind_N		= wind_observer.get_speed_compensator_wind()[NORTH];
     d.vario_wind_E		= wind_observer.get_speed_compensator_wind()[EAST];
     d.body_induction		= ahrs.getBodyInduction();
-    d.body_induction_error	= ahrs.getBodyInductionError();
+//    d.body_induction_error	= ahrs.getBodyInductionError();
+    d.body_induction_error	= ahrs_magnetic.getBodyInductionError();
     d.gyro_correction_power	= ahrs.getGyro_correction_Power();
 #endif
 }

@@ -1,3 +1,5 @@
+#include "stdio.h"
+
 #include "compass_calibrator_3D.h"
 #include "embedded_math.h"
 
@@ -6,9 +8,6 @@
 
 bool compass_calibrator_3D::learn (const float3vector &observed_induction,const float3vector &expected_induction, const quaternion<float> &q)
 {
-//  if( calibration_successful)
-//    return false;
-
   float present_heading = q.get_heading();
   if( present_heading <0.0f)
     present_heading += M_PI_F * TWO;
@@ -25,18 +24,16 @@ bool compass_calibrator_3D::learn (const float3vector &observed_induction,const 
       target_vector[axis][next_populated_observation] = expected_induction[axis];
 
       observation_matrix[axis][next_populated_observation][0] = 1.0f;
-      observation_matrix[axis][next_populated_observation][1] = observed_induction[0];
-      observation_matrix[axis][next_populated_observation][2] = observed_induction[1];
-      observation_matrix[axis][next_populated_observation][3] = observed_induction[2];
-      observation_matrix[axis][next_populated_observation][4] = q[0] * q[1];
-      observation_matrix[axis][next_populated_observation][5] = q[0] * q[2];
-      observation_matrix[axis][next_populated_observation][6] = q[0] * q[3];
-      observation_matrix[axis][next_populated_observation][7] = q[1] * q[1];
-      observation_matrix[axis][next_populated_observation][8] = q[1] * q[2];
-      observation_matrix[axis][next_populated_observation][9] = q[1] * q[3];
-      observation_matrix[axis][next_populated_observation][10]= q[2] * q[2];
-      observation_matrix[axis][next_populated_observation][11]= q[2] * q[3];
-      observation_matrix[axis][next_populated_observation][12]= q[3] * q[3];
+      observation_matrix[axis][next_populated_observation][1] = observed_induction[axis];
+      observation_matrix[axis][next_populated_observation][2] = q[0] * q[1];
+      observation_matrix[axis][next_populated_observation][3] = q[0] * q[2];
+      observation_matrix[axis][next_populated_observation][4] = q[0] * q[3];
+      observation_matrix[axis][next_populated_observation][5] = q[1] * q[1];
+      observation_matrix[axis][next_populated_observation][6] = q[1] * q[2];
+      observation_matrix[axis][next_populated_observation][7] = q[1] * q[3];
+      observation_matrix[axis][next_populated_observation][8] = q[2] * q[2];
+      observation_matrix[axis][next_populated_observation][9] = q[2] * q[3];
+      observation_matrix[axis][next_populated_observation][10]= q[3] * q[3];
     }
 
   ++next_populated_observation;
@@ -45,6 +42,9 @@ bool compass_calibrator_3D::learn (const float3vector &observed_induction,const 
 
 bool compass_calibrator_3D::calculate( float temporary_solution_matrix[DIM][DIM])
 {
+  if( calibration_successful)
+    return false;
+
   arm_matrix_instance_f32 destination;
   destination.numCols=DIM;
   destination.numRows=DIM;
@@ -69,12 +69,30 @@ bool compass_calibrator_3D::calculate( float temporary_solution_matrix[DIM][DIM]
       arm_matrix_instance_f32 solution_inst;
       solution_inst.numCols=1;
       solution_inst.numRows=DIM;
-      solution_inst.pData=&(c[axis][0]);
-
-      result = arm_mat_mult_f32( &destination, &target_vector_inst, &solution_inst);
+      if( ! calibration_successful)
+	{
+	  solution_inst.pData=&(c[axis][0]);
+	  result = arm_mat_mult_f32( &destination, &target_vector_inst, &solution_inst);
+	}
+      else
+	{
+	      float solution[DIM];
+	      solution_inst.pData=solution;
+	      result = arm_mat_mult_f32( &destination, &target_vector_inst, &solution_inst);
+	      for( unsigned i=0; i< DIM; ++i)
+		c[axis][i] = c[axis][i] * 0.98f + solution[i] * 0.02f;
+	}
     }
 
   calibration_successful = true;
+
+  for( unsigned k=0; k<3; ++k)
+    {
+      for( unsigned i=0; i<DIM; ++i)
+	printf("%e\t", (double)(c[k][i]));
+      printf("\n");
+    }
+  printf("\n");
 
   next_populated_observation = 0; // start new data collection
   covered_heading_sectors = 0;
@@ -91,13 +109,10 @@ float3vector compass_calibrator_3D::calibrate( const float3vector &induction, co
     for( int i = 0; i < 3; ++i)
       {
 	retv[i] =
-	    c[i][0] +
-	    c[i][1] * induction[0] +
-	    c[i][2] * induction[1] +
-	    c[i][3] * induction[2] +
-	    c[i][4] * q[0] * q[1] + c[i][5] * q[0] * q[2] + c[i][6] * q[0] * q[3] +
-	    c[i][7] * q[1] * q[1] + c[i][8] * q[1] * q[2] + c[i][9] * q[1] * q[3] +
-	    c[i][10] * q[2] * q[2] + c[i][11] * q[2] * q[3] + c[i][12]* q[3] * q[3] ;
+	    c[i][0] + c[i][1] * induction[i] +
+	    c[i][2] * q[0] * q[1] + c[i][3] * q[0] * q[2] + c[i][4] * q[0] * q[3] +
+	    c[i][5] * q[1] * q[1] + c[i][6] * q[1] * q[2] + c[i][7] * q[1] * q[3] +
+	    c[i][8] * q[2] * q[2] + c[i][9] * q[2] * q[3] + c[i][10]* q[3] * q[3] ;
       }
     return retv;
   }
