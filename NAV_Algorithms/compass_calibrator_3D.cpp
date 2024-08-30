@@ -42,8 +42,8 @@ bool compass_calibrator_3D::learn (const float3vector &observed_induction,const 
 
 bool compass_calibrator_3D::calculate( float temporary_solution_matrix[DIM][DIM])
 {
-  if( calibration_successful)
-    return false;
+//  if( calibration_successful)
+//    return false;
 
   arm_matrix_instance_f32 destination;
   destination.numCols=DIM;
@@ -69,7 +69,7 @@ bool compass_calibrator_3D::calculate( float temporary_solution_matrix[DIM][DIM]
       arm_matrix_instance_f32 solution_inst;
       solution_inst.numCols=1;
       solution_inst.numRows=DIM;
-      if( ! calibration_successful)
+      if( true || ! calibration_successful)
 	{
 	  solution_inst.pData=&(c[axis][0]);
 	  result = arm_mat_mult_f32( &destination, &target_vector_inst, &solution_inst);
