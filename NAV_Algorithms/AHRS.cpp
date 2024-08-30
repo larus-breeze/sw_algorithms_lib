@@ -123,10 +123,7 @@ void AHRS_type::feed_magnetic_induction_observer(const float3vector &mag_sensor)
       mag_calibration_data_collector_left_turn[i].add_value ( MAG_SCALE * expected_body_induction[i], MAG_SCALE * mag_sensor[i]);
 
 #if USE_3D_CALIBRATION
-	float offset_init[]={ 0.2, -0.2, 0.3};
-	float3vector offset( offset_init);
-
-  bool calibration_data_complete = calib_3D.learn( mag_sensor*2.0f+offset, expected_body_induction, attitude);
+  bool calibration_data_complete = calib_3D.learn( mag_sensor, expected_body_induction, attitude);
   if( calibration_data_complete)
     {
       float temp_matrix[compass_calibrator_3D::DIM][compass_calibrator_3D::DIM];
@@ -249,14 +246,14 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 #if USE_3D_CALIBRATION
   float3vector bad_sensor = mag_sensor;
 
-  bad_sensor[0] *= 1.2;
+  bad_sensor[0] *= 1.1;
   bad_sensor[0] += 0.2;
   bad_sensor[1] *= 0.8;
   bad_sensor[1] -= 0.2;
-  bad_sensor[2] *= -1.3;
+  bad_sensor[2] *= 1.2;
   bad_sensor[2] += 0.3;
 
-  body_induction = calib_3D.calibrate( bad_sensor, attitude);
+  body_induction = calib_3D.calibrate( mag_sensor, attitude);
 #else
   if( compass_calibration.isCalibrationDone()) // use calibration if available
       body_induction = compass_calibration.calibrate(mag_sensor);
@@ -317,7 +314,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   // only here we get fresh magnetic entropy
   // and: wait for low control loop error
   if ( (circling_state == CIRCLING) && ( nav_correction.abs() < NAV_CORRECTION_LIMIT))
-	feed_magnetic_induction_observer (bad_sensor);
+	feed_magnetic_induction_observer (mag_sensor);
 
   // when circling is finished eventually update the magnetic calibration
   if (automatic_magnetic_calibration && (old_circle_state == CIRCLING) && (circling_state == TRANSITION))
@@ -344,7 +341,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   bad_sensor[2] *= -1.3;
   bad_sensor[2] += 0.3;
 
-  body_induction = calib_3D.calibrate( bad_sensor, attitude);
+  body_induction = calib_3D.calibrate( mag_sensor, attitude);
 #else
   if( compass_calibration.isCalibrationDone()) // use calibration if available
       body_induction = compass_calibration.calibrate(mag_sensor);
