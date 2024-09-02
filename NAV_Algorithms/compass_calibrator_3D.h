@@ -16,31 +16,29 @@
 class compass_calibrator_3D
 {
 public:
-  enum { AXES=3, DIM=11};
+  enum { AXES=3, PARAMETERS=11, OBSERVATIONS=40};
 
   compass_calibrator_3D( void)
-  : next_populated_observation(0),
-    covered_heading_sectors(0),
-    calibration_successful(false)
+    : calibration_successful(false)
   {
+    start_learning();
   }
 
   void start_learning( void)
   {
-    next_populated_observation = 0;
-    covered_heading_sectors=0;
+    for( unsigned i=0; i<OBSERVATIONS; ++i)
+      heading_sector_error[i]=1e20f;
   }
 
-  bool learn (const float3vector &observed_induction,const float3vector &expected_induction, const quaternion<float> &q);
+  bool learn (const float3vector &observed_induction,const float3vector &expected_induction, const quaternion<float> &q, bool turning_right, float error_margin);
   float3vector calibrate( const float3vector &induction, const quaternion<float> &q);
-  bool calculate( float temporary_solution_matrix[DIM][DIM]);
+  bool calculate( void);
 
 private:
-  float c[AXES][DIM];
-  float target_vector[AXES][DIM];
-  uint8_t next_populated_observation;
-  float observation_matrix[AXES][DIM][DIM];
-  uint16_t covered_heading_sectors;
+  float c[AXES][PARAMETERS];
+  float target_vector[AXES][PARAMETERS];
+  float observation_matrix[AXES][OBSERVATIONS][PARAMETERS];
+  float heading_sector_error[OBSERVATIONS];
   bool calibration_successful;
 };
 
