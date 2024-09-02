@@ -46,7 +46,7 @@ AHRS_type::attitude_setup (const float3vector &acceleration,
   float3vector induction;
 
 #if USE_3D_CALIBRATION
-  induction = calib_3D.calibrate( mag, attitude);
+  induction = mag - calib_3D.calibrate( mag, attitude);
 #else
   if( compass_calibration.isCalibrationDone()) // use calibration if available
     induction = compass_calibration.calibrate(mag);

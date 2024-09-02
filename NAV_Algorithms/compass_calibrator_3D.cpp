@@ -1,4 +1,7 @@
+#define PRINT_Parameters 0
+#if PRINT_PARAMETERS
 #include "stdio.h"
+#endif
 
 #include "compass_calibrator_3D.h"
 #include "embedded_math.h"
@@ -82,6 +85,13 @@ bool compass_calibrator_3D::calculate( void)
     {
       observations.pData = &(observation_matrix[axis][0][0]);
 
+      // calculation, once per axis (FRONT, RIGHT, DOWN):
+      // target vector:        T = ideal induction values for all observations
+      // single measurement:   < 1 induction q0q1 q0q2 q0q3 q1q1 q1q2 q1q3 q2q2 q2q3 q3q3 > (single row)
+      // measurement matrix:   M = single measurement * # OBSERVATIONS
+      // solution matrix:      S = inverse( M_transposed * M) * M_transposed
+      // axis parameter set:   P = S * T
+
       arm_status result = arm_mat_trans_f32( &observations, &observations_transposed);
       assert( result == ARM_MATH_SUCCESS);
 
@@ -109,6 +119,8 @@ bool compass_calibrator_3D::calculate( void)
 
   calibration_successful = true;
 
+#if PRINT_PARAMETERS
+
   for( unsigned k=0; k<3; ++k)
     {
       for( unsigned i=0; i<PARAMETERS; ++i)
@@ -116,6 +128,7 @@ bool compass_calibrator_3D::calculate( void)
       printf("\n");
     }
   printf("\n");
+#endif
 
   start_learning(); // ... again
 
@@ -125,7 +138,7 @@ bool compass_calibrator_3D::calculate( void)
 float3vector compass_calibrator_3D::calibrate( const float3vector &induction, const quaternion<float> &q)
   {
     if( ! calibration_successful)
-      return induction;
+      return float3vector();
 
     float3vector retv;
     for( int i = 0; i < 3; ++i)

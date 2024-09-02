@@ -16,7 +16,7 @@
 class compass_calibrator_3D
 {
 public:
-  enum { AXES=3, PARAMETERS=11, OBSERVATIONS=18};
+  enum { AXES=3, PARAMETERS=11, OBSERVATIONS=22};
 
   compass_calibrator_3D( void)
     : calibration_successful(false)
