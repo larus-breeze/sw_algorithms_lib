@@ -16,7 +16,7 @@
 class compass_calibrator_3D
 {
 public:
-  enum { AXES=3, PARAMETERS=11, OBSERVATIONS=40};
+  enum { AXES=3, PARAMETERS=11, OBSERVATIONS=18};
 
   compass_calibrator_3D( void)
     : calibration_successful(false)
@@ -36,7 +36,7 @@ public:
 
 private:
   float c[AXES][PARAMETERS];
-  float target_vector[AXES][PARAMETERS];
+  float target_vector[AXES][OBSERVATIONS];
   float observation_matrix[AXES][OBSERVATIONS][PARAMETERS];
   float heading_sector_error[OBSERVATIONS];
   bool calibration_successful;
