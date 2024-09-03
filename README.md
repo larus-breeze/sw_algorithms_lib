@@ -18,6 +18,8 @@ The algorithms include:
 
 The sensor output as a set of NMEA sentences ist defined in our subproject [larus-NMEA-protocol](https://github.com/larus-breeze/doc_larus/blob/master/documentation/Larus_NMEA_Protocol.md)
 
+To get an idea about the software structure and the algorithms used you may want to browse the [Doxygen-generated documentation of the library.](https://schaefer.eit.h-da.de/Larus_SIL)
+
 # This library is designed to be imported into another project via a .gitmodules file.
 
 Add as submodule to repository:
