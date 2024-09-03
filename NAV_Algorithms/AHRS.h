@@ -33,7 +33,6 @@
 #include "compass_calibration.h"
 #include "compass_calibrator_3D.h"
 #include "HP_LP_fusion.h"
-#include "induction_observer.h"
 #include "pt2.h"
 
 extern float3vector nav_induction;
