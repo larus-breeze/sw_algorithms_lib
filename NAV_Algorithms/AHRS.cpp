@@ -44,16 +44,10 @@ AHRS_type::attitude_setup (const float3vector &acceleration,
   float3vector north, east, down;
 
   float3vector induction;
-
-#if USE_3D_CALIBRATION
-  induction = mag - calib_3D.calibrate( mag, attitude);
-#else
-  if( compass_calibration.isCalibrationDone()) // use calibration if available
-    induction = compass_calibration.calibrate(mag);
+  if( compass_calibration.available())
+    induction = compass_calibration.calibrate( mag);
   else
     induction = mag;
-#endif
-
 
   down = acceleration;
 
@@ -119,25 +113,17 @@ void AHRS_type::feed_magnetic_induction_observer(const float3vector &mag_sensor)
 
   bool turning_right = turn_rate_averager.get_output() > 0.0f;
 
-#if USE_3D_CALIBRATION
-
   bool calibration_data_complete = calib_3D.learn( mag_sensor, mag_sensor-expected_body_induction, attitude, turning_right, error_margin);
   if( calibration_data_complete)
     {
       calib_3D.calculate();
     }
-#else
+
   for (unsigned i = 0; i < 3; ++i)
     if( turning_right)
       mag_calibration_data_collector_right_turn[i].add_value ( MAG_SCALE * expected_body_induction[i], MAG_SCALE * mag_sensor[i]);
     else
       mag_calibration_data_collector_left_turn[i].add_value ( MAG_SCALE * expected_body_induction[i], MAG_SCALE * mag_sensor[i]);
-#endif
-
-#if USE_EARTH_INDUCTION_DATA_COLLECTOR
-  // measurement of earth induction to find the local earth field parameters
-  earth_induction_data_collector.feed( induction_nav_frame, turning_right);
-#endif
 }
 
 AHRS_type::AHRS_type (float sampling_time)
@@ -161,9 +147,6 @@ AHRS_type::AHRS_type (float sampling_time)
   G_load_averager(     G_LOAD_F_BY_FS),
   compass_calibration(),
   calib_3D(),
-#if USE_EARTH_INDUCTION_DATA_COLLECTOR
-  earth_induction_data_collector( MAG_SCALE),
-#endif
   antenna_DOWN_correction(  configuration( ANT_SLAVE_DOWN)  / configuration( ANT_BASELENGTH)),
   antenna_RIGHT_correction( configuration( ANT_SLAVE_RIGHT) / configuration( ANT_BASELENGTH)),
   heading_difference_AHRS_DGNSS(0.0f),
@@ -246,15 +229,12 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 
   expected_body_induction = body2nav.reverse_map( expected_nav_induction);
 
-#if USE_3D_CALIBRATION
-  float3vector zero;
-  body_induction = mag_sensor - calib_3D.calibrate( mag_sensor, attitude);
-#else
-  if( compass_calibration.isCalibrationDone()) // use calibration if available
+  if( calib_3D.available())
+    body_induction = mag_sensor - calib_3D.calibrate( mag_sensor, attitude);
+  else if( compass_calibration.available())
       body_induction = compass_calibration.calibrate(mag_sensor);
   else
-      body_induction = mag_sensor;
-#endif
+      body_induction = mag_sensor; // fall back to uncalibrated sensor signal
 
   body_induction_error = body_induction - expected_body_induction;
   float3vector nav_acceleration = body2nav * acc;
@@ -326,15 +306,12 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 {
   expected_body_induction = body2nav.reverse_map( expected_nav_induction);
 
-#if USE_3D_CALIBRATION
-  float3vector zero;
-  body_induction = mag_sensor - calib_3D.calibrate( mag_sensor, attitude);
-#else
-  if( compass_calibration.isCalibrationDone()) // use calibration if available
+  if( calib_3D.available())
+    body_induction = mag_sensor - calib_3D.calibrate( mag_sensor, attitude);
+  else if( compass_calibration.available())
       body_induction = compass_calibration.calibrate(mag_sensor);
   else
-    body_induction = mag_sensor;
-#endif
+      body_induction = mag_sensor; // fall back to uncalibrated sensor signal
 
   body_induction_error = body_induction - expected_body_induction;
 
@@ -411,11 +388,12 @@ void AHRS_type::update_ACC_only (const float3vector &gyro, const float3vector &a
 			   const float3vector &mag_sensor,
 			   const float3vector &GNSS_acceleration)
 {
-  float3vector mag;
-  if (compass_calibration.isCalibrationDone ()) // use calibration if available
-    mag = compass_calibration.calibrate (mag_sensor);
+  if( calib_3D.available())
+    body_induction = mag_sensor - calib_3D.calibrate( mag_sensor, attitude);
+  else if( compass_calibration.available())
+      body_induction = compass_calibration.calibrate(mag_sensor);
   else
-    mag = mag_sensor;
+      body_induction = mag_sensor; // fall back to uncalibrated sensor signal
 
   expected_body_induction = body2nav.reverse_map( expected_nav_induction);
   body_induction_error = body_induction - expected_body_induction;
@@ -445,7 +423,7 @@ void AHRS_type::update_ACC_only (const float3vector &gyro, const float3vector &a
   gyro_correction = gyro_correction + gyro_integrator * I_GAIN; // use integrator
 
   // feed quaternion update with corrected sensor readings
-  update_attitude(acc, gyro + gyro_correction, mag);
+  update_attitude(acc, gyro + gyro_correction, body_induction);
 }
 
 void AHRS_type::write_calibration_into_EEPROM( void)
@@ -469,35 +447,11 @@ void AHRS_type::handle_magnetic_calibration ( char type)
 
   float3vector new_induction_estimate;
 
-#if USE_EARTH_INDUCTION_DATA_COLLECTOR
-
-  if (earth_induction_data_collector.data_valid ())
-	{
-	  new_induction_estimate = earth_induction_data_collector.get_estimated_induction();
-	  induction_error = SQRT(earth_induction_data_collector.get_variance ());
-
-	  if ( automatic_earth_field_parameters && ( induction_error < INDUCTION_STD_DEVIATION_LIMIT))
-	    {
-	      expected_nav_induction = new_induction_estimate;
-	      expected_nav_induction.normalize();
-	      update_magnetic_loop_gain(); // adapt to magnetic inclination
-
-	      calibration_changed = true;
-	    }
-	  earth_induction_data_collector.reset ();
-	}
-#endif
-
   if( calibration_changed)
     {
       magnetic_induction_report_t magnetic_induction_report;
       for( unsigned i=0; i<3; ++i)
 	magnetic_induction_report.calibration[i] = (compass_calibration.get_calibration())[i];
-
-#if USE_EARTH_INDUCTION_DATA_COLLECTOR
-      magnetic_induction_report.nav_induction=new_induction_estimate;
-      magnetic_induction_report.nav_induction_std_deviation = induction_error;
-#endif
 
       report_magnetic_calibration_has_changed( &magnetic_induction_report, type);
       magnetic_calibration_updated = true;

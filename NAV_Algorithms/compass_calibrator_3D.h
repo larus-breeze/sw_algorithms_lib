@@ -1,9 +1,26 @@
-/*
- * compass_calibrator_3D.h
- *
- *  Created on: Aug 20, 2024
- *      Author: schaefer
- */
+/***********************************************************************//**
+ * @file		compass_calibrator_3D.h
+ * @brief		induction sensor calibration and magnetic disturbance compensation
+ * @author		Dr. Klaus Schaefer
+ * @copyright 		Copyright 20.8.2024 Dr. Klaus Schaefer. All rights reserved.
+ * @license 		This project is released under the GNU Public License GPL-3.0
+
+    <Larus Flight Sensor Firmware>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ **************************************************************************/
 
 #ifndef NAV_ALGORITHMS_COMPASS_CALIBRATOR_3D_H_
 #define NAV_ALGORITHMS_COMPASS_CALIBRATOR_3D_H_
@@ -33,7 +50,10 @@ public:
   bool learn (const float3vector &observed_induction,const float3vector &expected_induction, const quaternion<float> &q, bool turning_right, float error_margin);
   float3vector calibrate( const float3vector &induction, const quaternion<float> &q);
   bool calculate( void);
-
+  bool available( void) const
+  {
+    return calibration_successful;
+  }
 private:
   float c[AXES][PARAMETERS];
   float target_vector[AXES][OBSERVATIONS];

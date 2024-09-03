@@ -145,7 +145,7 @@ public:
     return true;
   }
 
-  bool isCalibrationDone () const
+  bool available () const
   {
     return calibration_done;
   }

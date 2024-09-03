@@ -15,10 +15,6 @@
 struct magnetic_induction_report_t
 {
   single_axis_calibration_t calibration[3];
-#if USE_EARTH_INDUCTION_DATA_COLLECTOR
-  float3vector nav_induction;
-  float nav_induction_std_deviation;
-#endif
 };
 
 void report_magnetic_calibration_has_changed( magnetic_induction_report_t *p_magnetic_induction_report, char type);
