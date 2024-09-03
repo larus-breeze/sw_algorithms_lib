@@ -8,6 +8,7 @@
 
 #define CUTOFF_DIV_BY_SAMPLING_FREQ 0.01f
 
+//! helper class to support manual compass calibration
 class compass_ground_calibration_t
 {
 public:

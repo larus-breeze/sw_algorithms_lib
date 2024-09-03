@@ -12,6 +12,7 @@
 #include "float3vector.h"
 #include "NAV_tuning_parameters.h"
 
+//! helper struct containing magnetic calibration data
 struct magnetic_induction_report_t
 {
   single_axis_calibration_t calibration[3];

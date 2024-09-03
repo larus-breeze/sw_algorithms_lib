@@ -99,7 +99,7 @@ typedef enum { GNSS_HAVE_FIX, GNSS_NO_FIX, GNSS_ERROR} GNSS_Result;
 #define SAT_FIX 	1 // bits within sat_fix
 #define SAT_HEADING 	2
 
-//! this structure contains all important data from the GNSS
+//! Contains all important data from the GNSS
 typedef struct
 {
   float3vector position;  	//!< NED / meters
@@ -131,7 +131,7 @@ typedef struct
   uint16_t dummy;
 } coordinates_t;
 
-//! this class is organizing the data transfer from uBlox-GNSS to Larus
+//! Organizing the data transfer from a uBlox-GNSS receiver
 class GNSS_type
 {
 public:

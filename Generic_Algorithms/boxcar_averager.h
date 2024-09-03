@@ -8,6 +8,7 @@
 #ifndef GENERIC_ALGORITHMS_BOXCAR_AVERAGER_H_
 #define GENERIC_ALGORITHMS_BOXCAR_AVERAGER_H_
 
+//! FIR averager using a rectangle window
 template <class data_t, unsigned length> class boxcar_averager
 {
 public:

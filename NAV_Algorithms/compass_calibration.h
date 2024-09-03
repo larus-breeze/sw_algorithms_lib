@@ -68,7 +68,7 @@ public:
   float variance; 	//!< measure of precision: sensor calibration parameter variance
 };
 
-//! this class maintains 3d magnetic calibration data
+//! Maintains 3 axes magnetic calibration data
 template <class sample_type, class evaluation_type> class compass_calibration_t
 {
 public:

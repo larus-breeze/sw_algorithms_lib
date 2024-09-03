@@ -45,7 +45,7 @@ typedef enum  { STRAIGHT_FLIGHT, TRANSITION, CIRCLING} circle_state_t;
 
 typedef integrator<float, float3vector> vector3integrator;
 
-//! Attitude and heading reference system class
+//! Attitude and heading reference system
 class AHRS_type
 {
 public:

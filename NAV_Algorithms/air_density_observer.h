@@ -36,7 +36,7 @@ typedef uint64_t measurement_type;
 #define MINIMUM_ALTITUDE_RANGE	300.0f
 #define ALTITUDE_TRIGGER_HYSTERESIS 50.0f
 
-//! this class maintains offset and slope of the air density measurement
+//! Maintains offset and slope of the air density measurement
 class air_data_result
 {
 public:
@@ -50,7 +50,7 @@ public:
   bool valid;
 };
 
-//! this class measures air density and QFF
+//! Measures air density and reference pressure
 class air_density_observer
 {
 public:

@@ -30,6 +30,7 @@
 #include "float3vector.h"
 #include "quaternion.h"
 
+//! 3 dimensional magnetic calibration and error compensation mechanism
 class compass_calibrator_3D
 {
 public:
