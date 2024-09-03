@@ -45,7 +45,7 @@ ROM persistent_data_t PERSISTENT_DATA[]=
 	{MAG_Z_OFF,	"Mag_Z_Off",		false,  0.0f, 0},	//! Induction sensor x offset signed / ( 10.0f / 32768 )
 	{MAG_Z_SCALE,	"Mag_Z_Scale",		false,  1.0f, 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
 	{MAG_STD_DEVIATION, "Mag_Calib_Err",	false,  1e-2f, 0},	//! Magnetic calibration STD deviation / ( 1 % / 65536 )
-	{MAG_AUTO_CALIB, "Mag_Auto_Calib",	false,  1.0f, 0},	//! Magnetic calibration adjusted automatically
+	{MAG_AUTO_CALIB, "Mag_Auto_Calib",	false,  2.0f, 0},	//! Magnetic calibration automatic { OFF=0, 2D=1, 3D=2 }
 
 	{VARIO_TC,	"Vario_TC",		false, 2.0f, 0}, 	//! Vario time constant unsigned s / ( 100.0f / 65536 )
 	{VARIO_INT_TC,	"Vario_Int_TC",		false, 30.0f, 0},	//! Vario integrator time constant unsigned s / ( 100.0f / 65536 )

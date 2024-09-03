@@ -153,7 +153,7 @@ AHRS_type::AHRS_type (float sampling_time)
   cross_acc_correction(0.0f),
   magnetic_disturbance(0.0f),
   magnetic_control_gain(1.0f),
-  automatic_magnetic_calibration( configuration(MAG_AUTO_CALIB)),
+  automatic_magnetic_calibration( (magnetic_calibration_type)(round)(configuration(MAG_AUTO_CALIB))),
   automatic_earth_field_parameters( false),
   magnetic_calibration_updated( false)
 {
@@ -229,7 +229,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 
   expected_body_induction = body2nav.reverse_map( expected_nav_induction);
 
-  if( calib_3D.available())
+  if( (automatic_magnetic_calibration == AUTO_3D) && calib_3D.available())
     body_induction = mag_sensor - calib_3D.calibrate( mag_sensor, attitude);
   else if( compass_calibration.available())
       body_induction = compass_calibration.calibrate(mag_sensor);
@@ -306,7 +306,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 {
   expected_body_induction = body2nav.reverse_map( expected_nav_induction);
 
-  if( calib_3D.available())
+  if( (automatic_magnetic_calibration == AUTO_3D) && calib_3D.available())
     body_induction = mag_sensor - calib_3D.calibrate( mag_sensor, attitude);
   else if( compass_calibration.available())
       body_induction = compass_calibration.calibrate(mag_sensor);
@@ -380,7 +380,6 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 	  handle_magnetic_calibration('m');
 }
 
-
 /**
  * @brief  update attitude from IMU data NOT using magnetometer of D-GNSS
  */
@@ -388,7 +387,7 @@ void AHRS_type::update_ACC_only (const float3vector &gyro, const float3vector &a
 			   const float3vector &mag_sensor,
 			   const float3vector &GNSS_acceleration)
 {
-  if( calib_3D.available())
+  if( (automatic_magnetic_calibration == AUTO_3D) && calib_3D.available())
     body_induction = mag_sensor - calib_3D.calibrate( mag_sensor, attitude);
   else if( compass_calibration.available())
       body_induction = compass_calibration.calibrate(mag_sensor);

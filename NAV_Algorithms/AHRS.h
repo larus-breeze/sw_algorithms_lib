@@ -190,7 +190,7 @@ public:
   {
     return gyro_correction_power;
   }
-
+  enum magnetic_calibration_type { NONE, AUTO_1D, AUTO_3D};
 private:
   void handle_magnetic_calibration( char type);
 
@@ -240,7 +240,7 @@ private:
   float cross_acc_correction;
   float magnetic_disturbance; //!< abs( observed_induction - expected_induction)
   float magnetic_control_gain; //!< declination-dependent magnetic control loop gain
-  bool automatic_magnetic_calibration;
+  magnetic_calibration_type automatic_magnetic_calibration;
   bool automatic_earth_field_parameters; // todo unused, remove me some day
   bool magnetic_calibration_updated;
   float3vector body_induction;
