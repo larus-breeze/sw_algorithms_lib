@@ -29,16 +29,18 @@
 #include "data_structures.h"
 #include "navigator.h"
 #include "earth_induction_model.h"
+#include "compass_calibrator_3D.h"
 
 //! set of algorithms and data to be used by Larus flight sensor
 class organizer_t
 {
 public:
-  organizer_t( void)
-    : pitot_offset(0.0f),
-      pitot_span(0.0f),
-      QNH_offset(0.0f),
-      magnetic_induction_update_counter(0)
+  organizer_t( compass_calibrator_3D::compass_calibrator_3D_data_t *calibration_matrix_data)
+   : navigator( calibration_matrix_data),
+     pitot_offset(0.0f),
+     pitot_span(0.0f),
+     QNH_offset(0.0f),
+     magnetic_induction_update_counter(0)
   {
 
   }

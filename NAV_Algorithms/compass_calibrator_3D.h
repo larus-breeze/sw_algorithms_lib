@@ -36,8 +36,20 @@ class compass_calibrator_3D
 public:
   enum { AXES=3, PARAMETERS=11, OBSERVATIONS=22};
 
-  compass_calibrator_3D( void)
-    : calibration_successful(false)
+  struct compass_calibrator_3D_data_t
+  {
+    float target_vector[AXES][OBSERVATIONS];
+    float observation_matrix[AXES][OBSERVATIONS][PARAMETERS];
+
+    float temporary_solution_matrix[PARAMETERS][PARAMETERS];
+    float transposed_matrix[PARAMETERS][OBSERVATIONS];
+    float matrix_to_be_inverted_data[PARAMETERS][PARAMETERS];
+    float solution_mapping_data[PARAMETERS][OBSERVATIONS];
+  };
+
+  compass_calibrator_3D( compass_calibrator_3D_data_t * _data)
+    : data (_data),
+      calibration_successful(false)
   {
     start_learning();
   }
@@ -49,16 +61,19 @@ public:
   }
 
   bool learn (const float3vector &observed_induction,const float3vector &expected_induction, const quaternion<float> &q, bool turning_right, float error_margin);
+
   float3vector calibrate( const float3vector &induction, const quaternion<float> &q);
-  bool calculate( void);
+
   bool available( void) const
   {
     return calibration_successful;
   }
+
+  bool calculate( compass_calibrator_3D_data_t * data);
+
 private:
+  compass_calibrator_3D_data_t *data;
   float c[AXES][PARAMETERS];
-  float target_vector[AXES][OBSERVATIONS];
-  float observation_matrix[AXES][OBSERVATIONS][PARAMETERS];
   float heading_sector_error[OBSERVATIONS];
   bool calibration_successful;
 };

@@ -116,7 +116,7 @@ void AHRS_type::feed_magnetic_induction_observer(const float3vector &mag_sensor)
   bool calibration_data_complete = calib_3D.learn( mag_sensor, mag_sensor-expected_body_induction, attitude, turning_right, error_margin);
   if( calibration_data_complete)
     {
-      calib_3D.calculate();
+      calib_3D.calculate( calibration_matrix_data);
     }
 
   for (unsigned i = 0; i < 3; ++i)
@@ -126,7 +126,7 @@ void AHRS_type::feed_magnetic_induction_observer(const float3vector &mag_sensor)
       mag_calibration_data_collector_left_turn[i].add_value ( MAG_SCALE * expected_body_induction[i], MAG_SCALE * mag_sensor[i]);
 }
 
-AHRS_type::AHRS_type (float sampling_time)
+AHRS_type::AHRS_type (float sampling_time, compass_calibrator_3D::compass_calibrator_3D_data_t * _calibration_matrix_data)
 :
   Ts(sampling_time),
   Ts_div_2 (sampling_time / 2.0f),
@@ -146,7 +146,7 @@ AHRS_type::AHRS_type (float sampling_time)
   turn_rate_averager( ANGLE_F_BY_FS),
   G_load_averager(     G_LOAD_F_BY_FS),
   compass_calibration(),
-  calib_3D(),
+  calib_3D(_calibration_matrix_data),
   antenna_DOWN_correction(  configuration( ANT_SLAVE_DOWN)  / configuration( ANT_BASELENGTH)),
   antenna_RIGHT_correction( configuration( ANT_SLAVE_RIGHT) / configuration( ANT_BASELENGTH)),
   heading_difference_AHRS_DGNSS(0.0f),
@@ -154,8 +154,8 @@ AHRS_type::AHRS_type (float sampling_time)
   magnetic_disturbance(0.0f),
   magnetic_control_gain(1.0f),
   automatic_magnetic_calibration( (magnetic_calibration_type)(round)(configuration(MAG_AUTO_CALIB))),
-  automatic_earth_field_parameters( false),
-  magnetic_calibration_updated( false)
+  magnetic_calibration_updated( false),
+  calibration_matrix_data( _calibration_matrix_data)
 {
   update_magnetic_loop_gain(); // adapt to magnetic inclination
 

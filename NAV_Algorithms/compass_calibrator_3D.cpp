@@ -50,19 +50,19 @@ bool compass_calibrator_3D::learn (const float3vector &observed_induction,const 
 
   for( unsigned axis = 0; axis < AXES; ++axis)
     {
-      target_vector[axis][sector_index] = expected_induction[axis];
+      data->target_vector[axis][sector_index] = expected_induction[axis];
 
-      observation_matrix[axis][sector_index][0] = 1.0f;
-      observation_matrix[axis][sector_index][1] = observed_induction[axis];
-      observation_matrix[axis][sector_index][2] = q[0] * q[1];
-      observation_matrix[axis][sector_index][3] = q[0] * q[2];
-      observation_matrix[axis][sector_index][4] = q[0] * q[3];
-      observation_matrix[axis][sector_index][5] = q[1] * q[1];
-      observation_matrix[axis][sector_index][6] = q[1] * q[2];
-      observation_matrix[axis][sector_index][7] = q[1] * q[3];
-      observation_matrix[axis][sector_index][8] = q[2] * q[2];
-      observation_matrix[axis][sector_index][9] = q[2] * q[3];
-      observation_matrix[axis][sector_index][10]= q[3] * q[3];
+      data->observation_matrix[axis][sector_index][0] = 1.0f;
+      data->observation_matrix[axis][sector_index][1] = observed_induction[axis];
+      data->observation_matrix[axis][sector_index][2] = q[0] * q[1];
+      data->observation_matrix[axis][sector_index][3] = q[0] * q[2];
+      data->observation_matrix[axis][sector_index][4] = q[0] * q[3];
+      data->observation_matrix[axis][sector_index][5] = q[1] * q[1];
+      data->observation_matrix[axis][sector_index][6] = q[1] * q[2];
+      data->observation_matrix[axis][sector_index][7] = q[1] * q[3];
+      data->observation_matrix[axis][sector_index][8] = q[2] * q[2];
+      data->observation_matrix[axis][sector_index][9] = q[2] * q[3];
+      data->observation_matrix[axis][sector_index][10]= q[3] * q[3];
     }
 
   for( unsigned i = 0; i < OBSERVATIONS; ++i)
@@ -72,42 +72,38 @@ bool compass_calibrator_3D::learn (const float3vector &observed_induction,const 
   return true; // complete
 }
 
-bool compass_calibrator_3D::calculate( void)
+bool compass_calibrator_3D::calculate( compass_calibrator_3D_data_t * data)
 {
 //  if( calibration_successful)
 //    return false;
 
-  float temporary_solution_matrix[PARAMETERS][PARAMETERS];
   arm_matrix_instance_f32 solution;
   solution.numCols=PARAMETERS;
   solution.numRows=PARAMETERS;
-  solution.pData = (float *)temporary_solution_matrix;
+  solution.pData = (float *)(data->temporary_solution_matrix);
 
   arm_matrix_instance_f32 observations;
   observations.numCols=PARAMETERS;
   observations.numRows=OBSERVATIONS;
 
-  float transposed_matrix[PARAMETERS][OBSERVATIONS];
   arm_matrix_instance_f32 observations_transposed;
   observations_transposed.numCols=OBSERVATIONS;
   observations_transposed.numRows=PARAMETERS;
-  observations_transposed.pData = (float *)transposed_matrix;
+  observations_transposed.pData = (float *)(data->transposed_matrix);
 
-  float matrix_to_be_inverted_data[PARAMETERS][PARAMETERS];
   arm_matrix_instance_f32 matrix_to_be_inverted;
   matrix_to_be_inverted.numCols=PARAMETERS;
   matrix_to_be_inverted.numRows=PARAMETERS;
-  matrix_to_be_inverted.pData = (float *)matrix_to_be_inverted_data;
+  matrix_to_be_inverted.pData = (float *)(data->matrix_to_be_inverted_data);
 
-  float solution_mapping_data[PARAMETERS][OBSERVATIONS];
   arm_matrix_instance_f32 solution_mapping;
   solution_mapping.numCols=OBSERVATIONS;
   solution_mapping.numRows=PARAMETERS;
-  solution_mapping.pData = (float *)solution_mapping_data;
+  solution_mapping.pData = (float *)(data->solution_mapping_data);
 
   for( unsigned axis = 0; axis < AXES; ++axis)
     {
-      observations.pData = &(observation_matrix[axis][0][0]);
+      observations.pData = &(data->observation_matrix[axis][0][0]);
 
       // calculation, once per axis (FRONT, RIGHT, DOWN):
       // target vector:        T = ideal induction values for all observations
@@ -131,7 +127,7 @@ bool compass_calibrator_3D::calculate( void)
       arm_matrix_instance_f32 target_vector_inst;
       target_vector_inst.numCols=1;
       target_vector_inst.numRows=OBSERVATIONS;
-      target_vector_inst.pData=&(target_vector[axis][0]);
+      target_vector_inst.pData=&(data->target_vector[axis][0]);
 
       arm_matrix_instance_f32 axis_parameter_set;
       axis_parameter_set.numCols=1;

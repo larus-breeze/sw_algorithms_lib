@@ -49,7 +49,7 @@ typedef integrator<float, float3vector> vector3integrator;
 class AHRS_type
 {
 public:
-	AHRS_type(float sampling_time);
+	AHRS_type(float sampling_time, compass_calibrator_3D::compass_calibrator_3D_data_t *calibration_matrix_data);
 	void attitude_setup( const float3vector & acceleration, const float3vector & induction);
 
 	void update_magnetic_induction_data( float declination, float inclination)
@@ -214,6 +214,7 @@ private:
 
   ftype Ts;
   ftype Ts_div_2;
+  compass_calibrator_3D::compass_calibrator_3D_data_t *calibration_matrix_data;
   quaternion<ftype>attitude;
   float3vector gyro_integrator;
   unsigned circling_counter;
@@ -241,7 +242,6 @@ private:
   float magnetic_disturbance; //!< abs( observed_induction - expected_induction)
   float magnetic_control_gain; //!< declination-dependent magnetic control loop gain
   magnetic_calibration_type automatic_magnetic_calibration;
-  bool automatic_earth_field_parameters; // todo unused, remove me some day
   bool magnetic_calibration_updated;
   float3vector body_induction;
   float3vector body_induction_error;

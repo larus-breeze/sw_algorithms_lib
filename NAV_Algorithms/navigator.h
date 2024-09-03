@@ -36,15 +36,16 @@
 #include "accumulating_averager.h"
 #include "airborne_detector.h"
 #include "wind_observer.h"
+#include "compass_calibrator_3D.h"
 
 //! organizes horizontal navigation, wind observation and variometer
 class navigator_t
 {
 public:
-  navigator_t (void)
-	:ahrs (0.01f),
+  navigator_t ( compass_calibrator_3D::compass_calibrator_3D_data_t *calibration_matrix_data)
+	:ahrs (0.01f, calibration_matrix_data),
 #if DEVELOPMENT_ADDITIONS
-	 ahrs_magnetic (0.01f),
+	 ahrs_magnetic (0.01f, calibration_matrix_data),
 #endif
 	 atmosphere (101325.0f),
 	 flight_observer(),
