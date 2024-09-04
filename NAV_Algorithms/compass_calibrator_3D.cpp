@@ -22,11 +22,6 @@
 
  **************************************************************************/
 
-#define PRINT_PARAMETERS 0
-#if PRINT_PARAMETERS
-#include "stdio.h"
-#endif
-
 #include "compass_calibrator_3D.h"
 #include "embedded_math.h"
 
@@ -74,9 +69,6 @@ bool compass_calibrator_3D_t::learn (const float3vector &observed_induction,cons
 
 bool compass_calibrator_3D_t::calculate( void)
 {
-//  if( calibration_successful)
-//    return false;
-
   float temporary_solution_matrix[PARAMETERS][PARAMETERS];
   arm_matrix_instance_f32 solution;
   solution.numCols=PARAMETERS;
@@ -123,16 +115,32 @@ bool compass_calibrator_3D_t::calculate( void)
       // axis parameter set:   P = S * T
 
       arm_status result = arm_mat_trans_f32( &observations, &observations_transposed);
-      assert( result == ARM_MATH_SUCCESS);
+      if( result != ARM_MATH_SUCCESS)
+	{
+	  start_learning(); // discard data
+	  return false;
+	}
 
       result = arm_mat_mult_f32( &observations_transposed, &observations, &matrix_to_be_inverted);
-      assert( result == ARM_MATH_SUCCESS);
+      if( result != ARM_MATH_SUCCESS)
+	{
+	  start_learning(); // discard data
+	  return false;
+	}
 
       result = arm_mat_inverse_f32( &matrix_to_be_inverted, &solution);
-      assert( result == ARM_MATH_SUCCESS);
+      if( result != ARM_MATH_SUCCESS)
+	{
+	  start_learning(); // discard data
+	  return false;
+	}
 
       result = arm_mat_mult_f32( &solution, &observations_transposed, &solution_mapping);
-      assert( result == ARM_MATH_SUCCESS);
+      if( result != ARM_MATH_SUCCESS)
+	{
+	  start_learning(); // discard data
+	  return false;
+	}
 
       arm_matrix_instance_f32 target_vector_inst;
       target_vector_inst.numCols=1;
@@ -144,23 +152,14 @@ bool compass_calibrator_3D_t::calculate( void)
       axis_parameter_set.numRows=PARAMETERS;
       axis_parameter_set.pData=&(c[next_buffer][axis][0]);
       result = arm_mat_mult_f32( &solution_mapping, &target_vector_inst, &axis_parameter_set);
-      buffer_used_for_calibration = next_buffer; // switch now in a thread-save manner
-      assert( result == ARM_MATH_SUCCESS);
+      if( result != ARM_MATH_SUCCESS)
+	{
+	  start_learning(); // discard data
+	  return false;
+	}
     }
 
-  calibration_successful = true;
-
-#if PRINT_PARAMETERS
-
-  for( unsigned k=0; k<3; ++k)
-    {
-      for( unsigned i=0; i<PARAMETERS; ++i)
-	printf("%e\t", (double)(c[next_buffer][k][i]));
-      printf("\n");
-    }
-  printf("\n");
-#endif
-
+  buffer_used_for_calibration = next_buffer; // switch now in a thread-save manner
   start_learning(); // ... again
 
   return true;

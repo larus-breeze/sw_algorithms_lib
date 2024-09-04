@@ -55,6 +55,7 @@ public:
   {
     return buffer_used_for_calibration != INVALID;
   }
+
   const float * get_current_parameters( void) const
   {
     if( buffer_used_for_calibration == INVALID)
@@ -62,13 +63,28 @@ public:
 
     return &(c[buffer_used_for_calibration][0][0]);
   }
+
+  void set_current_parameters( const float * source)
+  {
+    int next_buffer;
+    if( buffer_used_for_calibration != 0)
+      next_buffer = 0;
+    else
+      next_buffer = 1;
+
+    float * destination = &(c[next_buffer][0][0]);
+    for( unsigned i=0; i < AXES * PARAMETERS; ++i)
+      *destination++ = *source++;
+
+    buffer_used_for_calibration = next_buffer;
+  }
+
 private:
   int buffer_used_for_calibration;
   float c[2][AXES][PARAMETERS]; // double buffering for multi-thrading support
   float target_vector[AXES][OBSERVATIONS];
   float observation_matrix[AXES][OBSERVATIONS][PARAMETERS];
   float heading_sector_error[OBSERVATIONS];
-  bool calibration_successful;
 };
 
 extern compass_calibrator_3D_t compass_calibrator_3D;
