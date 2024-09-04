@@ -22,7 +22,7 @@
 
  **************************************************************************/
 
-#define PRINT_PARAMETERS 1
+#define PRINT_PARAMETERS 0
 #if PRINT_PARAMETERS
 #include "stdio.h"
 #endif
