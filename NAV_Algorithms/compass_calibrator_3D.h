@@ -31,13 +31,13 @@
 #include "quaternion.h"
 
 //! 3 dimensional magnetic calibration and error compensation mechanism
-class compass_calibrator_3D
+class compass_calibrator_3D_t
 {
 public:
-  enum { AXES=3, PARAMETERS=11, OBSERVATIONS=22};
+  enum { AXES=3, PARAMETERS=11, OBSERVATIONS=22, INVALID=-1};
 
-  compass_calibrator_3D( void)
-    : calibration_successful(false)
+  compass_calibrator_3D_t( void)
+    : buffer_used_for_calibration(INVALID)
   {
     start_learning();
   }
@@ -53,14 +53,18 @@ public:
   bool calculate( void);
   bool available( void) const
   {
-    return calibration_successful;
+    return buffer_used_for_calibration != INVALID;
   }
 private:
-  float c[AXES][PARAMETERS];
+  int buffer_used_for_calibration;
+  float c[2][AXES][PARAMETERS]; // double buffering for multi-thrading support
   float target_vector[AXES][OBSERVATIONS];
   float observation_matrix[AXES][OBSERVATIONS][PARAMETERS];
   float heading_sector_error[OBSERVATIONS];
   bool calibration_successful;
 };
+
+extern compass_calibrator_3D_t compass_calibrator_3D;
+void trigger_compass_calibrator_3D_calculation(void);
 
 #endif /* NAV_ALGORITHMS_COMPASS_CALIBRATOR_3D_H_ */

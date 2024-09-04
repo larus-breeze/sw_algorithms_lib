@@ -33,9 +33,9 @@
 #define __PROGRAM_START 0
 #include "arm_math.h"
 
-ROM float RECIP_SECTOR_SIZE = compass_calibrator_3D::OBSERVATIONS / M_PI_F / TWO / TWO;
+ROM float RECIP_SECTOR_SIZE = compass_calibrator_3D_t::OBSERVATIONS / M_PI_F / TWO / TWO;
 
-bool compass_calibrator_3D::learn (const float3vector &observed_induction,const float3vector &expected_induction, const quaternion<float> &q, bool turning_right, float error_margin)
+bool compass_calibrator_3D_t::learn (const float3vector &observed_induction,const float3vector &expected_induction, const quaternion<float> &q, bool turning_right, float error_margin)
 {
   float present_heading = q.get_heading();
   if( present_heading <0.0f)
@@ -72,7 +72,7 @@ bool compass_calibrator_3D::learn (const float3vector &observed_induction,const 
   return true; // complete
 }
 
-bool compass_calibrator_3D::calculate( void)
+bool compass_calibrator_3D_t::calculate( void)
 {
 //  if( calibration_successful)
 //    return false;
@@ -105,6 +105,12 @@ bool compass_calibrator_3D::calculate( void)
   solution_mapping.numRows=PARAMETERS;
   solution_mapping.pData = (float *)solution_mapping_data;
 
+  int next_buffer;
+  if( buffer_used_for_calibration == 0)
+    next_buffer = 1;
+  else
+    next_buffer = 0;
+
   for( unsigned axis = 0; axis < AXES; ++axis)
     {
       observations.pData = &(observation_matrix[axis][0][0]);
@@ -136,8 +142,9 @@ bool compass_calibrator_3D::calculate( void)
       arm_matrix_instance_f32 axis_parameter_set;
       axis_parameter_set.numCols=1;
       axis_parameter_set.numRows=PARAMETERS;
-      axis_parameter_set.pData=&(c[axis][0]);
+      axis_parameter_set.pData=&(c[next_buffer][axis][0]);
       result = arm_mat_mult_f32( &solution_mapping, &target_vector_inst, &axis_parameter_set);
+      buffer_used_for_calibration = next_buffer; // switch now in a thread-save manner
       assert( result == ARM_MATH_SUCCESS);
     }
 
@@ -148,7 +155,7 @@ bool compass_calibrator_3D::calculate( void)
   for( unsigned k=0; k<3; ++k)
     {
       for( unsigned i=0; i<PARAMETERS; ++i)
-	printf("%e\t", (double)(c[k][i]));
+	printf("%e\t", (double)(c[next_buffer][k][i]));
       printf("\n");
     }
   printf("\n");
@@ -159,19 +166,21 @@ bool compass_calibrator_3D::calculate( void)
   return true;
 }
 
-float3vector compass_calibrator_3D::calibrate( const float3vector &induction, const quaternion<float> &q)
+float3vector compass_calibrator_3D_t::calibrate( const float3vector &induction, const quaternion<float> &q)
   {
-    if( ! calibration_successful)
+    if( buffer_used_for_calibration == INVALID) // we do not have a valid calibration
       return float3vector();
+
+    unsigned b=buffer_used_for_calibration; // just to save expensive characters ...
 
     float3vector retv;
     for( int i = 0; i < 3; ++i)
       {
 	retv[i] =
-	    c[i][0] + c[i][1] * induction[i] +
-	    c[i][2] * q[0] * q[1] + c[i][3] * q[0] * q[2] + c[i][4] * q[0] * q[3] +
-	    c[i][5] * q[1] * q[1] + c[i][6] * q[1] * q[2] + c[i][7] * q[1] * q[3] +
-	    c[i][8] * q[2] * q[2] + c[i][9] * q[2] * q[3] + c[i][10]* q[3] * q[3] ;
+	    c[b][i][0] + c[b][i][1] * induction[i] +
+	    c[b][i][2] * q[0] * q[1] + c[b][i][3] * q[0] * q[2] + c[b][i][4] * q[0] * q[3] +
+	    c[b][i][5] * q[1] * q[1] + c[b][i][6] * q[1] * q[2] + c[b][i][7] * q[1] * q[3] +
+	    c[b][i][8] * q[2] * q[2] + c[b][i][9] * q[2] * q[3] + c[b][i][10]* q[3] * q[3] ;
       }
     return retv;
   }
