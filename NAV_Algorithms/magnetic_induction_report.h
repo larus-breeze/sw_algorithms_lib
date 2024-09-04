@@ -16,6 +16,7 @@
 struct magnetic_induction_report_t
 {
   single_axis_calibration_t calibration[3];
+  bool valid;
 };
 
 void report_magnetic_calibration_has_changed( magnetic_induction_report_t *p_magnetic_induction_report, char type);

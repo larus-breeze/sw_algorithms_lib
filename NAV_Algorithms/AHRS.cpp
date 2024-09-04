@@ -256,7 +256,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 	   + nav_acceleration[NORTH] * GNSS_acceleration[EAST]
 	   - nav_acceleration[EAST]  * GNSS_acceleration[NORTH];
 
-  if( circling_state == CIRCLING) // heading correction using acceleration cross product GNSS * INS
+  if( false /* PATCH */ && circling_state == CIRCLING) // heading correction using acceleration cross product GNSS * INS
     {
 
 #if USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING

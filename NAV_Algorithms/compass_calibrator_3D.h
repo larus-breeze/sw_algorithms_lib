@@ -55,6 +55,13 @@ public:
   {
     return buffer_used_for_calibration != INVALID;
   }
+  const float * get_current_parameters( void) const
+  {
+    if( buffer_used_for_calibration == INVALID)
+      return 0;
+
+    return &(c[buffer_used_for_calibration][0][0]);
+  }
 private:
   int buffer_used_for_calibration;
   float c[2][AXES][PARAMETERS]; // double buffering for multi-thrading support
