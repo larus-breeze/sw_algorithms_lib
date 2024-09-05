@@ -25,7 +25,6 @@
 #include "compass_calibrator_3D.h"
 #include "embedded_math.h"
 
-#define __PROGRAM_START 0
 #include <matrix_functions.h>
 
 ROM float RECIP_SECTOR_SIZE = compass_calibrator_3D_t::OBSERVATIONS / M_PI_F / TWO / TWO;
