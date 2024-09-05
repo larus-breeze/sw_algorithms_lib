@@ -60,6 +60,8 @@ public:
 
   void start_learning( void)
   {
+    populated_sectors = 0;
+    last_sector_collected=-1;
     for( unsigned i=0; i<OBSERVATIONS; ++i)
       heading_sector_error[i]=1e20f;
   }
@@ -97,6 +99,8 @@ public:
 
 private:
   int buffer_used_for_calibration;
+  unsigned populated_sectors;
+  unsigned last_sector_collected;
   computation_float_type c[2][AXES][PARAMETERS]; // double buffering for multi-thrading support
   computation_float_type target_vector[AXES][OBSERVATIONS];
   computation_float_type observation_matrix[AXES][OBSERVATIONS][PARAMETERS];

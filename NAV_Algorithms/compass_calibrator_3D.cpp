@@ -38,6 +38,13 @@ bool compass_calibrator_3D_t::learn (const float3vector &observed_induction,cons
 
   unsigned sector_index = (turning_right ? OBSERVATIONS / TWO : 0) + (unsigned)(present_heading * RECIP_SECTOR_SIZE);
 
+  // if we have just left the last sector to be collected: report ready for computation
+  if( ( last_sector_collected != -1) && ( sector_index != last_sector_collected))
+    return true;
+
+  if( heading_sector_error[sector_index] > 1e19) // this sector has not been written before
+    ++populated_sectors;
+
   if ( heading_sector_error[sector_index] < error_margin)
     return false; // we have collected more precise data for this observation earlier
 
@@ -60,17 +67,16 @@ bool compass_calibrator_3D_t::learn (const float3vector &observed_induction,cons
       observation_matrix[axis][sector_index][10]= q[3] * q[3];
     }
 
-  for( unsigned i = 0; i < OBSERVATIONS; ++i)
-    if( heading_sector_error[i] > 1e19)
-      return false; // some observations are still missing
+  if( (last_sector_collected == -1) && populated_sectors >= OBSERVATIONS)
+    last_sector_collected = sector_index;
 
-  return true; // complete
+  return false;
 }
 
 bool compass_calibrator_3D_t::calculate( void)
 {
-  if( buffer_used_for_calibration != INVALID)
-    return false;
+//  if( buffer_used_for_calibration != INVALID)
+//    return false;
 
   computation_float_type temporary_solution_matrix[PARAMETERS][PARAMETERS];
   ARM_MATRIX_INSTANCE solution;
