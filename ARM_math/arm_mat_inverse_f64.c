@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------
  * Project:      CMSIS DSP Library
- * Title:        arm_mat_inverse_f32.c
+ * Title:        arm_mat_inverse_f64.c
  * Description:  Floating-point matrix inverse
  *
  * $Date:        23 April 2021
@@ -29,46 +29,10 @@
 #include "matrix_functions.h"
 #include "matrix_utils.h"
 
-
 /**
   @ingroup groupMatrix
  */
 
-/**
-  @defgroup MatrixInv Matrix Inverse
-
-  Computes the inverse of a matrix.
-
-  The inverse is defined only if the input matrix is square and non-singular (the determinant is non-zero).
-  The function checks that the input and output matrices are square and of the same size.
-
-  Matrix inversion is numerically sensitive and the CMSIS DSP library only supports matrix
-  inversion of floating-point matrices.
-
-  @par Algorithm
-  The Gauss-Jordan method is used to find the inverse.
-  The algorithm performs a sequence of elementary row-operations until it
-  reduces the input matrix to an identity matrix. Applying the same sequence
-  of elementary row-operations to an identity matrix yields the inverse matrix.
-  If the input matrix is singular, then the algorithm terminates and returns error status
-  <code>ARM_MATH_SINGULAR</code>.
- 
-  @par Matrix Inverse of a 3 x 3 matrix using Gauss-Jordan Method 
-
-  \f[
-  \begin{pmatrix}
-   a_{1,1} & a_{1,2} & a_{1,3} & | & 1 & 0 & 0\\
-   a_{2,1} & a_{2,2} & a_{2,3} & | & 0 & 1 & 0\\
-   a_{3,1} & a_{3,2} & a_{3,3} & | & 0 & 0 & 1\\
-  \end{pmatrix}
-  \rightarrow
-  \begin{pmatrix}
-   1 & 0 & 0 & | & x_{1,1} & x_{2,1} & x_{3,1} \\
-   0 & 1 & 0 & | & x_{1,2} & x_{2,2} & x_{3,2} \\
-   0 & 0 & 1 & | & x_{1,3} & x_{2,3} & x_{3,3} \\
-  \end{pmatrix}
-  \f]
- */
 
 /**
   @addtogroup MatrixInv
@@ -76,7 +40,7 @@
  */
 
 /**
-  @brief         Floating-point matrix inverse.
+  @brief         Floating-point (64 bit) matrix inverse.
   @param[in]     pSrc      points to input matrix structure. The source matrix is modified by the function.
   @param[out]    pDst      points to output matrix structure
   @return        execution status
@@ -84,19 +48,20 @@
                    - \ref ARM_MATH_SIZE_MISMATCH : Matrix size check failed
                    - \ref ARM_MATH_SINGULAR      : Input matrix is found to be singular (non-invertible)
  */
-arm_status arm_mat_inverse_f32(
-  const arm_matrix_instance_f32 * pSrc,
-        arm_matrix_instance_f32 * pDst)
+
+arm_status arm_mat_inverse_f64(
+  const arm_matrix_instance_f64 * pSrc,
+        arm_matrix_instance_f64 * pDst)
 {
-  float32_t *pIn = pSrc->pData;                  /* input data matrix pointer */
-  float32_t *pOut = pDst->pData;                 /* output data matrix pointer */
+  float64_t *pIn = pSrc->pData;                  /* input data matrix pointer */
+  float64_t *pOut = pDst->pData;                 /* output data matrix pointer */
   
-  float32_t *pTmp;
+  float64_t *pTmp;
   uint32_t numRows = pSrc->numRows;              /* Number of rows in the matrix  */
   uint32_t numCols = pSrc->numCols;              /* Number of Cols in the matrix  */
 
 
-  float32_t pivot = 0.0f, newPivot=0.0f;                /* Temporary input values  */
+  float64_t pivot = 0.0, newPivot=0.0;                /* Temporary input values  */
   uint32_t selectedRow,pivotRow,i, rowNb, rowCnt, flag = 0U, j,column;      /* loop counters */
   arm_status status;                             /* status of matrix inverse */
 
@@ -163,18 +128,18 @@ arm_status arm_mat_inverse_f32(
       j = numRows - rowCnt;
       while (j > 0U)
       {
-        *pTmp++ = 0.0f;
+        *pTmp++ = 0.0;
         j--;
       }
 
       /* Writing all ones in the diagonal of the destination matrix */
-      *pTmp++ = 1.0f;
+      *pTmp++ = 1.0;
 
       /* Writing all zeroes in upper triangle of the destination matrix */
       j = rowCnt - 1U;
       while (j > 0U)
       {
-        *pTmp++ = 0.0f;
+        *pTmp++ = 0.0;
         j--;
       }
 
@@ -200,7 +165,6 @@ arm_status arm_mat_inverse_f32(
       pivot = *pTmp;
       selectedRow = column;
 
-      /* Find maximum pivot in column */
       
         /* Loop over the number rows present below */
 
@@ -209,42 +173,42 @@ arm_status arm_mat_inverse_f32(
           /* Update the input and destination pointers */
           pTmp = ELEM(pSrc,rowNb,column);
           newPivot = *pTmp;
-          if (fabsf(newPivot) > fabsf(pivot))
+          if (fabs(newPivot) > fabs(pivot))
           {
             selectedRow = rowNb; 
             pivot = newPivot;
           }
       }
-        
-      /* Check if there is a non zero pivot element to
-       * replace in the rows below */
-      if ((pivot != 0.0f) && (selectedRow != column))
+
+          /* Check if there is a non zero pivot element to
+           * replace in the rows below */
+      if ((pivot != 0.0) && (selectedRow != column))
       {
-            
-            SWAP_ROWS_F32(pSrc,column, pivotRow,selectedRow);
-            SWAP_ROWS_F32(pDst,0, pivotRow,selectedRow);
+            /* Loop over number of columns
+             * to the right of the pilot element */
+
+            SWAP_ROWS_F64(pSrc,column, pivotRow,selectedRow);
+            SWAP_ROWS_F64(pDst,0, pivotRow,selectedRow);
 
     
             /* Flag to indicate whether exchange is done or not */
             flag = 1U;
-       }
 
+      }
 
-      
-      
 
       /* Update the status if the matrix is singular */
-      if ((flag != 1U) && (pivot == 0.0f))
+      if ((flag != 1U) && (pivot == 0.0))
       {
         return ARM_MATH_SINGULAR;
       }
 
      
       /* Pivot element of the row */
-      pivot = 1.0f / pivot;
+      pivot = 1.0 / pivot;
 
-      SCALE_ROW_F32(pSrc,column,pivot,pivotRow);
-      SCALE_ROW_F32(pDst,0,pivot,pivotRow);
+      SCALE_ROW_F64(pSrc,column,pivot,pivotRow);
+      SCALE_ROW_F64(pDst,0,pivot,pivotRow);
 
       
       /* Replace the rows with the sum of that row and a multiple of row i
@@ -256,8 +220,8 @@ arm_status arm_mat_inverse_f32(
            pTmp = ELEM(pSrc,rowNb,column) ;
            pivot = *pTmp;
 
-           MAS_ROW_F32(column,pSrc,rowNb,pivot,pSrc,pivotRow);
-           MAS_ROW_F32(0     ,pDst,rowNb,pivot,pDst,pivotRow);
+           MAS_ROW_F64(column,pSrc,rowNb,pivot,pSrc,pivotRow);
+           MAS_ROW_F64(0     ,pDst,rowNb,pivot,pDst,pivotRow);
 
 
       }
@@ -267,8 +231,8 @@ arm_status arm_mat_inverse_f32(
            pTmp = ELEM(pSrc,rowNb,column) ;
            pivot = *pTmp;
 
-           MAS_ROW_F32(column,pSrc,rowNb,pivot,pSrc,pivotRow);
-           MAS_ROW_F32(0     ,pDst,rowNb,pivot,pDst,pivotRow);
+           MAS_ROW_F64(column,pSrc,rowNb,pivot,pSrc,pivotRow);
+           MAS_ROW_F64(0     ,pDst,rowNb,pivot,pDst,pivotRow);
 
       }
 
@@ -277,12 +241,12 @@ arm_status arm_mat_inverse_f32(
     /* Set status as ARM_MATH_SUCCESS */
     status = ARM_MATH_SUCCESS;
 
-    if ((flag != 1U) && (pivot == 0.0f))
+    if ((flag != 1U) && (pivot == 0.0))
     {
       pIn = pSrc->pData;
       for (i = 0; i < numRows * numCols; i++)
       {
-        if (pIn[i] != 0.0f)
+        if (pIn[i] != 0.0)
             break;
       }
 

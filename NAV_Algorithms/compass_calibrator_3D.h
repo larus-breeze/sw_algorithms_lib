@@ -30,6 +30,22 @@
 #include "float3vector.h"
 #include "quaternion.h"
 
+#include "matrix_functions.h"
+
+#if 0
+typedef double computation_float_type;
+#define ARM_MATRIX_INSTANCE arm_matrix_instance_f64
+#define ARM_MAT_TRANS arm_mat_trans_f64
+#define ARM_MAT_MULT arm_mat_mult_f64
+#define ARM_MAT_INVERSE arm_mat_inverse_f64
+#else
+typedef float computation_float_type;
+#define ARM_MATRIX_INSTANCE arm_matrix_instance_f32
+#define ARM_MAT_TRANS arm_mat_trans_f32
+#define ARM_MAT_MULT arm_mat_mult_f32
+#define ARM_MAT_INVERSE arm_mat_inverse_f32
+#endif
+
 //! 3 dimensional magnetic calibration and error compensation mechanism
 class compass_calibrator_3D_t
 {
@@ -56,7 +72,7 @@ public:
     return buffer_used_for_calibration != INVALID;
   }
 
-  const float * get_current_parameters( void) const
+  const computation_float_type * get_current_parameters( void) const
   {
     if( buffer_used_for_calibration == INVALID)
       return 0;
@@ -72,7 +88,7 @@ public:
     else
       next_buffer = 1;
 
-    float * destination = &(c[next_buffer][0][0]);
+    computation_float_type * destination = &(c[next_buffer][0][0]);
     for( unsigned i=0; i < AXES * PARAMETERS; ++i)
       *destination++ = *source++;
 
@@ -81,10 +97,10 @@ public:
 
 private:
   int buffer_used_for_calibration;
-  float c[2][AXES][PARAMETERS]; // double buffering for multi-thrading support
-  float target_vector[AXES][OBSERVATIONS];
-  float observation_matrix[AXES][OBSERVATIONS][PARAMETERS];
-  float heading_sector_error[OBSERVATIONS];
+  computation_float_type c[2][AXES][PARAMETERS]; // double buffering for multi-thrading support
+  computation_float_type target_vector[AXES][OBSERVATIONS];
+  computation_float_type observation_matrix[AXES][OBSERVATIONS][PARAMETERS];
+  computation_float_type heading_sector_error[OBSERVATIONS];
 };
 
 extern compass_calibrator_3D_t compass_calibrator_3D;

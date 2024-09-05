@@ -26,7 +26,7 @@
 #include "embedded_math.h"
 
 #define __PROGRAM_START 0
-#include "arm_math.h"
+#include <matrix_functions.h>
 
 ROM float RECIP_SECTOR_SIZE = compass_calibrator_3D_t::OBSERVATIONS / M_PI_F / TWO / TWO;
 
@@ -69,33 +69,36 @@ bool compass_calibrator_3D_t::learn (const float3vector &observed_induction,cons
 
 bool compass_calibrator_3D_t::calculate( void)
 {
-  float temporary_solution_matrix[PARAMETERS][PARAMETERS];
-  arm_matrix_instance_f32 solution;
+  if( buffer_used_for_calibration != INVALID)
+    return false;
+
+  computation_float_type temporary_solution_matrix[PARAMETERS][PARAMETERS];
+  ARM_MATRIX_INSTANCE solution;
   solution.numCols=PARAMETERS;
   solution.numRows=PARAMETERS;
-  solution.pData = (float *)temporary_solution_matrix;
+  solution.pData = (computation_float_type *)temporary_solution_matrix;
 
-  arm_matrix_instance_f32 observations;
+  ARM_MATRIX_INSTANCE  observations;
   observations.numCols=PARAMETERS;
   observations.numRows=OBSERVATIONS;
 
-  float transposed_matrix[PARAMETERS][OBSERVATIONS];
-  arm_matrix_instance_f32 observations_transposed;
+  computation_float_type transposed_matrix[PARAMETERS][OBSERVATIONS];
+  ARM_MATRIX_INSTANCE observations_transposed;
   observations_transposed.numCols=OBSERVATIONS;
   observations_transposed.numRows=PARAMETERS;
-  observations_transposed.pData = (float *)transposed_matrix;
+  observations_transposed.pData = (computation_float_type *)transposed_matrix;
 
-  float matrix_to_be_inverted_data[PARAMETERS][PARAMETERS];
-  arm_matrix_instance_f32 matrix_to_be_inverted;
+  computation_float_type matrix_to_be_inverted_data[PARAMETERS][PARAMETERS];
+  ARM_MATRIX_INSTANCE matrix_to_be_inverted;
   matrix_to_be_inverted.numCols=PARAMETERS;
   matrix_to_be_inverted.numRows=PARAMETERS;
-  matrix_to_be_inverted.pData = (float *)matrix_to_be_inverted_data;
+  matrix_to_be_inverted.pData = (computation_float_type *)matrix_to_be_inverted_data;
 
-  float solution_mapping_data[PARAMETERS][OBSERVATIONS];
-  arm_matrix_instance_f32 solution_mapping;
+  computation_float_type solution_mapping_data[PARAMETERS][OBSERVATIONS];
+  ARM_MATRIX_INSTANCE solution_mapping;
   solution_mapping.numCols=OBSERVATIONS;
   solution_mapping.numRows=PARAMETERS;
-  solution_mapping.pData = (float *)solution_mapping_data;
+  solution_mapping.pData = (computation_float_type *)solution_mapping_data;
 
   int next_buffer;
   if( buffer_used_for_calibration == 0)
@@ -114,44 +117,44 @@ bool compass_calibrator_3D_t::calculate( void)
       // solution matrix:      S = inverse( M_transposed * M) * M_transposed
       // axis parameter set:   P = S * T
 
-      arm_status result = arm_mat_trans_f32( &observations, &observations_transposed);
+      arm_status result = ARM_MAT_TRANS( &observations, &observations_transposed);
       if( result != ARM_MATH_SUCCESS)
 	{
 	  start_learning(); // discard data
 	  return false;
 	}
 
-      result = arm_mat_mult_f32( &observations_transposed, &observations, &matrix_to_be_inverted);
+      result = ARM_MAT_MULT( &observations_transposed, &observations, &matrix_to_be_inverted);
       if( result != ARM_MATH_SUCCESS)
 	{
 	  start_learning(); // discard data
 	  return false;
 	}
 
-      result = arm_mat_inverse_f32( &matrix_to_be_inverted, &solution);
+      result = ARM_MAT_INVERSE( &matrix_to_be_inverted, &solution);
       if( result != ARM_MATH_SUCCESS)
 	{
 	  start_learning(); // discard data
 	  return false;
 	}
 
-      result = arm_mat_mult_f32( &solution, &observations_transposed, &solution_mapping);
+      result = ARM_MAT_MULT( &solution, &observations_transposed, &solution_mapping);
       if( result != ARM_MATH_SUCCESS)
 	{
 	  start_learning(); // discard data
 	  return false;
 	}
 
-      arm_matrix_instance_f32 target_vector_inst;
+      ARM_MATRIX_INSTANCE target_vector_inst;
       target_vector_inst.numCols=1;
       target_vector_inst.numRows=OBSERVATIONS;
       target_vector_inst.pData=&(target_vector[axis][0]);
 
-      arm_matrix_instance_f32 axis_parameter_set;
+      ARM_MATRIX_INSTANCE axis_parameter_set;
       axis_parameter_set.numCols=1;
       axis_parameter_set.numRows=PARAMETERS;
       axis_parameter_set.pData=&(c[next_buffer][axis][0]);
-      result = arm_mat_mult_f32( &solution_mapping, &target_vector_inst, &axis_parameter_set);
+      result = ARM_MAT_MULT( &solution_mapping, &target_vector_inst, &axis_parameter_set);
       if( result != ARM_MATH_SUCCESS)
 	{
 	  start_learning(); // discard data
