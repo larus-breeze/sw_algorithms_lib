@@ -113,7 +113,7 @@ void AHRS_type::feed_magnetic_induction_observer(const float3vector &mag_sensor)
 
   bool turning_right = turn_rate_averager.get_output() > 0.0f;
 
-  bool calibration_data_complete = compass_calibrator_3D.learn( mag_sensor, mag_sensor-expected_body_induction, attitude, turning_right, error_margin);
+  bool calibration_data_complete = compass_calibrator_3D.learn( mag_sensor, expected_body_induction, attitude, turning_right, error_margin);
   if( calibration_data_complete)
     trigger_compass_calibrator_3D_calculation();
 

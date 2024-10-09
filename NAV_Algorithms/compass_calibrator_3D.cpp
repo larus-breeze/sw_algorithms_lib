@@ -22,6 +22,11 @@
 
  **************************************************************************/
 
+#define PRINT_PARAMETERS 1
+#if PRINT_PARAMETERS
+#include "stdio.h"
+#endif
+
 #include "compass_calibrator_3D.h"
 #include "embedded_math.h"
 
@@ -55,8 +60,8 @@ bool compass_calibrator_3D_t::learn (const float3vector &observed_induction,cons
 
       observation_matrix[axis][sector_index][0] = 1.0f;
       observation_matrix[axis][sector_index][1] = observed_induction[0];
-      observation_matrix[axis][sector_index][1] = observed_induction[1];
-      observation_matrix[axis][sector_index][1] = observed_induction[2];
+      observation_matrix[axis][sector_index][2] = observed_induction[1];
+      observation_matrix[axis][sector_index][3] = observed_induction[2];
     }
 
   if( (last_sector_collected == -1) && populated_sectors >= OBSERVATIONS)
@@ -161,6 +166,18 @@ bool compass_calibrator_3D_t::calculate( void)
     }
 
   buffer_used_for_calibration = next_buffer; // switch now in a thread-save manner
+  
+  #if PRINT_PARAMETERS
+
+  for( unsigned k=0; k<3; ++k)
+    {
+      for( unsigned i=0; i<PARAMETERS; ++i)
+	printf("%e\t", (double)(c[next_buffer][k][i]));
+      printf("\n");
+    }
+  printf("\n");
+#endif
+  
   start_learning(); // ... again
 
   return true;
