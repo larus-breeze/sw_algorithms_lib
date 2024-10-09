@@ -61,8 +61,8 @@ public:
   void start_learning( void)
   {
     populated_sectors = 0;
-    last_sector_collected=-1;
-    for( unsigned i=0; i<OBSERVATIONS; ++i)
+    last_sector_collected = INVALID;
+    for( unsigned i=0; i < OBSERVATIONS; ++i)
       heading_sector_error[i]=1e20f;
   }
 

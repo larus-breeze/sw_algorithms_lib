@@ -227,7 +227,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   expected_body_induction = body2nav.reverse_map( expected_nav_induction);
 
   if( (automatic_magnetic_calibration == AUTO_3D) && compass_calibrator_3D.available())
-    body_induction = mag_sensor - compass_calibrator_3D.calibrate( mag_sensor, attitude);
+    body_induction = compass_calibrator_3D.calibrate( mag_sensor, attitude);
   else if( compass_calibration.available())
       body_induction = compass_calibration.calibrate(mag_sensor);
   else
@@ -304,7 +304,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   expected_body_induction = body2nav.reverse_map( expected_nav_induction);
 
   if( (automatic_magnetic_calibration == AUTO_3D) && compass_calibrator_3D.available())
-    body_induction = mag_sensor - compass_calibrator_3D.calibrate( mag_sensor, attitude);
+    body_induction = compass_calibrator_3D.calibrate( mag_sensor, attitude);
   else if( compass_calibration.available())
       body_induction = compass_calibration.calibrate(mag_sensor);
   else
@@ -385,7 +385,7 @@ void AHRS_type::update_ACC_only (const float3vector &gyro, const float3vector &a
 			   const float3vector &GNSS_acceleration)
 {
   if( (automatic_magnetic_calibration == AUTO_3D) && compass_calibrator_3D.available())
-    body_induction = mag_sensor - compass_calibrator_3D.calibrate( mag_sensor, attitude);
+    body_induction = compass_calibrator_3D.calibrate( mag_sensor, attitude);
   else if( compass_calibration.available())
       body_induction = compass_calibration.calibrate(mag_sensor);
   else

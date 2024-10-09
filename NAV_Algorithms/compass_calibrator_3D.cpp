@@ -43,7 +43,7 @@ bool compass_calibrator_3D_t::learn (const float3vector &observed_induction,cons
   unsigned sector_index = (turning_right ? OBSERVATIONS / TWO : 0) + (unsigned)(present_heading * RECIP_SECTOR_SIZE);
 
   // if we have just left the last sector to be collected: report ready for computation
-  if( ( last_sector_collected != -1) && ( sector_index != last_sector_collected))
+  if( ( last_sector_collected != INVALID) && ( sector_index != last_sector_collected))
     return true;
 
   if( heading_sector_error[sector_index] > 1e19) // this sector has not been written before
@@ -64,7 +64,8 @@ bool compass_calibrator_3D_t::learn (const float3vector &observed_induction,cons
       observation_matrix[axis][sector_index][3] = observed_induction[2];
     }
 
-  if( (last_sector_collected == -1) && populated_sectors >= OBSERVATIONS)
+  if( (last_sector_collected == INVALID) && populated_sectors >= OBSERVATIONS)
+    // now we are collecting data within the last sector to be collected
     last_sector_collected = sector_index;
 
   return false;
@@ -167,9 +168,9 @@ bool compass_calibrator_3D_t::calculate( void)
 
   buffer_used_for_calibration = next_buffer; // switch now in a thread-save manner
   
-  #if PRINT_PARAMETERS
+#if PRINT_PARAMETERS
 
-  for( unsigned k=0; k<3; ++k)
+  for( unsigned k=0; k < AXES; ++k)
     {
       for( unsigned i=0; i<PARAMETERS; ++i)
 	printf("%e\t", (double)(c[next_buffer][k][i]));
@@ -186,18 +187,18 @@ bool compass_calibrator_3D_t::calculate( void)
 float3vector compass_calibrator_3D_t::calibrate( const float3vector &induction, const quaternion<float> &q)
   {
     if( buffer_used_for_calibration == INVALID) // we do not have a valid calibration
-      return float3vector();
+      return induction;
 
     unsigned b=buffer_used_for_calibration; // just to save expensive characters ...
 
     float3vector retv;
-    for( int i = 0; i < 3; ++i)
+    for( int i = 0; i < AXES; ++i)
       {
 	retv[i] =
 	    c[b][i][0] +
-	    c[b][i][1] +
-	    c[b][i][2] +
-	    c[b][i][3];
+	    c[b][i][1] * induction[0] +
+	    c[b][i][2] * induction[1] +
+	    c[b][i][3] * induction[2];
       }
 
     return retv;
