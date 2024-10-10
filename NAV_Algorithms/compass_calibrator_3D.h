@@ -50,7 +50,7 @@ typedef float computation_float_type;
 class compass_calibrator_3D_t
 {
 public:
-  enum { AXES=3, PARAMETERS=11, OBSERVATIONS=22, INVALID=-1};
+  enum { AXES=3, PARAMETERS=10, OBSERVATIONS=50, INVALID=-1};
 
   compass_calibrator_3D_t( void)
     : buffer_used_for_calibration(INVALID)

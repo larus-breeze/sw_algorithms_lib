@@ -22,6 +22,11 @@
 
  **************************************************************************/
 
+#define PRINT_PARAMETERS 1
+#if PRINT_PARAMETERS
+#include "stdio.h"
+#endif
+
 #include "compass_calibrator_3D.h"
 #include "embedded_math.h"
 
@@ -54,16 +59,15 @@ bool compass_calibrator_3D_t::learn (const float3vector &observed_induction,cons
       target_vector[axis][sector_index] = expected_induction[axis];
 
       observation_matrix[axis][sector_index][0] = 1.0f;
-      observation_matrix[axis][sector_index][1] = observed_induction[axis];
-      observation_matrix[axis][sector_index][2] = q[0] * q[1];
-      observation_matrix[axis][sector_index][3] = q[0] * q[2];
-      observation_matrix[axis][sector_index][4] = q[0] * q[3];
-      observation_matrix[axis][sector_index][5] = q[1] * q[1];
-      observation_matrix[axis][sector_index][6] = q[1] * q[2];
-      observation_matrix[axis][sector_index][7] = q[1] * q[3];
-      observation_matrix[axis][sector_index][8] = q[2] * q[2];
-      observation_matrix[axis][sector_index][9] = q[2] * q[3];
-      observation_matrix[axis][sector_index][10]= q[3] * q[3];
+      observation_matrix[axis][sector_index][1] = q[0] * q[1];
+      observation_matrix[axis][sector_index][2] = q[0] * q[2];
+      observation_matrix[axis][sector_index][3] = q[0] * q[3];
+      observation_matrix[axis][sector_index][4] = q[1] * q[1];
+      observation_matrix[axis][sector_index][5] = q[1] * q[2];
+      observation_matrix[axis][sector_index][6] = q[1] * q[3];
+      observation_matrix[axis][sector_index][7] = q[2] * q[2];
+      observation_matrix[axis][sector_index][8] = q[2] * q[3];
+      observation_matrix[axis][sector_index][9] = q[3] * q[3];
     }
 
   if( (last_sector_collected == -1) && populated_sectors >= OBSERVATIONS)
@@ -168,6 +172,18 @@ bool compass_calibrator_3D_t::calculate( void)
     }
 
   buffer_used_for_calibration = next_buffer; // switch now in a thread-save manner
+
+#if PRINT_PARAMETERS
+
+  for( unsigned k=0; k < AXES; ++k)
+    {
+      for( unsigned i=0; i<PARAMETERS; ++i)
+	printf("%e\t", (double)(c[next_buffer][k][i]));
+      printf("\n");
+    }
+  printf("\n");
+#endif
+
   start_learning(); // ... again
 
   return true;
@@ -184,10 +200,10 @@ float3vector compass_calibrator_3D_t::calibrate( const float3vector &induction, 
     for( int i = 0; i < 3; ++i)
       {
 	retv[i] =
-	    c[b][i][0] + c[b][i][1] * induction[i] +
-	    c[b][i][2] * q[0] * q[1] + c[b][i][3] * q[0] * q[2] + c[b][i][4] * q[0] * q[3] +
-	    c[b][i][5] * q[1] * q[1] + c[b][i][6] * q[1] * q[2] + c[b][i][7] * q[1] * q[3] +
-	    c[b][i][8] * q[2] * q[2] + c[b][i][9] * q[2] * q[3] + c[b][i][10]* q[3] * q[3] ;
+	    c[b][i][0] +
+	    c[b][i][1] * q[0] * q[1] + c[b][i][2] * q[0] * q[2] + c[b][i][3] * q[0] * q[3] +
+	    c[b][i][4] * q[1] * q[1] + c[b][i][5] * q[1] * q[2] + c[b][i][6] * q[1] * q[3] +
+	    c[b][i][7] * q[2] * q[2] + c[b][i][8] * q[2] * q[3] + c[b][i][9] * q[3] * q[3] ;
       }
     return retv;
   }

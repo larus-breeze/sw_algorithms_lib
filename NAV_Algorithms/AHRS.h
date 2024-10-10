@@ -203,7 +203,7 @@ private:
       magnetic_control_gain = M_H_GAIN / expected_horizontal_induction;
   }
 
-  void feed_magnetic_induction_observer(const float3vector &mag_sensor);
+  void feed_magnetic_induction_observer( const float3vector &mag_sensor, const float3vector &mag_delta);
   circle_state_t update_circling_state( void);
 
   void update_diff_GNSS( const float3vector &gyro, const float3vector &acc, const float3vector &mag,
