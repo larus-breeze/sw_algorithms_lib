@@ -62,10 +62,7 @@ bool compass_calibrator_3D_t::learn (const float3vector &observed_induction,cons
       observation_matrix[axis][sector_index][1] = observed_induction[0];
       observation_matrix[axis][sector_index][2] = observed_induction[1];
       observation_matrix[axis][sector_index][3] = observed_induction[2];
-      if( observed_induction[axis] > 0.0f)
-	observation_matrix[axis][sector_index][4] = observed_induction[axis]*observed_induction[axis];
-      else
-	observation_matrix[axis][sector_index][4] = - (observed_induction[axis]*observed_induction[axis]);
+      observation_matrix[axis][sector_index][4] = observed_induction[axis]*observed_induction[axis]*observed_induction[axis];
     }
 
   if( (last_sector_collected == INVALID) && populated_sectors >= OBSERVATIONS)
@@ -203,10 +200,7 @@ float3vector compass_calibrator_3D_t::calibrate( const float3vector &induction, 
 	    c[b][i][1] * induction[0] +
 	    c[b][i][2] * induction[1] +
 	    c[b][i][3] * induction[2];
-	    if( induction[i] > 0.0f)
-	      c[b][i][4] * induction[i];
-	    else
-	      c[b][i][4] * - induction[i];
+	    c[b][i][3] * induction[i]*induction[i]*induction[i];
       }
 
     return retv;
