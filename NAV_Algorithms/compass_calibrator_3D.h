@@ -32,7 +32,7 @@
 
 #include "matrix_functions.h"
 
-#if 0
+#if 1
 typedef double computation_float_type;
 #define ARM_MATRIX_INSTANCE arm_matrix_instance_f64
 #define ARM_MAT_TRANS arm_mat_trans_f64

@@ -34,6 +34,8 @@
 #include "EEPROM_emulation.h"
 #endif
 
+#define USE_MAG_COMPENSATOR 1
+
 /**
  * @brief initial attitude setup from observables
  */
@@ -227,8 +229,11 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   expected_body_induction = body2nav.reverse_map( expected_nav_induction);
 
   body_induction = compass_calibration.calibrate(mag_sensor);
-  float3vector mag_delta = body_induction - expected_body_induction;
-  body_induction = body_induction - compass_calibrator_3D.calibrate( body_induction, attitude);
+  float3vector mag_delta = body_induction - expected_body_induction; // for the training of the compensator
+
+#if USE_MAG_COMPENSATOR
+  body_induction = body_induction + compass_calibrator_3D.calibrate( body_induction, attitude);
+#endif
 
   body_induction_error = body_induction - expected_body_induction;
   float3vector nav_acceleration = body2nav * acc;
@@ -302,7 +307,10 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 
   body_induction = compass_calibration.calibrate(mag_sensor);
   float3vector mag_delta = body_induction - expected_body_induction;
-  body_induction = body_induction - compass_calibrator_3D.calibrate( body_induction, attitude);
+
+#if USE_MAG_COMPENSATOR
+  body_induction = body_induction + compass_calibrator_3D.calibrate( body_induction, attitude);
+#endif
 
   body_induction_error = body_induction - expected_body_induction;
 
