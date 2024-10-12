@@ -34,14 +34,11 @@
 
 ROM float RECIP_SECTOR_SIZE = compass_calibrator_3D_t::OBSERVATIONS / M_PI_F / TWO / TWO;
 
-bool compass_calibrator_3D_t::learn (const float3vector &observed_induction,const float3vector &expected_induction, const quaternion<float> &q_in, bool turning_right, float error_margin)
+bool compass_calibrator_3D_t::learn (const float3vector &observed_induction,const float3vector &expected_induction, const quaternion<float> &q, bool turning_right, float error_margin)
 {
-  float present_heading = q_in.get_heading();
+  float present_heading = q.get_heading();
   if( present_heading <0.0f)
     present_heading += M_PI_F * TWO;
-
-  quaternion<float> q;
-  q = q_in*q_in;
 
   unsigned sector_index = (turning_right ? OBSERVATIONS / TWO : 0) + (unsigned)(present_heading * RECIP_SECTOR_SIZE);
 
@@ -192,15 +189,12 @@ bool compass_calibrator_3D_t::calculate( void)
   return true;
 }
 
-float3vector compass_calibrator_3D_t::calibrate( const float3vector &induction, const quaternion<float> &q_in)
+float3vector compass_calibrator_3D_t::calibrate( const float3vector &induction, const quaternion<float> &q)
   {
     if( buffer_used_for_calibration == INVALID) // we do not have a valid calibration
       return float3vector();
 
     unsigned b=buffer_used_for_calibration; // just to save expensive characters ...
-
-    quaternion<float> q;
-    q = q_in*q_in;
 
     float3vector retv;
     for( int i = 0; i < 3; ++i)

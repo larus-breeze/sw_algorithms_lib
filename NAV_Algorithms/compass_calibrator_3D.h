@@ -32,7 +32,7 @@
 
 #include "matrix_functions.h"
 
-#if 1
+#if 0
 typedef double computation_float_type;
 #define ARM_MATRIX_INSTANCE arm_matrix_instance_f64
 #define ARM_MAT_TRANS arm_mat_trans_f64
@@ -50,7 +50,7 @@ typedef float computation_float_type;
 class compass_calibrator_3D_t
 {
 public:
-  enum { AXES=3, PARAMETERS=10, OBSERVATIONS=50, INVALID=-1};
+  enum { AXES=3, PARAMETERS=10, OBSERVATIONS=22, INVALID=-1};
 
   compass_calibrator_3D_t( void)
     : buffer_used_for_calibration(INVALID)
