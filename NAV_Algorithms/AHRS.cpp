@@ -23,7 +23,7 @@
  **************************************************************************/
 
 #include <AHRS.h>
-#include "soft_iron_compensator.h""
+#include "soft_iron_compensator.h"
 #include "system_configuration.h"
 #include "GNSS.h"
 #include "magnetic_induction_report.h"
@@ -34,7 +34,7 @@
 #include "EEPROM_emulation.h"
 #endif
 
-#define INJECT_SOFT_IRON_ERROR 1
+#define INJECT_SOFT_IRON_ERROR 0
 
 /**
  * @brief initial attitude setup from observables
@@ -249,7 +249,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 #endif
 
   if( (automatic_magnetic_calibration == AUTO_3D) && soft_iron_compensator.available())
-    body_induction = body_induction - soft_iron_compensator.calibrate( body_induction, attitude);
+    body_induction = body_induction - soft_iron_compensator.calibrate( expected_body_induction, attitude);
 
 //  body_induction_error = body_induction - expected_body_induction;
   float3vector nav_acceleration = body2nav * acc;
@@ -342,7 +342,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 #endif
 
   if( (automatic_magnetic_calibration == AUTO_3D) && soft_iron_compensator.available())
-    body_induction = body_induction - soft_iron_compensator.calibrate( body_induction, attitude);
+    body_induction = body_induction - soft_iron_compensator.calibrate( expected_body_induction, attitude);
 
   body_induction_error = body_induction - expected_body_induction;
 
