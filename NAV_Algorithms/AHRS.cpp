@@ -23,18 +23,18 @@
  **************************************************************************/
 
 #include <AHRS.h>
+#include "soft_iron_compensator.h""
 #include "system_configuration.h"
 #include "GNSS.h"
 #include "magnetic_induction_report.h"
 #include "embedded_memory.h"
 #include "NAV_tuning_parameters.h"
-#include "compass_calibrator_3D.h"
 
 #if USE_HARDWARE_EEPROM	== 0
 #include "EEPROM_emulation.h"
 #endif
 
-#define USE_MAG_COMPENSATOR 1
+#define INJECT_SOFT_IRON_ERROR 1
 
 /**
  * @brief initial attitude setup from observables
@@ -115,9 +115,9 @@ void AHRS_type::feed_magnetic_induction_observer( const float3vector &mag_sensor
 
   bool turning_right = turn_rate_averager.get_output() > 0.0f;
 
-  bool calibration_data_complete = compass_calibrator_3D.learn( mag_sensor, mag_delta, attitude, turning_right, error_margin);
+  bool calibration_data_complete = soft_iron_compensator.learn( mag_delta, attitude, turning_right, error_margin);
   if( calibration_data_complete)
-    trigger_compass_calibrator_3D_calculation();
+    trigger_soft_iron_compensator_calculation();
 
   for (unsigned i = 0; i < 3; ++i)
     if( turning_right)
@@ -229,12 +229,29 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   expected_body_induction = body2nav.reverse_map( expected_nav_induction);
 
   body_induction = compass_calibration.calibrate(mag_sensor);
-  float3vector mag_delta = body_induction - expected_body_induction; // for the training of the compensator
 
-  if( (automatic_magnetic_calibration == AUTO_3D) && compass_calibrator_3D.available())
-    body_induction = body_induction - compass_calibrator_3D.calibrate( body_induction, attitude);
+#if INJECT_SOFT_IRON_ERROR
+  float3vector error;
+  error[0] = 0.17f;
+  error[1] = 0.19f;
+  error[2] = -0.23f;
 
+  float error_magnitude = error.operator *( expected_body_induction);
+  error = error.operator *( error_magnitude);
+
+  body_induction += error;
+
+  body_induction_error = error - soft_iron_compensator.calibrate( body_induction, attitude);
+  float3vector mag_delta = error; // for the training of the compensator
+#else
   body_induction_error = body_induction - expected_body_induction;
+  float3vector mag_delta = body_induction - expected_body_induction; // for the training of the compensator
+#endif
+
+  if( (automatic_magnetic_calibration == AUTO_3D) && soft_iron_compensator.available())
+    body_induction = body_induction - soft_iron_compensator.calibrate( body_induction, attitude);
+
+//  body_induction_error = body_induction - expected_body_induction;
   float3vector nav_acceleration = body2nav * acc;
 
   float heading_gnss_work = GNSS_heading	// correct for antenna alignment
@@ -305,10 +322,27 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   expected_body_induction = body2nav.reverse_map( expected_nav_induction);
 
   body_induction = compass_calibration.calibrate(mag_sensor);
-  float3vector mag_delta = body_induction - expected_body_induction;
 
-  if( (automatic_magnetic_calibration == AUTO_3D) && compass_calibrator_3D.available())
-    body_induction = body_induction - compass_calibrator_3D.calibrate( body_induction, attitude);
+#if INJECT_SOFT_IRON_ERROR
+  float3vector error;
+  error[0] = 0.17f;
+  error[1] = 0.19f;
+  error[2] = -0.23f;
+
+  float error_magnitude = error.operator *( expected_body_induction);
+  error = error.operator *( error_magnitude);
+
+  body_induction += error;
+
+  body_induction_error = error - soft_iron_compensator.calibrate( body_induction, attitude);
+  float3vector mag_delta = error; // for the training of the compensator
+#else
+  body_induction_error = body_induction - expected_body_induction;
+  float3vector mag_delta = body_induction - expected_body_induction; // for the training of the compensator
+#endif
+
+  if( (automatic_magnetic_calibration == AUTO_3D) && soft_iron_compensator.available())
+    body_induction = body_induction - soft_iron_compensator.calibrate( body_induction, attitude);
 
   body_induction_error = body_induction - expected_body_induction;
 
@@ -384,8 +418,8 @@ void AHRS_type::update_ACC_only (const float3vector &gyro, const float3vector &a
 			   const float3vector &mag_sensor,
 			   const float3vector &GNSS_acceleration)
 {
-  if( (automatic_magnetic_calibration == AUTO_3D) && compass_calibrator_3D.available())
-    body_induction = mag_sensor - compass_calibrator_3D.calibrate( mag_sensor, attitude);
+  if( (automatic_magnetic_calibration == AUTO_3D) && soft_iron_compensator.available())
+    body_induction = mag_sensor - soft_iron_compensator.calibrate( mag_sensor, attitude);
   else if( compass_calibration.available())
       body_induction = compass_calibration.calibrate(mag_sensor);
   else

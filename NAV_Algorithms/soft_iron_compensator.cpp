@@ -27,14 +27,14 @@
 #include "stdio.h"
 #endif
 
-#include "compass_calibrator_3D.h"
+#include "soft_iron_compensator.h"
 #include "embedded_math.h"
 
 #include <matrix_functions.h>
 
-ROM float RECIP_SECTOR_SIZE = compass_calibrator_3D_t::OBSERVATIONS / M_PI_F / TWO / TWO;
+ROM float RECIP_SECTOR_SIZE = soft_iron_compensator_t::OBSERVATIONS / M_PI_F / TWO / TWO;
 
-bool compass_calibrator_3D_t::learn (const float3vector &observed_induction,const float3vector &expected_induction, const quaternion<float> &q, bool turning_right, float error_margin)
+bool soft_iron_compensator_t::learn ( const float3vector &induction_error, const quaternion<float> &q, bool turning_right, float error_margin)
 {
   float present_heading = q.get_heading();
   if( present_heading <0.0f)
@@ -56,7 +56,7 @@ bool compass_calibrator_3D_t::learn (const float3vector &observed_induction,cons
 
   for( unsigned axis = 0; axis < AXES; ++axis)
     {
-      target_vector[axis][sector_index] = expected_induction[axis];
+      target_vector[axis][sector_index] = induction_error[axis];
 
       observation_matrix[axis][sector_index][0] = 1.0f;
       observation_matrix[axis][sector_index][1] = q[0] * q[1];
@@ -76,7 +76,7 @@ bool compass_calibrator_3D_t::learn (const float3vector &observed_induction,cons
   return false;
 }
 
-bool compass_calibrator_3D_t::calculate( void)
+bool soft_iron_compensator_t::calculate( void)
 {
 //  if( buffer_used_for_calibration != INVALID)
 //    return false;
@@ -189,7 +189,7 @@ bool compass_calibrator_3D_t::calculate( void)
   return true;
 }
 
-float3vector compass_calibrator_3D_t::calibrate( const float3vector &induction, const quaternion<float> &q)
+float3vector soft_iron_compensator_t::calibrate( const float3vector &induction, const quaternion<float> &q)
   {
     if( buffer_used_for_calibration == INVALID) // we do not have a valid calibration
       return float3vector();

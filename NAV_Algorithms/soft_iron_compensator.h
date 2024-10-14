@@ -22,8 +22,8 @@
 
  **************************************************************************/
 
-#ifndef NAV_ALGORITHMS_COMPASS_CALIBRATOR_3D_H_
-#define NAV_ALGORITHMS_COMPASS_CALIBRATOR_3D_H_
+#ifndef NAV_ALGORITHMS_SOFT_IRON_COMPENSATOR_H_
+#define NAV_ALGORITHMS_SOFT_IRON_COMPENSATOR_H_
 
 #include "embedded_memory.h"
 #include "embedded_math.h"
@@ -47,12 +47,12 @@ typedef float computation_float_type;
 #endif
 
 //! 3 dimensional magnetic calibration and error compensation mechanism
-class compass_calibrator_3D_t
+class soft_iron_compensator_t
 {
 public:
-  enum { AXES=3, PARAMETERS=10, OBSERVATIONS=22, INVALID=-1};
+  enum { AXES=3, PARAMETERS=10, OBSERVATIONS=24, INVALID=-1};
 
-  compass_calibrator_3D_t( void)
+  soft_iron_compensator_t( void)
     : buffer_used_for_calibration(INVALID)
   {
     start_learning();
@@ -66,8 +66,8 @@ public:
       heading_sector_error[i]=1e20f;
   }
 
-  bool learn (const float3vector &observed_induction,const float3vector &expected_induction, const quaternion<float> &q, bool turning_right, float error_margin);
-  float3vector calibrate( const float3vector &induction, const quaternion<float> &q);
+  bool learn ( const float3vector &induction_error, const quaternion<float> &q, bool turning_right, float error_margin);
+float3vector calibrate( const float3vector &induction, const quaternion<float> &q);
   bool calculate( void);
   bool available( void) const
   {
@@ -107,7 +107,7 @@ private:
   computation_float_type heading_sector_error[OBSERVATIONS];
 };
 
-extern compass_calibrator_3D_t compass_calibrator_3D;
-void trigger_compass_calibrator_3D_calculation(void);
+extern soft_iron_compensator_t soft_iron_compensator;
+void trigger_soft_iron_compensator_calculation(void);
 
-#endif /* NAV_ALGORITHMS_COMPASS_CALIBRATOR_3D_H_ */
+#endif /* NAV_ALGORITHMS_SOFT_IRON_COMPENSATOR_H_ */

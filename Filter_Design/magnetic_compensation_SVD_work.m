@@ -1,5 +1,5 @@
-start = 50*6000; 
-stop = 400*6000; 
+start = 80*6000; 
+stop = 368*6000; 
 %stop = length(x);
 
 format long;

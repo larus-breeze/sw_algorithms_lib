@@ -31,7 +31,7 @@
 #include "float3matrix.h"
 #include "integrator.h"
 #include "compass_calibration.h"
-#include "compass_calibrator_3D.h"
+#include "soft_iron_compensator.h"
 #include "HP_LP_fusion.h"
 #include "pt2.h"
 
