@@ -22,8 +22,8 @@
 
  **************************************************************************/
 
-#ifndef NAV_ALGORITHMS_SOFT_IRON_COMPENSATOR_H_
-#define NAV_ALGORITHMS_SOFT_IRON_COMPENSATOR_H_
+#ifndef NAV_ALGORITHMS_COMPASS_CALIBRATOR_3D_H_
+#define NAV_ALGORITHMS_COMPASS_CALIBRATOR_3D_H_
 
 #include "embedded_memory.h"
 #include "embedded_math.h"
@@ -47,29 +47,29 @@ typedef float computation_float_type;
 #endif
 
 //! 3 dimensional magnetic calibration and error compensation mechanism
-class soft_iron_compensator_t
+class compass_calibrator_3D_t
 {
 public:
-  enum { AXES=3, PARAMETERS=10, OBSERVATIONS=24, INVALID=-1};
+  enum { AXES=3, PARAMETERS=4, OBSERVATIONS=22, INVALID=-1};
 
-  soft_iron_compensator_t( void)
+  compass_calibrator_3D_t( void)
     : buffer_used_for_calibration(INVALID),
       measurement_counter(0)
-  {
+{
     start_learning();
   }
 
   void start_learning( void)
   {
     populated_sectors = 0;
-    last_sector_collected=-1;
+    last_sector_collected = INVALID;
     measurement_counter=0;
-    for( unsigned i=0; i<OBSERVATIONS; ++i)
+    for( unsigned i=0; i < OBSERVATIONS; ++i)
       heading_sector_error[i]=1e20f;
   }
 
-  bool learn ( const float3vector &induction_error, const quaternion<float> &q, bool turning_right, float error_margin);
-float3vector calibrate( const float3vector &induction, const quaternion<float> &q);
+  bool learn (const float3vector &observed_induction,const float3vector &expected_induction, const quaternion<float> &q, bool turning_right, float error_margin);
+  float3vector calibrate( const float3vector &induction, const quaternion<float> &q);
   bool calculate( void);
   bool available( void) const
   {
@@ -102,7 +102,7 @@ float3vector calibrate( const float3vector &induction, const quaternion<float> &
 private:
   int buffer_used_for_calibration;
   unsigned populated_sectors;
-  int last_sector_collected;
+  unsigned last_sector_collected;
   unsigned measurement_counter;
   computation_float_type c[2][AXES][PARAMETERS]; // double buffering for multi-thrading support
   computation_float_type target_vector[AXES][OBSERVATIONS];
@@ -110,7 +110,7 @@ private:
   computation_float_type heading_sector_error[OBSERVATIONS];
 };
 
-extern soft_iron_compensator_t soft_iron_compensator;
-void trigger_soft_iron_compensator_calculation(void);
+extern compass_calibrator_3D_t compass_calibrator_3D;
+void trigger_compass_calibrator_3D_calculation(void);
 
-#endif /* NAV_ALGORITHMS_SOFT_IRON_COMPENSATOR_H_ */
+#endif /* NAV_ALGORITHMS_COMPASS_CALIBRATOR_3D_H_ */

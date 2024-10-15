@@ -27,20 +27,19 @@
 #include "stdio.h"
 #endif
 
-#include "soft_iron_compensator.h"
 #include "embedded_math.h"
-
 #include <matrix_functions.h>
+#include "compass_calibrator_3D.h"
 
-ROM float RECIP_SECTOR_SIZE = soft_iron_compensator_t::OBSERVATIONS / M_PI_F / TWO / TWO;
+ROM float RECIP_SECTOR_SIZE = compass_calibrator_3D_t::OBSERVATIONS / M_PI_F / TWO / TWO;
 
-bool soft_iron_compensator_t::learn ( const float3vector &induction_error, const quaternion<float> &q, bool turning_right, float error_margin)
+bool compass_calibrator_3D_t::learn (const float3vector &observed_induction,const float3vector &expected_induction, const quaternion<float> &q, bool turning_right, float error_margin)
 {
   float present_heading = q.get_heading();
   if( present_heading <0.0f)
     present_heading += M_PI_F * TWO;
 
-  int sector_index = (turning_right ? OBSERVATIONS / TWO : 0) + (unsigned)(present_heading * RECIP_SECTOR_SIZE);
+  unsigned sector_index = (turning_right ? OBSERVATIONS / TWO : 0) + (unsigned)(present_heading * RECIP_SECTOR_SIZE);
 
   // if we have just left the last sector to be collected: report ready for computation
   if( ( last_sector_collected != -1) && ( sector_index != last_sector_collected) && (++measurement_counter > 10000))
@@ -56,27 +55,22 @@ bool soft_iron_compensator_t::learn ( const float3vector &induction_error, const
 
   for( unsigned axis = 0; axis < AXES; ++axis)
     {
-      target_vector[axis][sector_index] = induction_error[axis];
+      target_vector[axis][sector_index] = expected_induction[axis];
 
       observation_matrix[axis][sector_index][0] = 1.0f;
-      observation_matrix[axis][sector_index][1] = q[0] * q[1];
-      observation_matrix[axis][sector_index][2] = q[0] * q[2];
-      observation_matrix[axis][sector_index][3] = q[0] * q[3];
-      observation_matrix[axis][sector_index][4] = q[1] * q[1];
-      observation_matrix[axis][sector_index][5] = q[1] * q[2];
-      observation_matrix[axis][sector_index][6] = q[1] * q[3];
-      observation_matrix[axis][sector_index][7] = q[2] * q[2];
-      observation_matrix[axis][sector_index][8] = q[2] * q[3];
-      observation_matrix[axis][sector_index][9] = q[3] * q[3];
+      observation_matrix[axis][sector_index][1] = observed_induction[0];
+      observation_matrix[axis][sector_index][2] = observed_induction[1];
+      observation_matrix[axis][sector_index][3] = observed_induction[2];
     }
 
-  if( (last_sector_collected == -1) && populated_sectors >= OBSERVATIONS)
+  if( (last_sector_collected == INVALID) && populated_sectors >= OBSERVATIONS)
+    // now we are collecting data within the last sector to be collected
     last_sector_collected = sector_index;
 
   return false;
 }
 
-bool soft_iron_compensator_t::calculate( void)
+bool compass_calibrator_3D_t::calculate( void)
 {
 //  if( buffer_used_for_calibration != INVALID)
 //    return false;
@@ -172,7 +166,7 @@ bool soft_iron_compensator_t::calculate( void)
     }
 
   buffer_used_for_calibration = next_buffer; // switch now in a thread-save manner
-
+  
 #if PRINT_PARAMETERS
 
   for( unsigned k=0; k < AXES; ++k)
@@ -183,27 +177,28 @@ bool soft_iron_compensator_t::calculate( void)
     }
   printf("\n");
 #endif
-
+  
   start_learning(); // ... again
 
   return true;
 }
 
-float3vector soft_iron_compensator_t::calibrate( const float3vector &induction, const quaternion<float> &q)
+float3vector compass_calibrator_3D_t::calibrate( const float3vector &induction, const quaternion<float> &q)
   {
     if( buffer_used_for_calibration == INVALID) // we do not have a valid calibration
-      return float3vector();
+      return induction;
 
     unsigned b=buffer_used_for_calibration; // just to save expensive characters ...
 
     float3vector retv;
-    for( int i = 0; i < 3; ++i)
+    for( int i = 0; i < AXES; ++i)
       {
 	retv[i] =
 	    c[b][i][0] +
-	    c[b][i][1] * q[0] * q[1] + c[b][i][2] * q[0] * q[2] + c[b][i][3] * q[0] * q[3] +
-	    c[b][i][4] * q[1] * q[1] + c[b][i][5] * q[1] * q[2] + c[b][i][6] * q[1] * q[3] +
-	    c[b][i][7] * q[2] * q[2] + c[b][i][8] * q[2] * q[3] + c[b][i][9] * q[3] * q[3] ;
+	    c[b][i][1] * induction[0] +
+	    c[b][i][2] * induction[1] +
+	    c[b][i][3] * induction[2];
       }
+
     return retv;
   }
