@@ -31,7 +31,7 @@
 #include "soft_iron_compensator.h"
 #include "compass_calibrator_3D.h"
 
-#define TEST_CALIBRATION_AND_COMPENSATION 1
+#define TEST_CALIBRATION_AND_COMPENSATION 0
 
 #if USE_HARDWARE_EEPROM	== 0
 #include "EEPROM_emulation.h"
@@ -110,6 +110,8 @@ AHRS_type::update_circling_state ()
 
 void AHRS_type::feed_magnetic_induction_observer( const float3vector &mag_sensor, const float3vector &mag_delta)
 {
+  return; // patch
+
   float error_margin = nav_correction.abs();
   if(  error_margin > NAV_CORRECTION_LIMIT)
     return;
@@ -244,13 +246,14 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 
    body_induction = compass_calibrator_3D.calibrate( mag_sensor_tilted, attitude);
 #else
-   body_induction = compass_calibration.calibrate(mag_sensor);
+   //   body_induction = compass_calibration.calibrate(mag_sensor);
+      body_induction =  mag_sensor;
 #endif
 
    float3vector mag_delta = body_induction - expected_body_induction; // for the training of the compensator
 
 // if( (automatic_magnetic_calibration == AUTO_3D)
-     body_induction = body_induction - soft_iron_compensator.calibrate( expected_body_induction, attitude);
+//     body_induction = body_induction - soft_iron_compensator.calibrate( expected_body_induction, attitude);
 
   body_induction_error = body_induction - expected_body_induction;
 
@@ -344,13 +347,14 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 
    body_induction = compass_calibrator_3D.calibrate( mag_sensor_tilted, attitude);
 #else
-   body_induction = compass_calibration.calibrate(mag_sensor);
+   //   body_induction = compass_calibration.calibrate(mag_sensor);
+      body_induction =  mag_sensor;
 #endif
 
    float3vector mag_delta = body_induction - expected_body_induction; // for the training of the compensator
 
 // if( (automatic_magnetic_calibration == AUTO_3D)
-     body_induction = body_induction - soft_iron_compensator.calibrate( expected_body_induction, attitude);
+//     body_induction = body_induction - soft_iron_compensator.calibrate( expected_body_induction, attitude);
 
   body_induction_error = body_induction - expected_body_induction;
 
