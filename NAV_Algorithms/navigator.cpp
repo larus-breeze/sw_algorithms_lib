@@ -52,7 +52,7 @@ void navigator_t::update_at_100Hz (
       ahrs.get_nav_acceleration (),
       heading_vector,
       GNSS_negative_altitude,
-      atmosphere.get_negative_altitude(),
+      atmosphere.get_negative_pressure_altitude(),
       IAS,
       wind_observer.get_speed_compensator_wind(),
       (GNSS_fix_type != 0)
@@ -133,7 +133,7 @@ void navigator_t::report_data( output_data_t &d)
     d.slip_angle		= ahrs.getSlipAngle();
     d.pitch_angle		= ahrs.getPitchAngle();
     d.G_load			= ahrs.get_G_load();
-    d.pressure_altitude		= - atmosphere.get_negative_altitude();
+    d.pressure_altitude		= - atmosphere.get_negative_pressure_altitude();
     d.magnetic_disturbance	= ahrs.getMagneticDisturbance();
     d.air_density		= atmosphere.get_density();
     d.nav_induction_gnss 	= ahrs.get_nav_induction();

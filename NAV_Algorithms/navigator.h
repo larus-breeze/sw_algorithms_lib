@@ -119,7 +119,9 @@ public:
 
   void reset_altitude( void)
   {
-    flight_observer.reset( atmosphere.get_negative_altitude(), GNSS_negative_altitude);
+    // set density correction to the value that will let GNSS altitude match pressure altitude
+    atmosphere.normalize_density_correction( -GNSS_negative_altitude);
+    flight_observer.reset( atmosphere.get_negative_pressure_altitude(), GNSS_negative_altitude);
   }
   /**
    * @brief update pitot pressure

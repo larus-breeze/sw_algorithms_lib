@@ -57,6 +57,15 @@ public:
   {
     density_correction_averager.settle(1.0f);
   }
+
+  //! set density to ICAO std density at present altitude
+  void normalize_density_correction( float GNSS_altitude)
+  {
+    float density_from_pressure = 1.0496346613e-5f * pressure + 0.1671546011f;
+    float ICAO_density_from_altitude = 1.2250 + GNSS_altitude * -1.1659e-4 + GNSS_altitude * GNSS_altitude * 3.786e-9;
+    density_correction = ICAO_density_from_altitude / density_from_pressure;
+    density_correction_averager.settle(density_correction);
+  }
   void update_density_correction( void)
   {
     density_correction_averager.respond(density_correction);
@@ -77,7 +86,7 @@ public:
   {
     return  (1.0496346613e-5f * pressure + 0.1671546011f) * density_correction_averager.get_output();
   }
-  float get_negative_altitude( void) const
+  float get_negative_pressure_altitude( void) const
   {
     float tmp = 8.104381531e-4f * pressure;
     return - tmp * tmp  + 0.20867299170f * pressure - 14421.43945f;

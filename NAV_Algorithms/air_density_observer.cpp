@@ -42,7 +42,8 @@ air_data_result air_density_observer::feed_metering( float pressure, float MSL_a
   if( MSL_altitude < min_altitude)
     min_altitude = MSL_altitude;
 
-  if( false == altitude_trigger.process(MSL_altitude))
+  if( ((max_altitude - min_altitude) < 2 * MINIMUM_ALTITUDE_RANGE) &&
+      false == altitude_trigger.process(MSL_altitude))
     return air_data;
 
   if( ((max_altitude - min_altitude) < MINIMUM_ALTITUDE_RANGE) // ... forget this measurement
@@ -59,10 +60,15 @@ air_data_result air_density_observer::feed_metering( float pressure, float MSL_a
 //  Due to numeric effects, when using float the
 //  variance has been observed to be negative in some cases !
 //  Therefore using float this test can not be used.
- assert( result.variance_slope > 0);
- assert( result.variance_offset > 0);
+  if( ( result.variance_slope < 0) || ( result.variance_offset < 0))
+      {
+      density_QFF_calculator.reset();
+      air_data.valid=false;
+      return air_data;
+      }
 
- if( result.variance_slope < MAX_ALLOWED_VARIANCE)
+ if( (result.variance_slope < MAX_ALLOWED_SLOPE_VARIANCE) &&
+     (result.variance_offset < MAX_ALLOWED_OFFSET_VARIANCE))
     {
       air_data.QFF = (float)(result.y_offset);
       float density = 100.0f * (float)(result.slope) * -0.10194f; // div by -9.81f;
