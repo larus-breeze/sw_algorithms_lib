@@ -28,6 +28,7 @@
 
 #include "embedded_math.h"
 #include <air_density_observer.h>
+#include <NAV_tuning_parameters.h>
 #include <pt2.h>
 
 #define RECIP_STD_DENSITY_TIMES_2 1.632f
@@ -120,8 +121,8 @@ public:
     air_data_result result = density_QFF_calculator.feed_metering( pressure, MSL_altitude);
       if( result.valid)
 	{
-	  QFF = result.QFF;
-	  density_correction = result.density_correction;
+	  QFF = QFF * AIR_DENSITY_LETHARGY_FACTOR + (1.0f - AIR_DENSITY_LETHARGY_FACTOR) * result.QFF;
+	  density_correction = density_correction * AIR_DENSITY_LETHARGY_FACTOR + (1.0f - AIR_DENSITY_LETHARGY_FACTOR) * result.density_correction;
 	}
     }
 

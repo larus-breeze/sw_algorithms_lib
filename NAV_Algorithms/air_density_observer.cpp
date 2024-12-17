@@ -25,31 +25,31 @@
 #include "embedded_math.h"
 #include <air_density_observer.h>
 
-air_data_result air_density_observer::feed_metering( float pressure, float MSL_altitude)
+air_data_result air_density_observer::feed_metering( float pressure, float GNSS_altitude)
 {
   air_data_result air_data;
 
 #if DENSITY_MEASURMENT_COLLECTS_INTEGER
-  density_QFF_calculator.add_value( MSL_altitude * 100.0f, pressure);
+  density_QFF_calculator.add_value( GNSS_altitude * 100.0f, pressure);
 #else
   // use values normalized around 1.0
-  density_QFF_calculator.add_value( MSL_altitude * 1e-3, pressure * 1e-5);
+  density_QFF_calculator.add_value( GNSS_altitude * 1e-3, pressure * 1e-5);
 #endif
 
-  if( MSL_altitude > max_altitude)
-    max_altitude = MSL_altitude;
+  if( GNSS_altitude > max_altitude)
+    max_altitude = GNSS_altitude;
 
-  if( MSL_altitude < min_altitude)
-    min_altitude = MSL_altitude;
+  if( GNSS_altitude < min_altitude)
+    min_altitude = GNSS_altitude;
 
   if( ((max_altitude - min_altitude) < 2 * MINIMUM_ALTITUDE_RANGE) &&
-      false == altitude_trigger.process(MSL_altitude))
+      false == altitude_trigger.process(GNSS_altitude))
     return air_data;
 
   if( ((max_altitude - min_altitude) < MINIMUM_ALTITUDE_RANGE) // ... forget this measurement
     || (density_QFF_calculator.get_count() < 3000))
     {
-      max_altitude = min_altitude = MSL_altitude;
+      max_altitude = min_altitude = GNSS_altitude;
       density_QFF_calculator.reset();
       return air_data;
     }
@@ -74,17 +74,16 @@ air_data_result air_density_observer::feed_metering( float pressure, float MSL_a
       float density = 100.0f * (float)(result.slope) * -0.10194f; // div by -9.81f;
 
 #if DENSITY_MEASURMENT_COLLECTS_INTEGER
-      float pressure = density_QFF_calculator.get_mean_y();
+      float mean_altitude = density_QFF_calculator.get_mean_x() * 0.01f;
 #else
       float pressure = 1e5 * density_QFF_calculator.get_mean_y();
 #endif
-
-      float std_density = 1.0496346613e-5f * pressure + 0.1671546011f;
-      air_data.density_correction = density / std_density;
+      float ICAO_density_from_altitude = 1.2250 + mean_altitude * -1.1659e-4 + mean_altitude * mean_altitude * 3.786e-9;
+      air_data.density_correction = density / ICAO_density_from_altitude;
       air_data.valid = true;
     }
 
-  max_altitude = min_altitude = MSL_altitude;
+  max_altitude = min_altitude = GNSS_altitude;
   density_QFF_calculator.reset();
 
   return air_data;

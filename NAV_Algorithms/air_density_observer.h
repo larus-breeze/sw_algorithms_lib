@@ -32,9 +32,9 @@
 typedef double evaluation_type;
 typedef uint64_t measurement_type;
 
-#define MAX_ALLOWED_SLOPE_VARIANCE 1e-9
-#define MAX_ALLOWED_OFFSET_VARIANCE 0.05
-#define MINIMUM_ALTITUDE_RANGE	250.0f
+#define MAX_ALLOWED_SLOPE_VARIANCE 1e-9f
+#define MAX_ALLOWED_OFFSET_VARIANCE 5.0f
+#define MINIMUM_ALTITUDE_RANGE	400.0f
 #define ALTITUDE_TRIGGER_HYSTERESIS 50.0f
 
 //! this class maintains offset and slope of the air density measurement
