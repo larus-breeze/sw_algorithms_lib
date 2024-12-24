@@ -110,21 +110,18 @@ AHRS_type::update_circling_state ()
 
 void AHRS_type::feed_magnetic_induction_observer( const float3vector &mag_sensor, const float3vector &mag_delta)
 {
-  return; // patch
-
   float error_margin = nav_correction.abs();
   if(  error_margin > NAV_CORRECTION_LIMIT)
     return;
 
   bool turning_right = turn_rate_averager.get_output() > 0.0f;
 
-  bool calibration_data_complete = soft_iron_compensator.learn( mag_delta, attitude, turning_right, error_margin);
-  if( calibration_data_complete)
-    trigger_soft_iron_compensator_calculation();
-
-  calibration_data_complete = compass_calibrator_3D.learn( mag_sensor, expected_body_induction, attitude, turning_right, error_margin);
-  if( calibration_data_complete)
-    trigger_compass_calibrator_3D_calculation();
+  if( mag_delta.abs() < 0.05) // only if the precision is already reasonably good ...
+    {
+      bool calibration_data_complete = soft_iron_compensator.learn( mag_delta, attitude, turning_right, error_margin);
+      if( calibration_data_complete)
+	trigger_soft_iron_compensator_calculation();
+    }
 
   for (unsigned i = 0; i < 3; ++i)
     if( turning_right)
@@ -246,14 +243,12 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 
    body_induction = compass_calibrator_3D.calibrate( mag_sensor_tilted, attitude);
 #else
-   //   body_induction = compass_calibration.calibrate(mag_sensor);
-      body_induction =  mag_sensor;
+   body_induction = compass_calibration.calibrate(mag_sensor);
 #endif
 
-   float3vector mag_delta = body_induction - expected_body_induction; // for the training of the compensator
+  float3vector mag_delta = body_induction - expected_body_induction; // for the training of the compensator
 
-// if( (automatic_magnetic_calibration == AUTO_3D)
-//     body_induction = body_induction - soft_iron_compensator.calibrate( expected_body_induction, attitude);
+  body_induction = body_induction - soft_iron_compensator.calibrate( expected_body_induction, attitude);
 
   body_induction_error = body_induction - expected_body_induction;
 
@@ -347,8 +342,8 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 
    body_induction = compass_calibrator_3D.calibrate( mag_sensor_tilted, attitude);
 #else
-   //   body_induction = compass_calibration.calibrate(mag_sensor);
-      body_induction =  mag_sensor;
+      body_induction = compass_calibration.calibrate(mag_sensor);
+      body_induction = body_induction - soft_iron_compensator.calibrate( expected_body_induction, attitude);
 #endif
 
    float3vector mag_delta = body_induction - expected_body_induction; // for the training of the compensator
@@ -415,16 +410,16 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 
   // only here we get fresh magnetic entropy
   // and: wait for low control loop error
-  if ( (circling_state == CIRCLING) && ( nav_correction.abs() < NAV_CORRECTION_LIMIT))
+//  if ( (circling_state == CIRCLING) && ( nav_correction.abs() < NAV_CORRECTION_LIMIT))
 #if TEST_CALIBRATION_AND_COMPENSATION
 	feed_magnetic_induction_observer (mag_sensor_tilted, mag_delta);
 #else
 	feed_magnetic_induction_observer (mag_sensor, mag_delta);
 #endif
 
-  // when circling is finished eventually update the magnetic calibration
-  if (automatic_magnetic_calibration && (old_circle_state == CIRCLING) && (circling_state == TRANSITION))
-	  handle_magnetic_calibration('m');
+ // when circling is finished eventually update the magnetic calibration
+ if (automatic_magnetic_calibration && (old_circle_state == CIRCLING) && (circling_state == TRANSITION))
+  handle_magnetic_calibration('m');
 }
 
 /**
