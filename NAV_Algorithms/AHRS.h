@@ -190,7 +190,7 @@ public:
   {
     return gyro_correction_power;
   }
-  enum magnetic_calibration_type { NONE, AUTO_1D, AUTO_3D};
+  enum magnetic_calibration_type { NONE, AUTO_1D, AUTO_SOFT_IRON_COMPENSATE};
 private:
   void handle_magnetic_calibration( char type);
 

@@ -248,7 +248,8 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 
   float3vector mag_delta = body_induction - expected_body_induction; // for the training of the compensator
 
-  body_induction = body_induction - soft_iron_compensator.calibrate( expected_body_induction, attitude);
+  if( automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE)
+    body_induction = body_induction - soft_iron_compensator.calibrate( expected_body_induction, attitude);
 
   body_induction_error = body_induction - expected_body_induction;
 
@@ -343,7 +344,8 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
    body_induction = compass_calibrator_3D.calibrate( mag_sensor_tilted, attitude);
 #else
       body_induction = compass_calibration.calibrate(mag_sensor);
-      body_induction = body_induction - soft_iron_compensator.calibrate( expected_body_induction, attitude);
+      if( automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE)
+	body_induction = body_induction - soft_iron_compensator.calibrate( expected_body_induction, attitude);
 #endif
 
    float3vector mag_delta = body_induction - expected_body_induction; // for the training of the compensator
@@ -429,14 +431,11 @@ void AHRS_type::update_ACC_only (const float3vector &gyro, const float3vector &a
 			   const float3vector &mag_sensor,
 			   const float3vector &GNSS_acceleration)
 {
-  if( (automatic_magnetic_calibration == AUTO_3D) && soft_iron_compensator.available())
-    body_induction = mag_sensor - soft_iron_compensator.calibrate( mag_sensor, attitude);
-  else if( compass_calibration.available())
-      body_induction = compass_calibration.calibrate(mag_sensor);
-  else
-      body_induction = mag_sensor; // fall back to uncalibrated sensor signal
-
   expected_body_induction = body2nav.reverse_map( expected_nav_induction);
+  body_induction = compass_calibration.calibrate(mag_sensor);
+  if( automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE)
+	body_induction = body_induction - soft_iron_compensator.calibrate( expected_body_induction, attitude);
+
   body_induction_error = body_induction - expected_body_induction;
 
   float3vector nav_acceleration = body2nav * acc;
