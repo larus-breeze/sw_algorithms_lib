@@ -45,13 +45,13 @@ air_data_result air_density_observer_t::feed_metering( float pressure, float GNS
   if( GNSS_altitude < min_altitude)
     min_altitude = GNSS_altitude;
 
+  // if range too low: continue
+  if( (max_altitude - min_altitude) < MINIMUM_ALTITUDE_RANGE)
+    return air_data;
+
   // elevation range triggering
   if( (max_altitude - min_altitude < MAXIMUM_ALTITUDE_RANGE) &&
       false == altitude_trigger.process(GNSS_altitude))
-    return air_data;
-
-  // if range too low: continue
-  if( (max_altitude - min_altitude) < MINIMUM_ALTITUDE_RANGE)
     return air_data;
 
   // if data points too rare: continue
