@@ -25,19 +25,22 @@
 #ifndef AIR_DENSITY_OBSERVER_H_
 #define AIR_DENSITY_OBSERVER_H_
 
+#include "pt2.h"
 #include "Linear_Least_Square_Fit.h"
 #include "trigger.h"
 
-#define DENSITY_MEASURMENT_COLLECTS_INTEGER 1
 typedef double evaluation_type;
 typedef uint64_t measurement_type;
 
-#define MAX_ALLOWED_SLOPE_VARIANCE 1e-9f
-#define MAX_ALLOWED_OFFSET_VARIANCE 5.0f
-#define MINIMUM_ALTITUDE_RANGE	400.0f
 #define ALTITUDE_TRIGGER_HYSTERESIS 50.0f
+#define MAX_ALLOWED_SLOPE_VARIANCE	3e-9
+#define MAX_ALLOWED_OFFSET_VARIANCE	150
+#define MINIMUM_ALTITUDE_RANGE		300.0f
+#define MAXIMUM_ALTITUDE_RANGE		500.0f
+#define ALTITUDE_TRIGGER_HYSTERESIS	50.0f
+#define AIR_DENSITY_LETHARGY	0.8f
 
-//! this class maintains offset and slope of the air density measurement
+//! Maintains offset and slope of the air density measurement
 class air_data_result
 {
 public:
@@ -51,14 +54,17 @@ public:
   bool valid;
 };
 
-//! this class measures air density and QFF
+//! Measures air density and reference pressure
 class air_density_observer
 {
 public:
   air_density_observer (void)
   : min_altitude(10000.0f),
     max_altitude(0.0f),
-    altitude_trigger( ALTITUDE_TRIGGER_HYSTERESIS)
+    altitude_trigger( ALTITUDE_TRIGGER_HYSTERESIS),
+    decimation_counter( 20),
+    altitude_decimation_filter( 0.025),
+    pressure_decimation_filter( 0.025)
   {
   }
   air_data_result feed_metering( float pressure, float MSL_altitude);
@@ -76,6 +82,9 @@ private:
     float min_altitude;
     float max_altitude;
     trigger altitude_trigger;
+    unsigned decimation_counter;
+    pt2 <float, float> altitude_decimation_filter;
+    pt2 <float, float> pressure_decimation_filter;
 };
 
 #endif /* AIR_DENSITY_OBSERVER_H_ */

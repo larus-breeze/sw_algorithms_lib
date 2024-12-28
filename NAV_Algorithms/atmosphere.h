@@ -29,6 +29,7 @@
 #include "embedded_math.h"
 #include <air_density_observer.h>
 #include <NAV_tuning_parameters.h>
+#include "NAV_tuning_parameters.h"
 #include <pt2.h>
 
 #define RECIP_STD_DENSITY_TIMES_2 1.632f
@@ -42,7 +43,7 @@
 /*! The offest for the conversion from degree celsius to kelvin */
 #define CELSIUS_TO_KELVIN_OFFSET 273.15f
 
-//! this class maintains instant atmosphere data like pressure, density etc
+//! Maintenance of atmosphere data like pressure, density etc.
 class atmosphere_t
 {
 public:
@@ -57,15 +58,6 @@ public:
     QFF(101325)
   {
     density_correction_averager.settle(1.0f);
-  }
-
-  //! set density to ICAO std density at present altitude
-  void normalize_density_correction( float GNSS_altitude)
-  {
-    float density_from_pressure = 1.0496346613e-5f * pressure + 0.1671546011f;
-    float ICAO_density_from_altitude = 1.2250 + GNSS_altitude * -1.1659e-4 + GNSS_altitude * GNSS_altitude * 3.786e-9;
-    density_correction = ICAO_density_from_altitude / density_from_pressure;
-    density_correction_averager.settle(density_correction);
   }
   void update_density_correction( void)
   {
@@ -82,6 +74,14 @@ public:
   float get_pressure( void) const
   {
     return pressure;
+  }
+  void normalize_density_correction_averager( float GNSS_altitude, float static_pressure)
+  {
+    float std_density =
+	0.000000003547494f * GNSS_altitude * GNSS_altitude
+	-0.000115412739613f * GNSS_altitude + 1.224096628212817f;
+    float pressure_density = 1.0496346613e-5f * pressure + 0.1671546011f;
+    density_correction_averager.settle( std_density / pressure_density);
   }
   float get_density( void) const
   {
@@ -121,8 +121,8 @@ public:
     air_data_result result = density_QFF_calculator.feed_metering( pressure, MSL_altitude);
       if( result.valid)
 	{
-	  QFF = QFF * AIR_DENSITY_LETHARGY_FACTOR + (1.0f - AIR_DENSITY_LETHARGY_FACTOR) * result.QFF;
-	  density_correction = density_correction * AIR_DENSITY_LETHARGY_FACTOR + (1.0f - AIR_DENSITY_LETHARGY_FACTOR) * result.density_correction;
+	  QFF = QFF * AIR_DENSITY_LETHARGY + result.QFF * (1 - AIR_DENSITY_LETHARGY);
+	  density_correction = density_correction * AIR_DENSITY_LETHARGY + result.density_correction * (1 - AIR_DENSITY_LETHARGY);
 	}
     }
 

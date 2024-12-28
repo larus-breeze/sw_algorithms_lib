@@ -74,7 +74,10 @@ public:
     ahrs_magnetic.update_magnetic_induction_data( declination, inclination);
 #endif
   }
-
+  void normalize_density_correction( float GNSS_altitude, float static_pressure)
+  {
+    atmosphere.normalize_density_correction_averager(GNSS_altitude, static_pressure);
+  }
   void set_density_data( float temperature, float humidity)
   {
     if( ! isnan( temperature) && ! isnan( humidity) )
@@ -119,8 +122,6 @@ public:
 
   void reset_altitude( void)
   {
-    // set density correction to the value that will let GNSS altitude match pressure altitude
-    atmosphere.normalize_density_correction( -GNSS_negative_altitude);
     flight_observer.reset( atmosphere.get_negative_pressure_altitude(), GNSS_negative_altitude);
   }
   /**
