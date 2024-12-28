@@ -25,7 +25,7 @@
 #include "embedded_math.h"
 #include <air_density_observer.h>
 
-air_data_result air_density_observer::feed_metering( float pressure, float GNSS_altitude)
+air_data_result air_density_observer_t::feed_metering( float pressure, float GNSS_altitude)
 {
   air_data_result air_data;
 
