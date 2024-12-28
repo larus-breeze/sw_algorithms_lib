@@ -55,10 +55,10 @@ public:
 };
 
 //! Measures air density and reference pressure
-class air_density_observer
+class air_density_observer_t
 {
 public:
-  air_density_observer (void)
+  air_density_observer_t (void)
   : min_altitude(10000.0f),
     max_altitude(0.0f),
     altitude_trigger( ALTITUDE_TRIGGER_HYSTERESIS),

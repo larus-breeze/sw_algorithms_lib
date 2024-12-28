@@ -54,18 +54,24 @@ public:
     temperature(20.0f),
     humidity( 0.0f),
     density_correction(1.0f),
-    density_correction_averager(0.001f),
-    QFF(101325)
+    extrapolated_sea_level_pressure(101325),
+    GNSS_altitude_based_density_available(false),
+    GNSS_altitude_based_density(1.2255f)
   {
-    density_correction_averager.settle(1.0f);
   }
-  void update_density_correction( void)
+  void update_density( float GNSS_altitude, bool valid)
   {
-    density_correction_averager.respond(density_correction);
+    if( valid)
+      {
+	GNSS_altitude_based_density = get_std_density( GNSS_altitude) * density_correction;
+	GNSS_altitude_based_density_available = true;
+      }
+    else
+      GNSS_altitude_based_density_available = false;
   }
   void initialize( float altitude)
   {
-    density_QFF_calculator.initialize(altitude);
+    air_density_observer.initialize(altitude);
   }
   void set_pressure( float p_abs)
   {
@@ -75,17 +81,27 @@ public:
   {
     return pressure;
   }
-  void normalize_density_correction_averager( float GNSS_altitude, float static_pressure)
+  float get_std_density( float GNSS_altitude)
   {
     float std_density =
 	0.000000003547494f * GNSS_altitude * GNSS_altitude
 	-0.000115412739613f * GNSS_altitude + 1.224096628212817f;
-    float pressure_density = 1.0496346613e-5f * pressure + 0.1671546011f;
-    density_correction_averager.settle( std_density / pressure_density);
+    return std_density;
+  }
+  float get_pressure_density( float static_pressure)
+  {
+    return 1.0496346613e-5f * static_pressure + 0.1671546011f;
+  }
+  void normalize_density_correction( float GNSS_altitude, float static_pressure)
+  {
+    density_correction = get_std_density(GNSS_altitude) / get_pressure_density(static_pressure);
   }
   float get_density( void) const
   {
-    return  (1.0496346613e-5f * pressure + 0.1671546011f) * density_correction_averager.get_output();
+    if( GNSS_altitude_based_density_available)
+      return GNSS_altitude_based_density;
+    else
+      return  (1.0496346613e-5f * pressure + 0.1671546011f) * density_correction;
   }
   float get_negative_pressure_altitude( void) const
   {
@@ -111,17 +127,17 @@ public:
     have_ambient_air_data = false;
   }
 
-  float get_QFF () const
+  float get_extrapolated_sea_level_pressure () const
   {
-    return QFF;
+    return extrapolated_sea_level_pressure;
   }
 
   void feed_QFF_density_metering( float pressure, float MSL_altitude)
     {
-    air_data_result result = density_QFF_calculator.feed_metering( pressure, MSL_altitude);
+    air_data_result result = air_density_observer.feed_metering( pressure, MSL_altitude);
       if( result.valid)
 	{
-	  QFF = QFF * AIR_DENSITY_LETHARGY + result.QFF * (1 - AIR_DENSITY_LETHARGY);
+	  extrapolated_sea_level_pressure = extrapolated_sea_level_pressure * AIR_DENSITY_LETHARGY + result.QFF * (1 - AIR_DENSITY_LETHARGY);
 	  density_correction = density_correction * AIR_DENSITY_LETHARGY + result.density_correction * (1 - AIR_DENSITY_LETHARGY);
 	}
     }
@@ -137,9 +153,10 @@ private:
   float temperature;
   float humidity;
   float density_correction;
-  pt2<float,float> density_correction_averager;
-  float QFF;
-  air_density_observer density_QFF_calculator;
+  float extrapolated_sea_level_pressure;
+  air_density_observer_t air_density_observer;
+  bool GNSS_altitude_based_density_available;
+  float GNSS_altitude_based_density;
 };
 
 #endif /* APPLICATION_ATMOSPHERE_H_ */

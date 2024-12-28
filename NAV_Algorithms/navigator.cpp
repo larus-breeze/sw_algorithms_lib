@@ -89,7 +89,7 @@ bool navigator_t::update_at_10Hz ()
 	air_pressure_resampler_100Hz_10Hz.get_output(),
 	flight_observer.get_filtered_GNSS_altitude());
 
-  atmosphere.update_density_correction(); // here because of the 10 Hz call frequency
+  atmosphere.update_density( -GNSS_negative_altitude, GNSS_fix_type > 0);
 
   wind_observer.process_at_10_Hz( ahrs);
 
@@ -140,7 +140,7 @@ void navigator_t::report_data( output_data_t &d)
 
 #if DEVELOPMENT_ADDITIONS
 
-    d.QFF			= atmosphere.get_QFF();
+    d.QFF			= atmosphere.get_extrapolated_sea_level_pressure();
     d.nav_correction		= ahrs.get_nav_correction();
     d.gyro_correction		= ahrs.get_gyro_correction();
     d.nav_acceleration_gnss 	= ahrs.get_nav_acceleration();
