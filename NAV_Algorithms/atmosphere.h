@@ -28,7 +28,6 @@
 
 #include "embedded_math.h"
 #include <air_density_observer.h>
-#include <NAV_tuning_parameters.h>
 #include "NAV_tuning_parameters.h"
 #include <pt2.h>
 
