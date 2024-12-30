@@ -32,11 +32,11 @@
 typedef double evaluation_type;
 typedef uint64_t measurement_type;
 
-#define ALTITUDE_TRIGGER_HYSTERESIS 50.0f
-#define MAX_ALLOWED_SLOPE_VARIANCE	1e-8
-#define MAX_ALLOWED_OFFSET_VARIANCE	150
+#define ALTITUDE_TRIGGER_HYSTERESIS	50.0f
+#define MAX_ALLOWED_SLOPE_VARIANCE	3e-9
+#define MAX_ALLOWED_OFFSET_VARIANCE	200
 #define MINIMUM_ALTITUDE_RANGE		300.0f
-#define MAXIMUM_ALTITUDE_RANGE		500.0f
+#define MAXIMUM_ALTITUDE_RANGE		800.0f
 
 //! Maintains offset and slope of the air density measurement
 class air_data_result

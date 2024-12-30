@@ -92,7 +92,7 @@ public:
 
   void feed_QFF_density_metering( float pressure, float MSL_altitude)
   {
-    atmosphere.feed_QFF_density_metering( pressure, MSL_altitude);
+    atmosphere.air_density_metering( pressure, MSL_altitude);
   }
 
   void disregard_density_data( void)

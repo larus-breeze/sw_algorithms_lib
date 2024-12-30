@@ -63,6 +63,7 @@
 #define INDUCTION_STD_DEVIATION_LIMIT	0.03 	//!< results outperforming this number will be used further on
 
 #define AIRBORNE_TRIGGER_SPEED		0.5f //!< speed-compensator vario value m/s
+#define AIR_DENSITY_IIR_FILTER		0
 #define AIR_DENSITY_LETHARGY	 	0.85
 
 #define MAG_SCALE			10000.0f //!< scale factor for high-precision integer statistics
