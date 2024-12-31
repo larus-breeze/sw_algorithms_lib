@@ -37,13 +37,11 @@
 
 extern float3vector nav_induction;
 
-enum { ROLL, PITCH, YAW};
+enum { ROLL, PITCH, HEADING};
 enum { FRONT, RIGHT, BOTTOM};
 enum { NORTH, EAST, DOWN};
 
 typedef enum  { STRAIGHT_FLIGHT, TRANSITION, CIRCLING} circle_state_t;
-
-typedef integrator<float, float3vector> vector3integrator;
 
 //! Attitude and heading reference system class
 class AHRS_type
@@ -68,6 +66,11 @@ public:
 		float GNSS_heading,
 		bool GNSS_heading_valid
 		);
+
+	inline void set_quaternion( const quaternion <ftype> &new_attitude)
+	{
+	  attitude = new_attitude;
+	}
 
 	inline void set_from_euler( float r, float n, float y)
 	{
@@ -172,13 +175,26 @@ public:
   void update_compass(
 		  const float3vector &gyro, const float3vector &acc, const float3vector &mag,
 		  const float3vector &GNSS_acceleration); //!< rotate quaternion taking angular rate readings
-#if 1 // SOFT_IRON_TEST
+
   void update_ACC_only(
-		  const float3vector &gyro, const float3vector &acc, const float3vector &mag,
-		  const float3vector &GNSS_acceleration); //!< rotate quaternion taking angular rate readings
-#endif
-  float
-  getHeadingDifferenceAhrsDgnss () const
+  		  const float3vector &gyro, const float3vector &acc, const float3vector &mag,
+  		  const float3vector &GNSS_acceleration); //!< rotate quaternion taking angular rate readings
+
+  void update_blind(
+  		  const float3vector &gyro, const float3vector &acc, const float3vector &mag,
+  		  const float3vector &GNSS_acceleration); //!< rotate quaternion taking angular rate readings
+
+  void set_gyro_integrator( const float3vector &value)
+  {
+    gyro_integrator = value;
+  }
+
+  const float3vector & get_gyro_integrator( void)
+  {
+    return gyro_integrator;
+  }
+
+  float getHeadingDifferenceAhrsDgnss () const
   {
     return heading_difference_AHRS_DGNSS;
   }

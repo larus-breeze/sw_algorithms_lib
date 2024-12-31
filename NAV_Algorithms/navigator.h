@@ -44,7 +44,7 @@ public:
   navigator_t (void)
 	:ahrs (0.01f),
 #if DEVELOPMENT_ADDITIONS
-	 ahrs_magnetic (0.01f),
+	 ahrs_dead_recogning (0.01f),
 #endif
 	 atmosphere (101325.0f),
 	 flight_observer(),
@@ -71,7 +71,7 @@ public:
   {
     ahrs.update_magnetic_induction_data( declination, inclination);
 #if DEVELOPMENT_ADDITIONS
-    ahrs_magnetic.update_magnetic_induction_data( declination, inclination);
+    ahrs_dead_recogning.update_magnetic_induction_data( declination, inclination);
 #endif
   }
 
@@ -183,7 +183,7 @@ public:
   {
     ahrs.set_from_euler(roll, nick, yaw);
 #if DEVELOPMENT_ADDITIONS
-    ahrs_magnetic.set_from_euler(roll, nick, yaw);
+    ahrs_dead_recogning.set_from_euler(roll, nick, yaw);
 #endif
   }
 
@@ -195,7 +195,7 @@ public:
 private:
   AHRS_type	ahrs;
 #if DEVELOPMENT_ADDITIONS
-  AHRS_type	ahrs_magnetic;
+  AHRS_type	ahrs_dead_recogning;
 #endif
   atmosphere_t 		atmosphere;
   variometer_t 	flight_observer;

@@ -191,7 +191,7 @@ AHRS_type::update_attitude ( const float3vector &acc,
 {
   attitude.rotate (gyro[ROLL] * Ts_div_2,
 		   gyro[PITCH] * Ts_div_2,
-		   gyro[YAW]  * Ts_div_2);
+		   gyro[HEADING]  * Ts_div_2);
 
   attitude.normalize ();
 
@@ -285,6 +285,24 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   // when circling is finished eventually update the magnetic calibration
   if (automatic_magnetic_calibration && (old_circle_state == CIRCLING) && (circling_state == TRANSITION))
 	  handle_magnetic_calibration ('s');
+}
+
+/**
+ * @brief  update attitude from IMU data D-GNSS compass
+ */
+void AHRS_type::update_blind(
+		  const float3vector &gyro, const float3vector &acc, const float3vector &mag_sensor,
+		  const float3vector &GNSS_acceleration) //!< rotate quaternion taking angular rate readings
+{
+  if( compass_calibration.isCalibrationDone()) // use calibration if available
+      body_induction = compass_calibration.calibrate(mag_sensor);
+  else
+      body_induction = mag_sensor;
+
+  body_induction_error = body_induction - body2nav.reverse_map( expected_nav_induction);
+
+  gyro_correction = gyro_integrator * I_GAIN;
+  update_attitude (acc, gyro + gyro_correction, body_induction);
 }
 
 /**

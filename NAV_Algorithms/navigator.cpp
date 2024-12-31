@@ -36,7 +36,16 @@ void navigator_t::update_at_100Hz (
 	    GNSS_fix_type == (SAT_FIX | SAT_HEADING));
 
 #if DEVELOPMENT_ADDITIONS
-  ahrs_magnetic.update_compass(
+#define BLIND_RUNNING_TICKS (10*60*100)
+  static unsigned blind_recogning_cown_counter = BLIND_RUNNING_TICKS;
+  --blind_recogning_cown_counter;
+  if( blind_recogning_cown_counter == 0)
+    {
+      blind_recogning_cown_counter = BLIND_RUNNING_TICKS;
+      ahrs_dead_recogning.set_quaternion(ahrs.get_attitude());
+      ahrs_dead_recogning.set_gyro_integrator( ahrs.get_gyro_integrator());
+    }
+  ahrs_dead_recogning.update_blind(
 	  gyro, acc, mag,
 	  GNSS_acceleration);
 #endif
@@ -145,10 +154,10 @@ void navigator_t::report_data( output_data_t &d)
     d.gyro_correction		= ahrs.get_gyro_correction();
     d.nav_acceleration_gnss 	= ahrs.get_nav_acceleration();
 
-    d.euler_magnetic		= ahrs_magnetic.get_euler();
-    d.q_magnetic		= ahrs_magnetic.get_attitude();
-    d.nav_acceleration_mag 	= ahrs_magnetic.get_nav_acceleration();
-    d.nav_induction_mag 	= ahrs_magnetic.get_nav_induction();
+    d.euler_magnetic		= ahrs_dead_recogning.get_euler();
+    d.q_magnetic		= ahrs_dead_recogning.get_attitude();
+    d.nav_acceleration_mag 	= ahrs_dead_recogning.get_nav_acceleration();
+    d.nav_induction_mag 	= ahrs_dead_recogning.get_nav_induction();
 
     d.HeadingDifferenceAhrsDgnss = ahrs.getHeadingDifferenceAhrsDgnss();
     d.satfix			= (float)(d.c.sat_fix_type);
@@ -160,7 +169,7 @@ void navigator_t::report_data( output_data_t &d)
     d.inst_wind_corrected_E	= wind_observer.get_corrected_wind()[EAST];
     for( unsigned i=0; i<3; ++i)
       d.speed_compensation[i]  	= flight_observer.get_speed_compensation(i);
-    d.cross_acc_correction 	= ahrs_magnetic.get_cross_acc_correction();
+    d.cross_acc_correction 	= ahrs_dead_recogning.get_cross_acc_correction();
     d.vario_wind_N		= wind_observer.get_speed_compensator_wind()[NORTH];
     d.vario_wind_E		= wind_observer.get_speed_compensator_wind()[EAST];
     d.body_induction		= ahrs.getBodyInduction();

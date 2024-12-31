@@ -91,7 +91,6 @@ public:
 
   bool set_default (void)
   {
-    float variance;
     calibration_done = true;
     for( unsigned i=0; i<3; ++i)
       {
