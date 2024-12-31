@@ -38,12 +38,17 @@ void navigator_t::update_at_100Hz (
 #if DEVELOPMENT_ADDITIONS
 #define BLIND_RUNNING_TICKS (10*60*100)
   static unsigned blind_recogning_cown_counter = BLIND_RUNNING_TICKS;
+  static float3vector integrator;
+
+  integrator += ahrs.get_gyro_integrator();
+
   --blind_recogning_cown_counter;
   if( blind_recogning_cown_counter == 0)
     {
       blind_recogning_cown_counter = BLIND_RUNNING_TICKS;
       ahrs_dead_recogning.set_quaternion(ahrs.get_attitude());
-      ahrs_dead_recogning.set_gyro_integrator( ahrs.get_gyro_integrator());
+      ahrs_dead_recogning.set_gyro_integrator( integrator * (1.0f / BLIND_RUNNING_TICKS));
+      integrator = float3vector();
     }
   ahrs_dead_recogning.update_blind(
 	  gyro, acc, mag,
