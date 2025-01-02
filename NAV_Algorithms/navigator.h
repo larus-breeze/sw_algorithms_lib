@@ -74,10 +74,6 @@ public:
     ahrs_magnetic.update_magnetic_induction_data( declination, inclination);
 #endif
   }
-  void normalize_density_correction( float GNSS_altitude, float static_pressure)
-  {
-    atmosphere.normalize_density_correction( GNSS_altitude, static_pressure);
-  }
   void set_density_data( float temperature, float humidity)
   {
     if( ! isnan( temperature) && ! isnan( humidity) )

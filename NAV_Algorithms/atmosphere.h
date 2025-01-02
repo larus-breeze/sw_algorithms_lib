@@ -93,10 +93,6 @@ public:
   {
     return 1.0496346613e-5f * static_pressure + 0.1671546011f;
   }
-  void normalize_density_correction( float GNSS_altitude, float static_pressure)
-  {
-    density_correction = get_std_density(GNSS_altitude) / get_pressure_density(static_pressure);
-  }
   float get_density( void) const
   {
     if( GNSS_altitude_based_density_available)

@@ -69,7 +69,6 @@ public:
 
   void initialize_after_first_measurement( output_data_t & output_data)
   {
-    navigator.normalize_density_correction( - output_data.c.position[DOWN], output_data.m.static_pressure);
     navigator.update_pressure( output_data.m.static_pressure - QNH_offset);
     navigator.initialize_QFF_density_metering( -output_data.c.position[DOWN]);
     navigator.reset_altitude ();
