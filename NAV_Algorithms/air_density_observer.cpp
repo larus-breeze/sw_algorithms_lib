@@ -83,6 +83,7 @@ air_data_result air_density_observer_t::feed_metering( float pressure, float GNS
 	  reference_altitude * reference_altitude *   0.000000003547494f
 	  -0.000115412739613f * reference_altitude +1.224096628212817f;
       air_data.density_correction = density / std_density;
+      air_data.density_variance = result.variance_slope;
       air_data.valid = true;
     }
 

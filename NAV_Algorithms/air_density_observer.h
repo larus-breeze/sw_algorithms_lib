@@ -44,10 +44,12 @@ class air_data_result
 public:
   air_data_result( void)
     : density_correction(1.0f),
+      density_variance(1.0f),
       QFF(101325.0f),
       valid( false)
   {}
   float density_correction;
+  float density_variance;
   float QFF;
   bool valid;
 };
