@@ -134,9 +134,13 @@ public:
     air_data_result result = air_density_observer.feed_metering( pressure, MSL_altitude);
       if( result.valid)
 	{
-	  weight_sum +=  1.0f / result.density_variance;
-	  density_factor_weighed_sum += result.density_correction / result.density_variance;
+#if USE_AIR_DENSITY_LETHARGY
+	  weight_sum =  weight_sum * AIR_DENSITY_LETHARGY + (AIR_DENSITY_LETHARGY -1) / result.density_variance;
+	  density_factor_weighed_sum =  density_factor_weighed_sum * AIR_DENSITY_LETHARGY + (AIR_DENSITY_LETHARGY -1) * result.density_correction / result.density_variance;
 	  density_correction = density_factor_weighed_sum / weight_sum;
+#else
+	  density_correction = result.density_correction;
+#endif
 	}
     }
 
