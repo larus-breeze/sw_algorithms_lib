@@ -135,9 +135,14 @@ public:
       if( result.valid)
 	{
 #if USE_AIR_DENSITY_LETHARGY
+	  bool first_measurement = (weight_sum == 0.0f);
+
 	  weight_sum =  weight_sum * AIR_DENSITY_LETHARGY + (AIR_DENSITY_LETHARGY -1) / result.density_variance;
 	  density_factor_weighed_sum =  density_factor_weighed_sum * AIR_DENSITY_LETHARGY + (AIR_DENSITY_LETHARGY -1) * result.density_correction / result.density_variance;
-	  density_correction = density_factor_weighed_sum / weight_sum;
+
+	  // postpone update unless we have two measurements
+	  if( ! first_measurement)
+	    density_correction = density_factor_weighed_sum / weight_sum;
 #else
 	  density_correction = result.density_correction;
 #endif
