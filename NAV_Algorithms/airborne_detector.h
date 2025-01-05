@@ -37,12 +37,14 @@ public:
   {
     if( yes)
       {
-	if( airborne_counter < LEVEL)
+	if( airborne_counter == 0)
+	  airborne_counter = 100; // create hysteresis
+	else if( airborne_counter < LEVEL)
 	  ++ airborne_counter;
       }
     else
       {
-      if( airborne_counter > 0)
+	      if( airborne_counter > 0)
 	{
 	  --airborne_counter;
 	  if( airborne_counter == 0)
