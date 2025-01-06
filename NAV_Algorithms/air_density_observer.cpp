@@ -34,7 +34,7 @@ air_data_result air_density_observer_t::feed_metering( float pressure, float GNS
   --decimation_counter;
   if( decimation_counter > 0)
     return air_data;
-  decimation_counter = 20;
+  decimation_counter = AIR_DENSITY_DECIMATION;
 
   density_QFF_calculator.add_value( GNSS_altitude * 100.0f, pressure);
 

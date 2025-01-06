@@ -39,6 +39,7 @@ typedef uint64_t measurement_type;
 #define MAXIMUM_ALTITUDE_RANGE		800.0f
 #define USE_AIR_DENSITY_LETHARGY	1
 #define AIR_DENSITY_LETHARGY 		0.7
+#define AIR_DENSITY_DECIMATION		20
 
 //! Maintains offset and slope of the air density measurement
 class air_data_result
@@ -65,8 +66,8 @@ public:
     max_altitude(0.0f),
     altitude_trigger( ALTITUDE_TRIGGER_HYSTERESIS),
     decimation_counter( 20),
-    altitude_decimation_filter( 0.025),
-    pressure_decimation_filter( 0.025)
+    altitude_decimation_filter( 1.0f / AIR_DENSITY_DECIMATION * 0.25f),
+    pressure_decimation_filter( 1.0f / AIR_DENSITY_DECIMATION * 0.25f)
   {
   }
   air_data_result feed_metering( float pressure, float MSL_altitude);
