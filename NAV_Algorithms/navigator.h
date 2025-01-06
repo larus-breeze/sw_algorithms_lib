@@ -50,7 +50,7 @@ public:
 	 flight_observer(),
 	 wind_observer(),
 	 airborne_detector(),
-	 air_pressure_resampler_100Hz_10Hz(0.04f), // = 2.5 Hz @ 100Hz
+	 air_pressure_resampler_100Hz_10Hz(0.025f), // = 2.5 Hz @ 100Hz
 	 pitot_pressure(0.0f),
 	 TAS( 0.0f),
 	 IAS( 0.0f),
