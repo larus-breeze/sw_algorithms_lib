@@ -94,7 +94,18 @@ bool navigator_t::update_at_10Hz ()
 			   ahrs.get_euler ().y,
 			   ahrs.get_circling_state ());
 
-  airborne_detector.report_to_be_airborne( abs( flight_observer.get_speed_compensation_GNSS()) > AIRBORNE_TRIGGER_SPEED);
+  unsigned airborne_criteria_fulfilled = 0;
+  if( abs( flight_observer.get_speed_compensation_GNSS()) > AIRBORNE_TRIGGER_SPEED_COMP)
+    ++ airborne_criteria_fulfilled;
+
+  if( GNSS_velocity.abs() > AIRBORNE_TRIGGER_SPEED)
+    ++ airborne_criteria_fulfilled;
+
+  if( IAS > AIRBORNE_TRIGGER_SPEED)
+    ++ airborne_criteria_fulfilled;
+
+  // if at least 2 of 3 criteria apply, we believe to be airborne
+  airborne_detector.report_to_be_airborne( airborne_criteria_fulfilled > 1);
   if( airborne_detector.detect_just_landed())
     {
       ahrs.write_calibration_into_EEPROM();
