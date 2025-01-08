@@ -58,11 +58,7 @@ public:
 };
 
 //! Measures air density and reference pressure
-<<<<<<< HEAD
 class air_density_observer_t
-=======
-class air_density_observer
->>>>>>> refs/remotes/origin/soft_iron_correction
 {
 public:
   air_density_observer_t (void)
