@@ -50,7 +50,13 @@ public:
 	}
       }
   }
-    bool detect_just_landed( void)
+
+  bool is_airborne( void)
+    {
+      return airborne_counter > 0;
+    }
+
+  bool detect_just_landed( void)
     {
       if( just_landed)
 	{

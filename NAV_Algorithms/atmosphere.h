@@ -28,6 +28,7 @@
 
 #include "embedded_math.h"
 #include <air_density_observer.h>
+#include "NAV_tuning_parameters.h"
 #include <pt2.h>
 
 #define RECIP_STD_DENSITY_TIMES_2 1.632f
@@ -41,7 +42,7 @@
 /*! The offest for the conversion from degree celsius to kelvin */
 #define CELSIUS_TO_KELVIN_OFFSET 273.15f
 
-//! this class maintains instant atmosphere data like pressure, density etc
+//! Maintenance of atmosphere data like pressure, density etc.
 class atmosphere_t
 {
 public:
@@ -52,18 +53,26 @@ public:
     temperature(20.0f),
     humidity( 0.0f),
     density_correction(1.0f),
-    density_correction_averager(0.001f),
-    QFF(101325)
+    extrapolated_sea_level_pressure(101325),
+    GNSS_altitude_based_density_available(false),
+    GNSS_altitude_based_density(1.2255f),
+    weight_sum(0.0f),
+    density_factor_weighed_sum(0.0f)
   {
-    density_correction_averager.settle(1.0f);
   }
-  void update_density_correction( void)
+  void update_density( float GNSS_altitude, bool valid)
   {
-    density_correction_averager.respond(density_correction);
+    if( valid)
+      {
+	GNSS_altitude_based_density = get_std_density( GNSS_altitude) * density_correction;
+	GNSS_altitude_based_density_available = true;
+      }
+    else
+      GNSS_altitude_based_density_available = false;
   }
   void initialize( float altitude)
   {
-    density_QFF_calculator.initialize(altitude);
+    air_density_observer.initialize(altitude);
   }
   void set_pressure( float p_abs)
   {
@@ -73,11 +82,25 @@ public:
   {
     return pressure;
   }
+  float get_std_density( float GNSS_altitude)
+  {
+    float std_density =
+	0.000000003547494f * GNSS_altitude * GNSS_altitude
+	-0.000115412739613f * GNSS_altitude + 1.224096628212817f;
+    return std_density;
+  }
+  float get_pressure_density( float static_pressure)
+  {
+    return 1.0496346613e-5f * static_pressure + 0.1671546011f;
+  }
   float get_density( void) const
   {
-    return  (1.0496346613e-5f * pressure + 0.1671546011f) * density_correction_averager.get_output();
+    if( GNSS_altitude_based_density_available)
+      return GNSS_altitude_based_density;
+    else
+      return  (1.0496346613e-5f * pressure + 0.1671546011f) * density_correction;
   }
-  float get_negative_altitude( void) const
+  float get_negative_pressure_altitude( void) const
   {
     float tmp = 8.104381531e-4f * pressure;
     return - tmp * tmp  + 0.20867299170f * pressure - 14421.43945f;
@@ -101,18 +124,28 @@ public:
     have_ambient_air_data = false;
   }
 
-  float get_QFF () const
+  float get_extrapolated_sea_level_pressure () const
   {
-    return QFF;
+    return extrapolated_sea_level_pressure;
   }
 
-  void feed_QFF_density_metering( float pressure, float MSL_altitude)
+  void air_density_metering( float pressure, float MSL_altitude)
     {
-    air_data_result result = density_QFF_calculator.feed_metering( pressure, MSL_altitude);
+    air_data_result result = air_density_observer.feed_metering( pressure, MSL_altitude);
       if( result.valid)
 	{
-	  QFF = result.QFF;
+#if USE_AIR_DENSITY_LETHARGY
+	  bool first_measurement = (weight_sum == 0.0f);
+
+	  weight_sum =  weight_sum * AIR_DENSITY_LETHARGY + (AIR_DENSITY_LETHARGY -1) / result.density_variance;
+	  density_factor_weighed_sum =  density_factor_weighed_sum * AIR_DENSITY_LETHARGY + (AIR_DENSITY_LETHARGY -1) * result.density_correction / result.density_variance;
+
+	  // postpone update unless we have two measurements
+	  if( ! first_measurement)
+	    density_correction = density_factor_weighed_sum / weight_sum;
+#else
 	  density_correction = result.density_correction;
+#endif
 	}
     }
 
@@ -127,9 +160,13 @@ private:
   float temperature;
   float humidity;
   float density_correction;
-  pt2<float,float> density_correction_averager;
-  float QFF;
-  air_density_observer density_QFF_calculator;
+  float extrapolated_sea_level_pressure;
+  air_density_observer_t air_density_observer;
+  bool GNSS_altitude_based_density_available;
+  float GNSS_altitude_based_density;
+  float old_density_correction;
+  float weight_sum;
+  float density_factor_weighed_sum;
 };
 
 #endif /* APPLICATION_ATMOSPHERE_H_ */

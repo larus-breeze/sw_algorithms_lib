@@ -115,16 +115,9 @@ public:
 
   void update_every_10ms( output_data_t & output_data)
   {
-    // rotate sensor coordinates into airframe coordinates
-#if USE_LOWCOST_IMU == 1
-    acc  = sensor_mapping * output_data.m.lowcost_acc;
-    mag  = sensor_mapping * output_data.m.lowcost_mag;
-    gyro = sensor_mapping * output_data.m.lowcost_gyro;
-#else
     acc  = sensor_mapping * output_data.m.acc;
     mag  = sensor_mapping * output_data.m.mag;
     gyro = sensor_mapping * output_data.m.gyro;
-#endif
 
 #if DEVELOPMENT_ADDITIONS
     output_data.body_acc  = acc;

@@ -52,7 +52,7 @@ void navigator_t::update_at_100Hz (
       ahrs.get_nav_acceleration (),
       heading_vector,
       GNSS_negative_altitude,
-      atmosphere.get_negative_altitude(),
+      atmosphere.get_negative_pressure_altitude(),
       IAS,
       wind_observer.get_speed_compensator_wind(),
       (GNSS_fix_type != 0)
@@ -85,11 +85,8 @@ void navigator_t::update_GNSS_data( const coordinates_t &coordinates)
 bool navigator_t::update_at_10Hz ()
 {
   bool landing_detected=false;
-  atmosphere.feed_QFF_density_metering(
-	air_pressure_resampler_100Hz_10Hz.get_output(),
-	flight_observer.get_filtered_GNSS_altitude());
 
-  atmosphere.update_density_correction(); // here because of the 10 Hz call frequency
+  atmosphere.update_density( -GNSS_negative_altitude, GNSS_fix_type > 0);
 
   wind_observer.process_at_10_Hz( ahrs);
 
@@ -103,6 +100,13 @@ bool navigator_t::update_at_10Hz ()
       ahrs.write_calibration_into_EEPROM();
       landing_detected = true;
     }
+
+  if( airborne_detector.is_airborne())
+    atmosphere.air_density_metering(
+	air_pressure_resampler_100Hz_10Hz.get_output(),
+	flight_observer.get_filtered_GNSS_altitude());
+
+
   return landing_detected;
 }
 
@@ -133,14 +137,14 @@ void navigator_t::report_data( output_data_t &d)
     d.slip_angle		= ahrs.getSlipAngle();
     d.pitch_angle		= ahrs.getPitchAngle();
     d.G_load			= ahrs.get_G_load();
-    d.pressure_altitude		= - atmosphere.get_negative_altitude();
+    d.pressure_altitude		= - atmosphere.get_negative_pressure_altitude();
     d.magnetic_disturbance	= ahrs.getMagneticDisturbance();
     d.air_density		= atmosphere.get_density();
     d.nav_induction_gnss 	= ahrs.get_nav_induction();
 
 #if DEVELOPMENT_ADDITIONS
 
-    d.QFF			= atmosphere.get_QFF();
+    d.QFF			= atmosphere.get_extrapolated_sea_level_pressure();
     d.nav_correction		= ahrs.get_nav_correction();
     d.gyro_correction		= ahrs.get_gyro_correction();
     d.nav_acceleration_gnss 	= ahrs.get_nav_acceleration();

@@ -50,7 +50,7 @@ public:
 	 flight_observer(),
 	 wind_observer(),
 	 airborne_detector(),
-	 air_pressure_resampler_100Hz_10Hz(0.04f), // f / fcutoff = 80% * 0.5 * 0.1
+	 air_pressure_resampler_100Hz_10Hz(0.025f), // = 2.5 Hz @ 100Hz
 	 pitot_pressure(0.0f),
 	 TAS( 0.0f),
 	 IAS( 0.0f),
@@ -74,7 +74,6 @@ public:
     ahrs_magnetic.update_magnetic_induction_data( declination, inclination);
 #endif
   }
-
   void set_density_data( float temperature, float humidity)
   {
     if( ! isnan( temperature) && ! isnan( humidity) )
@@ -89,7 +88,7 @@ public:
 
   void feed_QFF_density_metering( float pressure, float MSL_altitude)
   {
-    atmosphere.feed_QFF_density_metering( pressure, MSL_altitude);
+    atmosphere.air_density_metering( pressure, MSL_altitude);
   }
 
   void disregard_density_data( void)
@@ -119,7 +118,7 @@ public:
 
   void reset_altitude( void)
   {
-    flight_observer.reset( atmosphere.get_negative_altitude(), GNSS_negative_altitude);
+    flight_observer.reset( atmosphere.get_negative_pressure_altitude(), GNSS_negative_altitude);
   }
   /**
    * @brief update pitot pressure
