@@ -68,7 +68,7 @@ public:
   float variance; 	//!< measure of precision: sensor calibration parameter variance
 };
 
-//! this class maintains 3d magnetic calibration data
+//! Maintains 3 axes magnetic calibration data
 template <class sample_type, class evaluation_type> class compass_calibration_t
 {
 public:
@@ -91,7 +91,6 @@ public:
 
   bool set_default (void)
   {
-    float variance;
     calibration_done = true;
     for( unsigned i=0; i<3; ++i)
       {
@@ -145,7 +144,7 @@ public:
     return true;
   }
 
-  bool isCalibrationDone () const
+  bool available () const
   {
     return calibration_done;
   }

@@ -25,7 +25,7 @@
 #ifndef TRIGGER_H_
 #define TRIGGER_H_
 
-//! class for hysteresis-based triggering on input data
+//! Hysteresis-based triggering on input data
 class trigger
 {
 public:

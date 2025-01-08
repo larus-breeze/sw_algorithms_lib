@@ -91,33 +91,33 @@ for i = 1 : size
 
 end  
 
-%subplot( 4, 1, 1);
-figure(1);
+subplot( 3, 1, 1);
+%figure(1);
 plot(acc_est, 'r');
 hold;
 plot(acc,'g');
-plot(acc_m, '+');
+plot(acc_m, '.');
 plot(acc_est_x);
 plot(acc_offset);
 legend('Estimated Acc.','True Acc.','Acc.Measurement','Acc. Offset est.','Acc. Offset');
 title('Kalmanfilter Movement Estimation');
 ylabel('Accel. / m/s/s');
 grid;
-%subplot( 4, 1, 2);
-figure(2);
+subplot( 3, 1, 2);
+%figure(2);
 plot(vel_est,'r');
 hold;
 plot(vel,'g');
-plot(vel_m, '+');
+plot(vel_m, '.');
 legend('Estimated Velocity','True Velocity','Velocity Measurement');
 ylabel('Velocity / m/s');
 grid;
-%subplot( 4, 1, 3)
-figure(3);
+subplot( 3, 1, 3)
+%figure(3);
 plot(pos_est, 'r');
 hold;
 plot(pos,'g');
-plot(pos_m, '+');
+plot(pos_m, '.');
 ylabel('Position / m');
 legend('Estimated Position','True Position','Position Measurement');
 xlabel('Time / 10ms');

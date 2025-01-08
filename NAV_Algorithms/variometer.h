@@ -97,8 +97,11 @@ public:
 	return speed_compensation_kalman_2;
 	break;
 
-      default:
+      case 2:
 	return speed_compensation_energy_3;
+	break;
+      default:
+	return speed_compensation_projected_4;
 	break;
       }
   }
@@ -161,6 +164,7 @@ private:
 	float speed_compensation_INS_GNSS_1;
 	float speed_compensation_kalman_2;
 	float speed_compensation_energy_3;
+	float speed_compensation_projected_4;
 };
 
 #endif /* VARIOMETER_H_ */

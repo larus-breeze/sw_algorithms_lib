@@ -31,6 +31,7 @@
 #include "accumulating_averager.h"
 #include "persistent_data.h"
 
+//! mechanisms to filter wind data
 class wind_oberserver_t
 {
 public:

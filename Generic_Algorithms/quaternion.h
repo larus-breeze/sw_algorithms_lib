@@ -35,7 +35,7 @@
 template <class datatype > class quaternion: public vector <datatype, 4>
 {
 public:
-	//! constructor from eulerwinkel
+	//! constructor from euler angle
 	quaternion( vector <datatype, 3> &init)
 	{
 		from_euler( init[0], init[1], init[2]);
@@ -77,33 +77,27 @@ public:
 		_euler.y = ATAN2(  TWO * (e0*e3 + e1*e2) , e0*e0 + e1*e1 - e2*e2 - e3*e3 );
 		return _euler;
 	}
-	//! linearized euler component e0 (approximate nick angle / rad)
-	inline datatype lin_e0( void) const
-	{
-		datatype e0 = vector<datatype, 4>::e[0];
-		datatype e1 = vector<datatype, 4>::e[1];
-		datatype e2 = vector<datatype, 4>::e[2];
-		datatype e3 = vector<datatype, 4>::e[3];
-		return TWO * (e0*e1 + e2*e3) / ( e0*e0 - e1*e1 - e2*e2 + e3*e3);
 
-	}
-	//! linearized euler component e1 (approximate roll angle / rad)
-	inline datatype lin_e1( void) const
+	//! quaternion chaining, multiplication
+	quaternion<datatype> operator *( const quaternion<datatype> right) const
 	{
-		datatype e0 = vector<datatype, 4>::e[0];
-		datatype e1 = vector<datatype, 4>::e[1];
-		datatype e2 = vector<datatype, 4>::e[2];
-		datatype e3 = vector<datatype, 4>::e[3];
-		return TWO * (e0*e2 - e3*e1);
-	}
-	//! euler component e2
-	inline datatype get_e2( void) const
-	{
-		datatype e0 = vector<datatype, 4>::e[0];
-		datatype e1 = vector<datatype, 4>::e[1];
-		datatype e2 = vector<datatype, 4>::e[2];
-		datatype e3 = vector<datatype, 4>::e[3];
-		return ATAN2(  TWO * (e0*e3 + e1*e2) , e0*e0 + e1*e1 - e2*e2 - e3*e3 );
+	  quaternion<datatype> result;
+	  datatype w1 = vector<datatype, 4>::e[0];
+	  datatype x1 = vector<datatype, 4>::e[1];
+	  datatype y1 = vector<datatype, 4>::e[2];
+	  datatype z1 = vector<datatype, 4>::e[3];
+
+	  datatype w2 = right[0];
+	  datatype x2 = right[1];
+	  datatype y2 = right[2];
+	  datatype z2 = right[3];
+
+	  result[0] = w1*w2 - x1*x2 - y1*y2 - z1*z2;
+	  result[1] = w1*x2 + x1*w2 + y1*z2 - z1*y2;
+	  result[2] = w1*y2 - x1*z2 + y1*w2 + z1*x2;
+	  result[3] = w1*z2 + x1*y2 - y1*x2 + z1*w2;
+
+	  return result;
 	}
 
 	//! get north component of attitude
@@ -134,6 +128,17 @@ public:
 		datatype e2 = this->e[2];
 		datatype e3 = this->e[3];
 		return TWO * (e1*e3-e0*e2);
+	}
+
+	//! get heading component of attitude
+	datatype get_heading( void) const
+	{
+		datatype e0 = vector<datatype, 4>::e[0];
+		datatype e1 = vector<datatype, 4>::e[1];
+		datatype e2 = vector<datatype, 4>::e[2];
+		datatype e3 = vector<datatype, 4>::e[3];
+
+		return ATAN2(  TWO * (e0*e3 + e1*e2) , e0*e0 + e1*e1 - e2*e2 - e3*e3 );
 	}
 
 	//! quaternion update using rotation vector
@@ -191,7 +196,8 @@ public:
 	    m.e[2][1] = TWO * (e2*e3+e0*e1);
 	    m.e[2][2] = TWO * (e0*e0+e3*e3) - ONE;
 	}
-	quaternion <datatype> operator * ( quaternion <datatype> & right) //!< quaternion multiplication
+	#if 0
+	quaternion <datatype> operator * ( const quaternion <datatype> & right) const //!< quaternion multiplication
 		{
 		quaternion <datatype> result;
 		datatype e0=vector<datatype, 4>::e[0];
@@ -208,7 +214,7 @@ public:
 		result.vector<datatype, 4>::e[3] = e1 * re2 - e2 * re1 + e0 * re3 + e3 * re0;
 		return result;
 		}
-
+#endif
 	void from_rotation_matrix( matrix<datatype, 3> &rotm) //!< rotation matrix -> quaternion transformation
 		{
 		float tmp;

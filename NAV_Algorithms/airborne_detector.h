@@ -26,6 +26,7 @@
 #ifndef NAV_ALGORITHMS_AIRBORNE_DETECTOR_H_
 #define NAV_ALGORITHMS_AIRBORNE_DETECTOR_H_
 
+//! observation of the aircraft state (ground / flying)
 class airborne_detector_t
 {
 public:

@@ -1,6 +1,7 @@
 #ifndef GENERIC_ALGORITHMS_ACCUMULATING_AVERAGER_H_
 #define GENERIC_ALGORITHMS_ACCUMULATING_AVERAGER_H_
 
+//! simple average mechanism using the sum of input values
 template <typename type> class accumulating_averager
 {
 public:

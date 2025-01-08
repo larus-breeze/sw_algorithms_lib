@@ -25,11 +25,9 @@
 #ifndef NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_
 #define NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_
 
-#define USE_EARTH_INDUCTION_DATA_COLLECTOR 0
-
 #define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
-#define MAG_OFFSET_CHANGE_LIMIT 0.01f
-#define MAG_SCALE_CHANGE_LIMIT 0.01f
+#define MAG_OFFSET_CHANGE_LIMIT 0.02f
+#define MAG_SCALE_CHANGE_LIMIT 0.02f
 
 #define CIRCLE_LIMIT (10 * 100) //!< 10 * 1/100 s delay into / out of circling state
 
@@ -51,14 +49,14 @@
 #define I_GAIN 0.00006f 		//!< Attitude controller: integral gain
 #define H_GAIN 38.0f			//!< Attitude controller: horizontal gain
 #define M_H_GAIN 6.0f			//!< Attitude controller: horizontal gain magnetic
-#define CROSS_GAIN 0.05f		//!< Attitude controller: cross-product gain
+#define CROSS_GAIN 0.05			//!< Attitude controller: cross-product gain
 #define INDUCTION_ERROR	0.015		//!< Maximum std deviation to update earth induction parameters
 #define NAV_CORRECTION_LIMIT 5.0f	//!< limit for "low AHRS correcting variable"
 #define HIGH_TURN_RATE 8.0*M_PI/180.0f	//!< turn rate high limit
 #define LOW_TURN_RATE  1.0*M_PI/180.0f	//!< turn rate low limit
 #define SPEED_COMPENSATION_FUSIONER_FEEDBACK 0.998f // empirically tuned alpha
 
-#define USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING 1 	//!< if 1: do not use induction to control attitude while circling
+#define USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING 0 	//!< if 1: do not use induction to control attitude while circling
 #define DISABLE_CIRCLING_STATE		0	//!< for tests only: never use circling AHRS algorithm
 #define INDUCTION_STD_DEVIATION_LIMIT	0.03 	//!< results outperforming this number will be used further on
 

@@ -12,13 +12,11 @@
 #include "float3vector.h"
 #include "NAV_tuning_parameters.h"
 
+//! helper struct containing magnetic calibration data
 struct magnetic_induction_report_t
 {
   single_axis_calibration_t calibration[3];
-#if USE_EARTH_INDUCTION_DATA_COLLECTOR
-  float3vector nav_induction;
-  float nav_induction_std_deviation;
-#endif
+  bool valid;
 };
 
 void report_magnetic_calibration_has_changed( magnetic_induction_report_t *p_magnetic_induction_report, char type);
