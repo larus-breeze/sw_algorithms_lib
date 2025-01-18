@@ -157,7 +157,6 @@ AHRS_type::AHRS_type (float sampling_time)
   magnetic_disturbance(0.0f),
   magnetic_control_gain(1.0f),
   automatic_magnetic_calibration( (magnetic_calibration_type)(round)(configuration(MAG_AUTO_CALIB))),
-  automatic_earth_field_parameters( false),
   magnetic_calibration_updated( false)
 {
   update_magnetic_loop_gain(); // adapt to magnetic inclination
