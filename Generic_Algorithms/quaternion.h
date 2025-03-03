@@ -156,6 +156,7 @@ public:
 	//! euler angle -> quaternion transformation
 	void from_euler( datatype p, datatype q, datatype r)
 	{
+	// 3-2-1: yaw, then pitch, then roll
 		p *= HALF; q *= HALF; r *= HALF;
 		datatype sinphi   = SIN( p);
 		datatype cosphi   = COS( p);
@@ -165,7 +166,7 @@ public:
 		datatype cospsi   = COS( r);
 
 		vector<datatype, 4>::e[0] = cosphi*costheta*cospsi + sinphi*sintheta*sinpsi;
-		vector<datatype, 4>::e[1] = sinphi*costheta*cospsi + cosphi*sintheta*sinpsi;
+		vector<datatype, 4>::e[1] = sinphi*costheta*cospsi - cosphi*sintheta*sinpsi;
 		vector<datatype, 4>::e[2] = cosphi*sintheta*cospsi + sinphi*costheta*sinpsi;
 		vector<datatype, 4>::e[3] = cosphi*costheta*sinpsi - sinphi*sintheta*cospsi;
 	}
