@@ -31,9 +31,9 @@ void setup_tester(void)
   quaternion<float> qin;
   qin.from_rotation_matrix(sensor_2_body_assumption);
   eulerangle<float> euler_in = qin;
-  euler_in.r *= 180/M_PI;
-  euler_in.p *= 180/M_PI;
-  euler_in.y *= 180/M_PI;
+  euler_in.roll  *= 180/M_PI;
+  euler_in.pitch *= 180/M_PI;
+  euler_in.yaw   *= 180/M_PI;
 
   // map measurements into the sensor frame
   float3vector left_down_sensor	= sensor_2_body_assumption.reverse_map( left_down_body);
@@ -82,9 +82,9 @@ void setup_tester(void)
   quaternion<float> q;
   q.from_rotation_matrix(sensor_2_body);
   eulerangle<float> euler = q;
-  euler.r *= 180/M_PI;
-  euler.p *= 180/M_PI;
-  euler.y *= 180/M_PI;
+  euler.roll  *= 180/M_PI;
+  euler.pitch *= 180/M_PI;
+  euler.yaw   *= 180/M_PI;
 }
 
 

@@ -30,6 +30,13 @@
 #include "navigator.h"
 #include "earth_induction_model.h"
 
+typedef struct
+{
+  float3vector acc_observed_left;
+  float3vector acc_observed_right;
+  float3vector acc_observed_level;
+} vector_average_collection_t;
+
 //! set of algorithms and data to be used by Larus flight sensor
 class organizer_t
 {
@@ -43,20 +50,55 @@ public:
 
   }
 
+  void update_sensor_orientation_data( const vector_average_collection_t & values)
+  {
+    // resolve sensor orientation using measurements
+    float3vector front_down_sensor_helper = values.acc_observed_right.vector_multiply( values.acc_observed_left);
+    float3vector u_right_sensor = front_down_sensor_helper.vector_multiply( values.acc_observed_level);
+    u_right_sensor.normalize();
+
+    float3vector u_down_sensor = values.acc_observed_level * -1.0f;
+    u_down_sensor.normalize();
+
+    float3vector u_front_sensor=u_right_sensor.vector_multiply(u_down_sensor);
+    u_front_sensor.normalize();
+
+    // calculate the new rotation matrix using our calibration data
+    sensor_mapping.e[0][0]=u_front_sensor[0];
+    sensor_mapping.e[0][1]=u_front_sensor[1];
+    sensor_mapping.e[0][2]=u_front_sensor[2];
+
+    sensor_mapping.e[1][0]=u_right_sensor[0];
+    sensor_mapping.e[1][1]=u_right_sensor[1];
+    sensor_mapping.e[1][2]=u_right_sensor[2];
+
+    sensor_mapping.e[2][0]=u_down_sensor[0];
+    sensor_mapping.e[2][1]=u_down_sensor[1];
+    sensor_mapping.e[2][2]=u_down_sensor[2];
+
+    quaternion<float> q;
+    q.from_rotation_matrix( sensor_mapping);
+    eulerangle<float> euler = q;
+
+    // make the change permanent
+    lock_EEPROM( false);
+    write_EEPROM_value( SENS_TILT_ROLL,  euler.roll);
+    write_EEPROM_value( SENS_TILT_PITCH, euler.pitch);
+    write_EEPROM_value( SENS_TILT_YAW,   euler.yaw);
+    lock_EEPROM( true);
+  }
+
   void initialize_before_measurement( void)
   {
     pitot_offset= configuration (PITOT_OFFSET);
     pitot_span 	= configuration (PITOT_SPAN);
     QNH_offset	= configuration (QNH_OFFSET);
 
-      {
-        quaternion<float> q;
-        q.from_euler (configuration (SENS_TILT_ROLL),
-  		      configuration (SENS_TILT_PITCH),
-  		      configuration (SENS_TILT_YAW));
-        q.get_rotation_matrix (sensor_mapping);
-      }
-
+    quaternion<float> q;
+    q.from_euler (configuration (SENS_TILT_ROLL),
+		  configuration (SENS_TILT_PITCH),
+		  configuration (SENS_TILT_YAW));
+    q.get_rotation_matrix (sensor_mapping);
   }
 
   void update_magnetic_induction_data( double latitude, double longitude)
@@ -104,10 +146,11 @@ public:
     return landing_detected;
   }
 
-  void set_attitude ( float roll, float nick, float present_heading)
+  void set_attitude ( float roll, float pitch, float present_heading)
   {
-    navigator.set_attitude ( roll, nick, present_heading);
+    navigator.set_attitude ( roll, pitch, present_heading);
   }
+
   void update_GNSS_data( const coordinates_t &coordinates)
   {
     navigator.update_GNSS_data(coordinates);
@@ -116,15 +159,9 @@ public:
   void update_every_10ms( output_data_t & output_data)
   {
     // rotate sensor coordinates into airframe coordinates
-#if USE_LOWCOST_IMU == 1
-    acc  = sensor_mapping * output_data.m.lowcost_acc;
-    mag  = sensor_mapping * output_data.m.lowcost_mag;
-    gyro = sensor_mapping * output_data.m.lowcost_gyro;
-#else
     acc  = sensor_mapping * output_data.m.acc;
     mag  = sensor_mapping * output_data.m.mag;
     gyro = sensor_mapping * output_data.m.gyro;
-#endif
 
 #if DEVELOPMENT_ADDITIONS
     output_data.body_acc  = acc;

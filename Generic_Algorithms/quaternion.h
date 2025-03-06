@@ -72,9 +72,9 @@ public:
 		eulerangle <datatype> _euler;
 
 		//! formula from roenbaeck p34
-		_euler.r = ATAN2(  TWO * (e0*e1 + e2*e3) , e0*e0 - e1*e1 - e2*e2 + e3*e3 );
-		_euler.p = ASIN(   TWO * (e0*e2 - e3*e1));
-		_euler.y = ATAN2(  TWO * (e0*e3 + e1*e2) , e0*e0 + e1*e1 - e2*e2 - e3*e3 );
+		_euler.roll  = ATAN2(  TWO * (e0*e1 + e2*e3) , e0*e0 - e1*e1 - e2*e2 + e3*e3 );
+		_euler.pitch = ASIN(   TWO * (e0*e2 - e3*e1));
+		_euler.yaw   = ATAN2(  TWO * (e0*e3 + e1*e2) , e0*e0 + e1*e1 - e2*e2 - e3*e3 );
 		return _euler;
 	}
 	//! linearized euler component e0 (approximate nick angle / rad)
