@@ -251,7 +251,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 
 #if USE_SOFT_IRON_COMPENSATION
   if( automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE)
-    body_induction = body_induction - soft_iron_compensator.calibrate( expected_body_induction, attitude);
+    body_induction = body_induction - soft_iron_compensator.compensate( expected_body_induction, attitude);
 #endif
 
   body_induction_error = body_induction - expected_body_induction;
@@ -349,7 +349,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
       body_induction = compass_calibration.calibrate(mag_sensor);
 #if USE_SOFT_IRON_COMPENSATION
       if( automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE)
-	body_induction = body_induction - soft_iron_compensator.calibrate( expected_body_induction, attitude);
+	body_induction = body_induction - soft_iron_compensator.compensate( expected_body_induction, attitude);
 #endif
 
 #endif
@@ -442,7 +442,7 @@ void AHRS_type::update_ACC_only (const float3vector &gyro, const float3vector &a
 
 #if USE_SOFT_IRON_COMPENSATION
   if( automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE)
-	body_induction = body_induction - soft_iron_compensator.calibrate( expected_body_induction, attitude);
+	body_induction = body_induction - soft_iron_compensator.compensate( expected_body_induction, attitude);
 #endif
 
   body_induction_error = body_induction - expected_body_induction;

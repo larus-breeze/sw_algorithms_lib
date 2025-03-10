@@ -69,7 +69,7 @@ public:
   }
 
   bool learn ( const float3vector &induction_error, const quaternion<float> &q, bool turning_right, float error_margin);
-float3vector calibrate( const float3vector &induction, const quaternion<float> &q);
+float3vector compensate( const float3vector &induction, const quaternion<float> &q);
   bool calculate( void);
   bool available( void) const
   {

@@ -196,7 +196,7 @@ bool soft_iron_compensator_t::calculate( void)
   return true;
 }
 
-float3vector soft_iron_compensator_t::calibrate( const float3vector &induction, const quaternion<float> &q)
+float3vector soft_iron_compensator_t::compensate( const float3vector &induction, const quaternion<float> &q)
   {
     if( buffer_used_for_calibration == INVALID) // we do not have a valid calibration
       return float3vector();
