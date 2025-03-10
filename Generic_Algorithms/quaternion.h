@@ -197,7 +197,6 @@ public:
 	    m.e[2][1] = TWO * (e2*e3+e0*e1);
 	    m.e[2][2] = TWO * (e0*e0+e3*e3) - ONE;
 	}
-	#if 0
 	quaternion <datatype> operator * ( const quaternion <datatype> & right) const //!< quaternion multiplication
 		{
 		quaternion <datatype> result;
@@ -231,5 +230,4 @@ public:
 		normalize(); // compensate computational inaccuracies
 		};
 };
-
 #endif // QUATERNION_H

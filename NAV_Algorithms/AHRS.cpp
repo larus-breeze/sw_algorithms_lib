@@ -116,12 +116,14 @@ void AHRS_type::feed_magnetic_induction_observer( const float3vector &mag_sensor
 
   bool turning_right = turn_rate_averager.get_output() > 0.0f;
 
+#if USE_SOFT_IRON_COMPENSATION
   if( mag_delta.abs() < 0.05) // only if the precision is already reasonably good ...
     {
       bool calibration_data_complete = soft_iron_compensator.learn( mag_delta, attitude, turning_right, error_margin);
       if( calibration_data_complete)
 	trigger_soft_iron_compensator_calculation();
     }
+#endif
 
   for (unsigned i = 0; i < 3; ++i)
     if( turning_right)
@@ -247,8 +249,10 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 
   float3vector mag_delta = body_induction - expected_body_induction; // for the training of the compensator
 
+#if USE_SOFT_IRON_COMPENSATION
   if( automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE)
     body_induction = body_induction - soft_iron_compensator.calibrate( expected_body_induction, attitude);
+#endif
 
   body_induction_error = body_induction - expected_body_induction;
 
@@ -343,8 +347,11 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
    body_induction = compass_calibrator_3D.calibrate( mag_sensor_tilted, attitude);
 #else
       body_induction = compass_calibration.calibrate(mag_sensor);
+#if USE_SOFT_IRON_COMPENSATION
       if( automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE)
 	body_induction = body_induction - soft_iron_compensator.calibrate( expected_body_induction, attitude);
+#endif
+
 #endif
 
    float3vector mag_delta = body_induction - expected_body_induction; // for the training of the compensator
@@ -432,8 +439,11 @@ void AHRS_type::update_ACC_only (const float3vector &gyro, const float3vector &a
 {
   expected_body_induction = body2nav.reverse_map( expected_nav_induction);
   body_induction = compass_calibration.calibrate(mag_sensor);
+
+#if USE_SOFT_IRON_COMPENSATION
   if( automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE)
 	body_induction = body_induction - soft_iron_compensator.calibrate( expected_body_induction, attitude);
+#endif
 
   body_induction_error = body_induction - expected_body_induction;
 
@@ -481,8 +491,6 @@ void AHRS_type::write_calibration_into_EEPROM( void)
 void AHRS_type::handle_magnetic_calibration ( char type)
 {
   bool calibration_changed = compass_calibration.set_calibration_if_changed ( mag_calibration_data_collector_right_turn, mag_calibration_data_collector_left_turn, MAG_SCALE);
-
-  float induction_error = 0.0f;
 
   float3vector new_induction_estimate;
 
