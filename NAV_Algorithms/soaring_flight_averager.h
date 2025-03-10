@@ -88,7 +88,8 @@ template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false, bool SOFT_TAKEOF
 	  if (new_state == STRAIGHT_FLIGHT)
 	    {
 	      active_state = STRAIGHT_FLIGHT;
-	      reset( get_boxcar_average());
+//	      reset( get_boxcar_average()); todo patch
+	      reset( present_output); // smooth transition
 	    }
 
 	  record_input (current_value, heading);
