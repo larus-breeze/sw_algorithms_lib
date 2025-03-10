@@ -41,8 +41,12 @@ void variometer_t::update_at_100Hz (
     bool GNSS_fix_avaliable
   )
 {
+#if USE_OLD_FASHIONED_PRESSURE_VARIO
+  vario_uncompensated_pressure = pressure_vario_differentiator.respond( pressure_altitude);
+#else
   vario_uncompensated_pressure = KalmanVario_pressure.update (
       pressure_altitude, ahrs_acceleration[DOWN]);
+#endif
   speed_compensation_IAS = kinetic_energy_differentiator.respond (
       IAS * IAS * ONE_DIV_BY_GRAVITY_TIMES_2);
   vario_averager_pressure.respond (
