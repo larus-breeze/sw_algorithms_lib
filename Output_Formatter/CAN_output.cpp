@@ -307,20 +307,26 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
     system_state |= CAN_OUTPUT_ACTIVE;
   else
     system_state &= ~CAN_OUTPUT_ACTIVE;
+}
+
+extern uint32_t UNIQUE_ID[4]; // MPU silicon ID
+
+void CAN_heartbeat( void)
+{
+  CANpacket p;
 
   p.id=CAN_Id_Heartbeat_Sens;
   p.dlc=8;
   p.data_h[0] = 0; // todo fixme
   p.data_h[1] = 0;
-  p.data_w[1] = 0;
+  p.data_w[1] = UNIQUE_ID[0];
   CAN_send(p, 1);
 
   p.id=CAN_Id_Heartbeat_GNSS;
   p.data_h[0] = 0; // todo fixme
   p.data_h[1] = 0;
-  p.data_w[1] = 0;
+  p.data_w[1] = UNIQUE_ID[0];
   CAN_send(p, 1);
 }
-
 
 #endif

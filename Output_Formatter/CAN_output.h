@@ -59,5 +59,6 @@
 #define  CMD_TUNE				0x3004
 
 void CAN_output ( const output_data_t &x, bool horizon_activated);
+void CAN_heartbeat( void);
 
 #endif /* SRC_CAN_OUTPUT_H_ */
