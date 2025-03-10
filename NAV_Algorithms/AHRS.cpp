@@ -255,10 +255,10 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   float3vector nav_acceleration = body2nav * acc;
 
   float heading_gnss_work = GNSS_heading	// correct for antenna alignment
-      + antenna_DOWN_correction  * SIN (euler.r)
-      - antenna_RIGHT_correction * COS (euler.r);
+      + antenna_DOWN_correction  * SIN (euler.roll)
+      - antenna_RIGHT_correction * COS (euler.roll);
 
-  heading_gnss_work = heading_gnss_work - euler.y; // = heading difference D-GNSS - AHRS
+  heading_gnss_work = heading_gnss_work - euler.yaw; // = heading difference D-GNSS - AHRS
 
   if (heading_gnss_work > M_PI_F) // map into { -PI PI}
     heading_gnss_work -= 2.0f * M_PI_F;

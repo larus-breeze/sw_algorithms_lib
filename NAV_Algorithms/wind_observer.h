@@ -96,7 +96,7 @@ public:
     else
       wind_average_observer.update(
 	  instant_wind,
-	  ahrs.get_euler ().y,
+	  ahrs.get_euler ().yaw,
 	  circling_state);
 
     float3vector relative_wind_NAV  = wind_resampler_100_10Hz.get_output() - wind_average_observer.get_output();
@@ -114,7 +114,7 @@ public:
   	}
         else
           {
-	    relative_wind_observer.update( relative_wind_BODY, ahrs.get_euler ().y, ahrs.get_circling_state ());
+	    relative_wind_observer.update( relative_wind_BODY, ahrs.get_euler ().yaw, ahrs.get_circling_state ());
 	    wind_correction_nav = ahrs.get_body2nav() * relative_wind_observer.get_output();
 	    wind_correction_nav[DOWN]=0.0f;
 

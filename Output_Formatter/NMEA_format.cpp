@@ -439,9 +439,9 @@ void format_NMEA_string_fast( const output_data_t &output_data, string_buffer_t 
 
   // aircraft attitude
   if( horizon_available)
-    format_PLARA(output_data.euler.r, output_data.euler.p, output_data.euler.y, next);
+    format_PLARA(output_data.euler.roll, output_data.euler.pitch, output_data.euler.yaw, next);
   else
-    format_PLARA( ZERO, ZERO, output_data.euler.y, next);
+    format_PLARA( ZERO, ZERO, output_data.euler.yaw, next);
 
   // report instant and average total-energy-compensated variometer, pressure altitude, TAS
   format_PLARV ( output_data.vario,

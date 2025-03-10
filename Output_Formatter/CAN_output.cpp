@@ -35,7 +35,7 @@
 
 enum CAN_ID_SENSOR
 {
-  c_CAN_Id_EulerAngles	= 0x101,    //!< int16_t roll nick yaw / 1/1000 rad
+  c_CAN_Id_EulerAngles	= 0x101,    //!< int16_t roll pitch yaw / 1/1000 rad
   c_CAN_Id_Airspeed     = 0x102,    //!< int16_t TAS, IAS / km/h
   c_CAN_Id_Vario        = 0x103,    //!< int16_t vario, vario-integrator / mm/s
   c_CAN_Id_GPS_Date_Time= 0x104,    //!< uint8_t year-2000, month, day, hour, mins, secs
@@ -46,7 +46,7 @@ enum CAN_ID_SENSOR
   c_CAN_Id_Atmosphere   = 0x109,    //!< uint32_t pressure / Pa uint32_t density / g/m^3
   c_CAN_Id_GPS_Sats     = 0x10a,    //!< uin8_t No of Sats, uint8_t Fix-Type NO=0 2D=1 3D=2 RTK=3
   c_CAN_Id_Acceleration = 0x10b,    //!< int16_t G-force mm / s^2, int16_t vertical acc mm / m^2, vario uncomp mm / s, u_int8_t circle mode
-  c_CAN_Id_TurnCoord    = 0x10c,    //!< slip angle int16_t 1/1000 rad, turn rate int16_t 1/1000 rad/s, nick angle 1/1000 rad
+  c_CAN_Id_TurnCoord    = 0x10c,    //!< slip angle int16_t 1/1000 rad, turn rate int16_t 1/1000 rad/s, pitch angle 1/1000 rad
   c_CAN_Id_SystemState  = 0x10d,    //!< u32 system_state, u32 git_tag dec
   c_CID_KSB_Vdd         = 0x112,    //!< unit16_t as voltage * 10
 };
@@ -59,9 +59,9 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
     {
       p.id=c_CAN_Id_EulerAngles;		// 0x101
       p.dlc=6;
-      p.data_sh[0] = (int16_t)(round(x.euler.r * 1000.0f)); 	// unit = 1/1000 RAD
-      p.data_sh[1] = (int16_t)(round(x.euler.p * 1000.0f));
-      p.data_sh[2] = (int16_t)(round(x.euler.y * 1000.0f));
+      p.data_sh[0] = (int16_t)(round(x.euler.roll * 1000.0f)); 	// unit = 1/1000 RAD
+      p.data_sh[1] = (int16_t)(round(x.euler.pitch * 1000.0f));
+      p.data_sh[2] = (int16_t)(round(x.euler.yaw * 1000.0f));
       CAN_send(p, 1);
     }
   else
@@ -70,7 +70,7 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
       p.dlc=6;
       p.data_sh[0] = ZERO;
       p.data_sh[1] = ZERO;
-      p.data_sh[2] = (int16_t)(round(x.euler.y * 1000.0f));
+      p.data_sh[2] = (int16_t)(round(x.euler.yaw * 1000.0f));
       CAN_send(p, 1);
     }
 
@@ -160,7 +160,7 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
   p.dlc=6;
   p.data_sh[0] = (int16_t)(round(x.slip_angle * 1000.0f));	// slip angle in radiant from body acceleration
   p.data_sh[1] = (int16_t)(round(x.turn_rate  * 1000.0f)); 	// turn rate rad/s
-  p.data_sh[2] = (int16_t)(round(x.pitch_angle * 1000.0f));	// nick angle in radiant from body acceleration
+  p.data_sh[2] = (int16_t)(round(x.pitch_angle * 1000.0f));	// pitch angle in radiant from body acceleration
   if( CAN_send(p, 1)) // check CAN for timeout this time
     system_state |= CAN_OUTPUT_ACTIVE;
   else
@@ -186,7 +186,7 @@ enum CAN_ID_SENSOR
 {
   // all values in SI-STD- (metric) units, angles in radians
   // format IEEE float32 little-endian
-  CAN_Id_Roll_Nick	= 0x400,    //!< float roll-angle, float nick-angle (FRONT-RIGHT-DOWN-system)
+  CAN_Id_Roll_Pitch	= 0x400,    //!< float roll-angle, float pitch-angle (FRONT-RIGHT-DOWN-system)
   CAN_Id_Heading	= 0x401,    //!< float true heading, [OPTIONAL float magnetic declination]
   CAN_Id_Airspeed	= 0x402,    //!< float TAS, float IAS / m/s
   CAN_Id_Vario		= 0x403,    //!< float vario, float vario-average / m/s
@@ -211,7 +211,7 @@ void CAN_output ( const output_data_t &x)
   CANpacket p;
 
 #if  HORIZON_DATA_SECRET == 0
-  p.id=CAN_Id_Roll_Nick;
+  p.id=CAN_Id_Roll_Pitch;
   p.dlc=8;
   p.data_f[0] = x.euler.r;
   p.data_f[1] = x.euler.n;

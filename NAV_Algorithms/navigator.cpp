@@ -91,7 +91,7 @@ bool navigator_t::update_at_10Hz ()
   wind_observer.process_at_10_Hz( ahrs);
 
   vario_integrator.update (flight_observer.get_vario_GNSS(), // here because of the update rate 10Hz
-			   ahrs.get_euler ().y,
+			   ahrs.get_euler ().yaw,
 			   ahrs.get_circling_state ());
 
   unsigned airborne_criteria_fulfilled = 0;

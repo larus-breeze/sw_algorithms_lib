@@ -11,10 +11,10 @@
 template <class datatype> class eulerangle
 {
 public:
-	eulerangle( datatype ir=0, datatype in=0, datatype iy=0)
-	: r(ir), p(in), y(iy)
+	eulerangle( datatype ir=0, datatype ip=0, datatype iy=0)
+	: roll(ir), pitch(ip), yaw(iy)
 	{}
-	datatype r,p,y;
+	datatype roll,pitch,yaw;
 };
 
 #endif
