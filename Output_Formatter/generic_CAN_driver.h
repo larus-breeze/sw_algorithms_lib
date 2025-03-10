@@ -53,6 +53,7 @@ public:
 		uint32_t data_w[2]; 	//!< data seen as 2 times uint32_t
 		int32_t  data_sw[2];	//!< data seen as 2 times int32_t
 		float    data_f[2]; 	//!< data seen as 2 times 32-bit floats
+		double    data_d; 		//!< data seen as 64-bit float
 		uint64_t data_l;    	//!< data seen as 64-bit integer
   };
 } ;

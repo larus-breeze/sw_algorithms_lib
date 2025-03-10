@@ -31,7 +31,7 @@
 
 #define DEGREE_2_RAD 1.7453292e-2f
 
-#ifdef CAN_FORMAT_2021
+#if CAN_FORMAT_2021
 
 enum CAN_ID_SENSOR
 {
@@ -186,98 +186,105 @@ enum CAN_ID_SENSOR
 {
   // all values in SI-STD- (metric) units, angles in radians
   // format IEEE float32 little-endian
-  CAN_Id_Roll_Pitch	= 0x400,    //!< float roll-angle, float pitch-angle (FRONT-RIGHT-DOWN-system)
-  CAN_Id_Heading	= 0x401,    //!< float true heading, [OPTIONAL float magnetic declination]
-  CAN_Id_Airspeed	= 0x402,    //!< float TAS, float IAS / m/s
-  CAN_Id_Vario		= 0x403,    //!< float vario, float vario-average / m/s
+  CAN_Id_Roll_Pitch	= 0x120,    //!< float roll-angle, float pitch-angle (FRONT-RIGHT-DOWN-system)
+  CAN_Id_Heading	= 0x121,    //!< float true heading, turn-rate
+  CAN_Id_Airspeed	= 0x122,    //!< float TAS, float IAS / m/s
+  CAN_Id_Vario		= 0x123,    //!< float vario, float vario-average / m/s
+  CAN_Id_Wind		= 0x124,    //!< float wind direction (where from), float wind speed
+  CAN_Id_Wind_Average	= 0x125,    //!< float average wind direction, float average wind speed m/s
+  CAN_Id_Atmosphere	= 0x126,    //!< float ambient pressure / Pa, float air density / kg/m^3
+  CAN_Id_Acceleration	= 0x127,    //!< float body-frame G-load m/s^2, vertical acceleration world frame
+  CAN_Id_SlipPitch	= 0x128,    //!< float slip angle from body-acc, float pitch angle from body-acc
+  CAN_Id_Voltage_Circle	= 0x129,    //!< float supply voltage, uint8_t circle-mode
 
-  CAN_Id_GPS_Date_Time	= 0x404,    //!< uint8_t year-2000, month, day, hour, mins, secs
-  CAN_Id_GPS_LatLon	= 0x405,    //!< float latitude, float longitude / degrees(!)
-  CAN_Id_GPS_Alt	= 0x406,    //!< float MSL altitude,float geo separation
-  CAN_Id_GPS_Trk_Spd	= 0x407,    //!< float ground track, float groundspeed / m/s
-  CAN_Id_GPS_Sats	= 0x408,    //!< uin8_t No of Sats, (uint8_t)bool SAT FIX valid, (uint8_t)bool SAT HEADING available
+  CAN_Id_GPS_Date_Time	= 0x140,    //!< uint8_t year-2000, month, day, hour, mins, secs
+  CAN_Id_GPS_Lat	= 0x141,    //!< double latitude
+  CAN_Id_GPS_Lon	= 0x142,    //!< double longitude
+  CAN_Id_GPS_Alt	= 0x143,    //!< float MSL altitude, float geo separation
+  CAN_Id_GPS_Trk_Spd	= 0x144,    //!< float ground track, float groundspeed / m/s
+  CAN_Id_GPS_Sats	= 0x145,    //!< uin8_t No of Sats, (uint8_t)bool SAT FIX type
 
-  CAN_Id_Wind		= 0x409,    //!< float wind direction (where from), float wind speed
-  CAN_Id_Wind_Average	= 0x40a,    //!< float average wind direction, float average wind speed m/s
-  CAN_Id_Atmosphere	= 0x40b,    //!< float ambient pressure / Pa, float air density / kg/m^3
-  CAN_Id_Acceleration	= 0x40c,    //!< float body-frame G-load m/s^2, body acceleration angle roll-axis
-  CAN_Id_TurnRate	= 0x40d,    //!< float turn rate to the right, (uint8_t) (enum  { STRAIGHT_FLIGHT, TRANSITION, CIRCLING} )
-  CAN_Id_SystemState	= 0x40e,    //!< u32 system_state, u32 git_tag_dec
-  CAN_Id_Voltage	= 0x40f,    //!< float supply voltage
+  CAN_Id_Heartbeat_Sens	= 0x520,
+  CAN_Id_Heartbeat_GNSS	= 0x540
+
 };
 
-void CAN_output ( const output_data_t &x)
+void CAN_output ( const output_data_t &x, bool horizon_activated)
 {
   CANpacket p;
+  if( horizon_activated)
+    {
+      p.id=CAN_Id_Roll_Pitch;
+      p.dlc=8;
+      p.data_f[0] = x.euler.roll;
+      p.data_f[1] = x.euler.pitch;
+      CAN_send(p, 1);
+    }
 
-#if  HORIZON_DATA_SECRET == 0
-  p.id=CAN_Id_Roll_Pitch;
-  p.dlc=8;
-  p.data_f[0] = x.euler.r;
-  p.data_f[1] = x.euler.n;
-  CAN_send(p, 1);
-#endif
   p.id=CAN_Id_Heading;
-  p.dlc=4;
-  p.data_f[0] = x.euler.y;
+  p.dlc=8;
+  p.data_f[0] = x.euler.yaw;
+  p.data_f[1] = x.turn_rate;
   CAN_send(p, 1);
 
   p.id=CAN_Id_Airspeed;
-  p.dlc=8;
   p.data_f[0] = x.TAS;
   p.data_f[1] = x.IAS;
   CAN_send(p, 1);
 
   p.id=CAN_Id_Vario;
-  p.dlc=8;
   p.data_f[0] = x.vario;
   p.data_f[1] = x.integrator_vario;
   CAN_send(p, 1);
 
   p.id=CAN_Id_Wind;
-  p.dlc=8;
   p.data_f[0] = ATAN2( - x.wind[EAST], - x.wind[NORTH]);
   p.data_f[1] = x.wind.abs();
   CAN_send(p, 1);
 
   p.id=CAN_Id_Wind_Average;
-  p.dlc=8;
   p.data_f[0] = ATAN2( - x.wind_average[EAST], - x.wind_average[NORTH]);
-  p.data_f[1] = x.wind.abs();
+  p.data_f[1] = x.wind_average.abs();
   CAN_send(p, 1);
 
   p.id=CAN_Id_Atmosphere;
-  p.dlc=8;
   p.data_f[0] = x.m.static_pressure;
   p.data_f[1] = x.air_density;
   CAN_send(p, 1);
 
   p.id=CAN_Id_Acceleration;
-  p.dlc=7;
   p.data_f[0] = x.G_load;
-  p.data_f[1] = x.slip_angle;
+  p.data_f[1] = x.effective_vertical_acceleration;
   CAN_send(p, 1);
 
-  p.id=CAN_Id_TurnRate;
-  p.dlc=5;
-  p.data_f[0] = x.turn_rate;
-  p.data_b[4] = (uint8_t)(x.circle_mode);
+  p.id=CAN_Id_SlipPitch;
+  p.data_f[0] = x.slip_angle; // pendulum readings
+  p.data_f[1] = x.pitch_angle;
+  CAN_send(p, 1);
 
+  p.id=CAN_Id_Voltage_Circle;
+  p.dlc=5;
+  p.data_f[0] = x.m.supply_voltage;
+  p.data_b[4] = (uint8_t)(x.circle_mode);
+  CAN_send(p, 1);
 
   p.id=CAN_Id_GPS_Date_Time;
-  p.dlc=6;
-  p.data_b[0] = x.c.year;
-  p.data_b[1] = x.c.month;
-  p.data_b[2] = x.c.day;
-  p.data_b[3] = x.c.hour;
-  p.data_b[4] = x.c.minute;
-  p.data_b[5] = x.c.second;
+  p.dlc=7;
+  p.data_h[0] = x.c.year + 2000; // GNSS reports only 2000 + x
+  p.data_b[2] = x.c.month;
+  p.data_b[3] = x.c.day;
+  p.data_b[4] = x.c.hour;
+  p.data_b[5] = x.c.minute;
+  p.data_b[6] = x.c.second;
   CAN_send(p, 1);
 
-  p.id=CAN_Id_GPS_LatLon;
+  p.id=CAN_Id_GPS_Lat;
   p.dlc=8;
-  p.data_f[0] = (float)(x.c.latitude); // -> 4m of accuracy
-  p.data_f[1] = (float)(x.c.longitude);
+  p.data_d = x.c.latitude;
+  CAN_send(p, 1);
+
+  p.id=CAN_Id_GPS_Lon;
+  p.data_d = x.c.longitude;
   CAN_send(p, 1);
 
   p.id=CAN_Id_GPS_Alt;		// 0x106
@@ -287,8 +294,7 @@ void CAN_output ( const output_data_t &x)
   CAN_send(p, 1);
 
   p.id=CAN_Id_GPS_Trk_Spd;
-  p.dlc=8;
-  p.data_f[0] = x.c.heading_motion * DEGREE_2_RAD;
+  p.data_f[0] = x.c.heading_motion;
   p.data_f[1] = x.c.speed_motion;
   CAN_send(p, 1);
 
@@ -296,25 +302,23 @@ void CAN_output ( const output_data_t &x)
   p.dlc=2;
   p.data_b[0] = x.c.SATS_number;
   p.data_b[1] = x.c.sat_fix_type;
-  CAN_send(p, 1);
-
-  p.id=CAN_Id_Voltage;
-  p.dlc=4;
-  p.data_f[0] = x.m.supply_voltage;
 
   if( CAN_send(p, 1)) // check CAN for timeout this time
     system_state |= CAN_OUTPUT_ACTIVE;
   else
     system_state &= ~CAN_OUTPUT_ACTIVE;
 
-#ifndef GIT_TAG_DEC
-#define GIT_TAG_DEC 0xffffffff
-#endif
-
-  p.id=CAN_Id_SystemState;
+  p.id=CAN_Id_Heartbeat_Sens;
   p.dlc=8;
-  p.data_w[0] = system_state;
-  p.data_w[1] = GIT_TAG_DEC;
+  p.data_h[0] = 0; // todo fixme
+  p.data_h[1] = 0;
+  p.data_w[1] = 0;
+  CAN_send(p, 1);
+
+  p.id=CAN_Id_Heartbeat_GNSS;
+  p.data_h[0] = 0; // todo fixme
+  p.data_h[1] = 0;
+  p.data_w[1] = 0;
   CAN_send(p, 1);
 }
 

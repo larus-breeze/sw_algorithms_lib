@@ -56,6 +56,7 @@ public:
     extrapolated_sea_level_pressure(101325),
     GNSS_altitude_based_density_available(false),
     GNSS_altitude_based_density(1.2255f),
+    old_density_correction(1.0f),
     weight_sum(0.0f),
     density_factor_weighed_sum(0.0f)
   {

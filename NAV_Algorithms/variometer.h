@@ -69,7 +69,8 @@ public:
     specific_energy(0.0f),
     speed_compensation_INS_GNSS_1(0.0f),
     speed_compensation_kalman_2(0.0f),
-    speed_compensation_energy_3(0.0f)
+    speed_compensation_energy_3(0.0f),
+    speed_compensation_projected_4(0.0f)
   {
   };
     void update_at_100Hz
