@@ -29,6 +29,8 @@
 #include "system_state.h"
 #include "CAN_gateway.h"
 
+extern uint32_t UNIQUE_ID[4]; // MPU silicon ID
+
 #define DEGREE_2_RAD 1.7453292e-2f
 
 #if CAN_FORMAT_2021
@@ -196,6 +198,7 @@ enum CAN_ID_SENSOR
   CAN_Id_Acceleration	= 0x127,    //!< float body-frame G-load m/s^2, vertical acceleration world frame
   CAN_Id_SlipPitch	= 0x128,    //!< float slip angle from body-acc, float pitch angle from body-acc
   CAN_Id_Voltage_Circle	= 0x129,    //!< float supply voltage, uint8_t circle-mode
+  c_CAN_Id_SystemState  = 0x10a,    //!< u32 system_state, u32 git_tag dec
 
   CAN_Id_GPS_Date_Time	= 0x140,    //!< uint8_t year-2000, month, day, hour, mins, secs
   CAN_Id_GPS_Lat	= 0x141,    //!< double latitude
@@ -205,13 +208,14 @@ enum CAN_ID_SENSOR
   CAN_Id_GPS_Sats	= 0x145,    //!< uin8_t No of Sats, (uint8_t)bool SAT FIX type
 
   CAN_Id_Heartbeat_Sens	= 0x520,
-  CAN_Id_Heartbeat_GNSS	= 0x540
+  CAN_Id_Heartbeat_GNSS	= 0x540,
+  CAN_Id_Heartbeat_IMU	= 0x560
 
 };
 
 void CAN_output ( const output_data_t &x, bool horizon_activated)
 {
-  CANpacket p;
+  CANpacket p( 0x7ff, 8);
   if( horizon_activated)
     {
       p.id=CAN_Id_Roll_Pitch;
@@ -222,7 +226,6 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
     }
 
   p.id=CAN_Id_Heading;
-  p.dlc=8;
   p.data_f[0] = x.euler.yaw;
   p.data_f[1] = x.turn_rate;
   CAN_send(p, 1);
@@ -307,23 +310,25 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
     system_state |= CAN_OUTPUT_ACTIVE;
   else
     system_state &= ~CAN_OUTPUT_ACTIVE;
-}
 
-extern uint32_t UNIQUE_ID[4]; // MPU silicon ID
+  p.id=c_CAN_Id_SystemState;
+  p.dlc=8;
+  p.data_w[0] = system_state;
+  p.data_w[1] = GIT_TAG_DEC;
+  CAN_send(p, 1);
+}
 
 void CAN_heartbeat( void)
 {
-  CANpacket p;
+  CANpacket p( CAN_Id_Heartbeat_Sens, 8);
 
-  p.id=CAN_Id_Heartbeat_Sens;
-  p.dlc=8;
-  p.data_h[0] = 0; // todo fixme
+  p.data_h[0] = 2;
   p.data_h[1] = 0;
   p.data_w[1] = UNIQUE_ID[0];
   CAN_send(p, 1);
 
   p.id=CAN_Id_Heartbeat_GNSS;
-  p.data_h[0] = 0; // todo fixme
+  p.data_h[0] = 3;
   p.data_h[1] = 0;
   p.data_w[1] = UNIQUE_ID[0];
   CAN_send(p, 1);
