@@ -198,7 +198,7 @@ enum CAN_ID_SENSOR
   CAN_Id_Acceleration	= 0x127,    //!< float body-frame G-load m/s^2, vertical acceleration world frame
   CAN_Id_SlipPitch	= 0x128,    //!< float slip angle from body-acc, float pitch angle from body-acc
   CAN_Id_Voltage_Circle	= 0x129,    //!< float supply voltage, uint8_t circle-mode
-  c_CAN_Id_SystemState  = 0x10a,    //!< u32 system_state, u32 git_tag dec
+  CAN_Id_SystemState    = 0x12a,    //!< u32 system_state, u32 git_tag dec
 
   CAN_Id_GPS_Date_Time	= 0x140,    //!< uint8_t year-2000, month, day, hour, mins, secs
   CAN_Id_GPS_Lat	= 0x141,    //!< double latitude
@@ -311,7 +311,7 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
   else
     system_state &= ~CAN_OUTPUT_ACTIVE;
 
-  p.id=c_CAN_Id_SystemState;
+  p.id=CAN_Id_SystemState;
   p.dlc=8;
   p.data_w[0] = system_state;
   p.data_w[1] = GIT_TAG_DEC;
