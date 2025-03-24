@@ -34,6 +34,7 @@
 #include "soft_iron_compensator.h"
 #include "HP_LP_fusion.h"
 #include "pt2.h"
+#include "slope_limiter.h"
 
 extern float3vector nav_induction;
 
@@ -212,6 +213,8 @@ private:
 
   void update_attitude( const float3vector &acc, const float3vector &gyro, const float3vector &mag);
 
+  void filter_magnetic_induction( const float3vector &gyro, float3vector &mag);
+
   ftype Ts;
   ftype Ts_div_2;
   quaternion<ftype>attitude;
@@ -244,6 +247,7 @@ private:
   float3vector body_induction;
   float3vector body_induction_error;
   float gyro_correction_power;
+  slope_limiter <float> mag_filter[3];
 };
 
 #endif /* AHRS_H_ */
