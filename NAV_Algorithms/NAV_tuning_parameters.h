@@ -28,7 +28,7 @@
 #define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
 #define MAG_OFFSET_CHANGE_LIMIT 0.02f
 #define MAG_SCALE_CHANGE_LIMIT 0.02f
-#define USE_SOFT_IRON_COMPENSATION	1
+#define USE_SOFT_IRON_COMPENSATION	0
 
 #define CIRCLE_LIMIT (10 * 100) //!< 10 * 1/100 s delay into / out of circling state
 
