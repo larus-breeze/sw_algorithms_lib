@@ -400,17 +400,14 @@ void AHRS_type::write_calibration_into_EEPROM( void)
   lock_EEPROM( true);
 }
 
-bool compass_calibrated = false;
-
 void AHRS_type::handle_magnetic_calibration ( char type)
 {
   bool calibration_changed = compass_calibration.set_calibration_if_changed ( mag_calibration_data_collector_right_turn, mag_calibration_data_collector_left_turn, MAG_SCALE);
 
   float3vector new_induction_estimate;
 
-  if( ! compass_calibrated && calibration_changed)
+  if( calibration_changed)
     {
-      compass_calibrated=true;
       magnetic_induction_report_t magnetic_induction_report;
       for( unsigned i=0; i<3; ++i)
 	magnetic_induction_report.calibration[i] = (compass_calibration.get_calibration())[i];
