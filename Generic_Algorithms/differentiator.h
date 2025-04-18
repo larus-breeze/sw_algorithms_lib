@@ -62,7 +62,7 @@ public:
 
 private:
 //! sampling time
-   const basetype time_constant;
+   basetype time_constant;
 //! maintains old output
    datatype old_value;
    datatype differentiation;

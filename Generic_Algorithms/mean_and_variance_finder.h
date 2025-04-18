@@ -3,6 +3,7 @@
 #ifndef GENERIC_ALGORITHMS_MEAN_AND_VARIANCE_FINDER_H_
 #define GENERIC_ALGORITHMS_MEAN_AND_VARIANCE_FINDER_H_
 
+//! generic statistics class for average and variance data
 template <class sample_data>class mean_and_variance_finder_t
 {
 public:

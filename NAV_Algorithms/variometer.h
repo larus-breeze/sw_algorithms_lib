@@ -56,6 +56,9 @@ public:
     KalmanVario_GNSS( 0.0f, 0.0f, 0.0f, - GRAVITY),
     KalmanVario_pressure( 0.0f, 0.0f, 0.0f, - GRAVITY),
     specific_energy_differentiator( 1.0f, FAST_SAMPLING_TIME),
+#if USE_OLD_FASHIONED_PRESSURE_VARIO
+    pressure_vario_differentiator( 1.0f, FAST_SAMPLING_TIME),
+#endif
     Kalman_v_a_observer_N(),
     Kalman_v_a_observer_E(),
     GNSS_INS_speedcomp_fusioner(SPEED_COMPENSATION_FUSIONER_FEEDBACK),
@@ -66,7 +69,8 @@ public:
     specific_energy(0.0f),
     speed_compensation_INS_GNSS_1(0.0f),
     speed_compensation_kalman_2(0.0f),
-    speed_compensation_energy_3(0.0f)
+    speed_compensation_energy_3(0.0f),
+    speed_compensation_projected_4(0.0f)
   {
   };
     void update_at_100Hz
@@ -97,8 +101,11 @@ public:
 	return speed_compensation_kalman_2;
 	break;
 
-      default:
+      case 2:
 	return speed_compensation_energy_3;
+	break;
+      default:
+	return speed_compensation_projected_4;
 	break;
       }
   }
@@ -147,6 +154,9 @@ private:
 	KalmanVario_PVA_t KalmanVario_GNSS;
 	KalmanVario_t KalmanVario_pressure;
 	differentiator<float,float>specific_energy_differentiator;
+#if USE_OLD_FASHIONED_PRESSURE_VARIO
+	differentiator<float,float>pressure_vario_differentiator;
+#endif
 	Kalman_V_A_Aoff_observer_t Kalman_v_a_observer_N;
 	Kalman_V_A_Aoff_observer_t Kalman_v_a_observer_E;
 	HP_LP_fusion <float, float> GNSS_INS_speedcomp_fusioner;
@@ -161,6 +171,7 @@ private:
 	float speed_compensation_INS_GNSS_1;
 	float speed_compensation_kalman_2;
 	float speed_compensation_energy_3;
+	float speed_compensation_projected_4;
 };
 
 #endif /* VARIOMETER_H_ */

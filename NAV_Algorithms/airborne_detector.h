@@ -26,6 +26,7 @@
 #ifndef NAV_ALGORITHMS_AIRBORNE_DETECTOR_H_
 #define NAV_ALGORITHMS_AIRBORNE_DETECTOR_H_
 
+//! observation of the aircraft state (ground / flying)
 class airborne_detector_t
 {
 public:
@@ -37,12 +38,14 @@ public:
   {
     if( yes)
       {
-	if( airborne_counter < LEVEL)
+	if( airborne_counter == 0)
+	  airborne_counter = 100; // create hysteresis
+	else if( airborne_counter < LEVEL)
 	  ++ airborne_counter;
       }
     else
       {
-      if( airborne_counter > 0)
+	      if( airborne_counter > 0)
 	{
 	  --airborne_counter;
 	  if( airborne_counter == 0)
@@ -50,7 +53,13 @@ public:
 	}
       }
   }
-    bool detect_just_landed( void)
+
+  bool is_airborne( void)
+    {
+      return airborne_counter > 0;
+    }
+
+  bool detect_just_landed( void)
     {
       if( just_landed)
 	{

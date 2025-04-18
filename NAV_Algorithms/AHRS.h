@@ -31,9 +31,10 @@
 #include "float3matrix.h"
 #include "integrator.h"
 #include "compass_calibration.h"
+#include "soft_iron_compensator.h"
 #include "HP_LP_fusion.h"
-#include "induction_observer.h"
 #include "pt2.h"
+#include "slope_limiter.h"
 
 extern float3vector nav_induction;
 
@@ -45,7 +46,7 @@ typedef enum  { STRAIGHT_FLIGHT, TRANSITION, CIRCLING} circle_state_t;
 
 typedef integrator<float, float3vector> vector3integrator;
 
-//! Attitude and heading reference system class
+//! Attitude and heading reference system
 class AHRS_type
 {
 public:
@@ -90,18 +91,6 @@ public:
 	inline const float3vector &get_nav_induction(void) const
 	{
 		return induction_nav_frame;
-	}
-	inline float get_lin_e0(void) const
-	{
-		return attitude.lin_e0();
-	}
-	inline float get_lin_e1(void) const
-	{
-		return attitude.lin_e1();
-	}
-	inline float get_e2(void) const
-	{
-		return attitude.get_e2();
 	}
 	inline float get_north(void) const
 	{
@@ -198,6 +187,11 @@ public:
     return body_induction;
   }
 
+  float getGyro_correction_Power () const
+  {
+    return gyro_correction_power;
+  }
+  enum magnetic_calibration_type { NONE, AUTO_1D, AUTO_SOFT_IRON_COMPENSATE};
 private:
   void handle_magnetic_calibration( char type);
 
@@ -210,7 +204,7 @@ private:
       magnetic_control_gain = M_H_GAIN / expected_horizontal_induction;
   }
 
-  void feed_magnetic_induction_observer(const float3vector &mag_sensor);
+  void feed_magnetic_induction_observer( const float3vector &mag_sensor, const float3vector &mag_delta);
   circle_state_t update_circling_state( void);
 
   void update_diff_GNSS( const float3vector &gyro, const float3vector &acc, const float3vector &mag,
@@ -218,6 +212,8 @@ private:
 	  float GNSS_heading);
 
   void update_attitude( const float3vector &acc, const float3vector &gyro, const float3vector &mag);
+
+  void filter_magnetic_induction( const float3vector &gyro, float3vector &mag);
 
   ftype Ts;
   ftype Ts_div_2;
@@ -230,6 +226,7 @@ private:
   float3vector acceleration_nav_frame;
   float3vector induction_nav_frame; 	//!< observed NAV induction
   float3vector expected_nav_induction;	//!< expected NAV induction
+  float3vector expected_body_induction;	//!< expected body frame induction
   float3matrix body2nav;
   eulerangle<ftype> euler;
   pt2<float,float> slip_angle_averager;
@@ -239,20 +236,18 @@ private:
   linear_least_square_fit<int64_t, float> mag_calibration_data_collector_right_turn[3];
   linear_least_square_fit<int64_t, float> mag_calibration_data_collector_left_turn[3];
   compass_calibration_t <int64_t, float> compass_calibration;
-#if USE_EARTH_INDUCTION_DATA_COLLECTOR
-  induction_observer_t <int64_t> earth_induction_data_collector;
-#endif
   float antenna_DOWN_correction;  //!< slave antenna lower / DGNSS base length
   float antenna_RIGHT_correction; //!< slave antenna more right / DGNSS base length
   float heading_difference_AHRS_DGNSS;
   float cross_acc_correction;
   float magnetic_disturbance; //!< abs( observed_induction - expected_induction)
   float magnetic_control_gain; //!< declination-dependent magnetic control loop gain
-  bool automatic_magnetic_calibration;
-  bool automatic_earth_field_parameters; // todo unused, remove me some day
+  magnetic_calibration_type automatic_magnetic_calibration;
   bool magnetic_calibration_updated;
   float3vector body_induction;
   float3vector body_induction_error;
+  float gyro_correction_power;
+  slope_limiter <float> mag_filter[3];
 };
 
 #endif /* AHRS_H_ */

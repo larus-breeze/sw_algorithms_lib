@@ -41,8 +41,12 @@ void variometer_t::update_at_100Hz (
     bool GNSS_fix_avaliable
   )
 {
+#if USE_OLD_FASHIONED_PRESSURE_VARIO
+  vario_uncompensated_pressure = pressure_vario_differentiator.respond( pressure_altitude);
+#else
   vario_uncompensated_pressure = KalmanVario_pressure.update (
       pressure_altitude, ahrs_acceleration[DOWN]);
+#endif
   speed_compensation_IAS = kinetic_energy_differentiator.respond (
       IAS * IAS * ONE_DIV_BY_GRAVITY_TIMES_2);
   vario_averager_pressure.respond (
@@ -90,8 +94,23 @@ void variometer_t::update_at_100Hz (
       // speed compensation type 3 comes from the derivative of the specific energy
       speed_compensation_energy_3 = specific_energy_differentiator.respond ( specific_energy);
 
+      // speed-compensation type 4 is the product of acceleration and velocity, both calculated along the heading axis
+      float3vector kalman_air_velocity;
+      kalman_air_velocity[NORTH] = Kalman_v_a_observer_N.get_x ( Kalman_V_A_Aoff_observer_t::VELOCITY);
+      kalman_air_velocity[EAST]  = Kalman_v_a_observer_E.get_x ( Kalman_V_A_Aoff_observer_t::VELOCITY);
+      kalman_air_velocity[DOWN]  = KalmanVario_GNSS.get_x (  	   KalmanVario_PVA_t::VARIO);
+      float air_velocity_projected = kalman_air_velocity * heading_vector;
+
+      acceleration[NORTH] = Kalman_v_a_observer_N.get_x ( Kalman_V_A_Aoff_observer_t::ACCELERATION);
+      acceleration[EAST]  = Kalman_v_a_observer_E.get_x ( Kalman_V_A_Aoff_observer_t::ACCELERATION);
+      acceleration[DOWN]  = KalmanVario_GNSS.get_x (	    KalmanVario_PVA_t::ACCELERATION_OBSERVED);
+      float acceleration_projected = acceleration * heading_vector;
+
+      speed_compensation_projected_4 = air_velocity_projected * acceleration_projected * RECIP_GRAVITY;
+
       // blending of three mechanisms for speed-compensation
-      speed_compensation_GNSS = GNSS_INS_speedcomp_fusioner.respond( 0.5f * (speed_compensation_INS_GNSS_1 + speed_compensation_kalman_2), speed_compensation_energy_3);
+//      speed_compensation_GNSS = GNSS_INS_speedcomp_fusioner.respond( 0.3333333f * (speed_compensation_INS_GNSS_1 + speed_compensation_kalman_2 + speed_compensation_projected_4), speed_compensation_energy_3);
+      speed_compensation_GNSS = GNSS_INS_speedcomp_fusioner.respond( 0.5 * (speed_compensation_INS_GNSS_1 + speed_compensation_kalman_2), speed_compensation_energy_3);
       vario_averager_GNSS.respond ( vario_uncompensated_GNSS + speed_compensation_GNSS);
     }
 }

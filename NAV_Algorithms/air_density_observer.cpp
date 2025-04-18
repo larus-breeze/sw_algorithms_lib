@@ -25,60 +25,69 @@
 #include "embedded_math.h"
 #include <air_density_observer.h>
 
-air_data_result air_density_observer::feed_metering( float pressure, float MSL_altitude)
+air_data_result air_density_observer_t::feed_metering( float pressure, float GNSS_altitude)
 {
   air_data_result air_data;
 
-#if DENSITY_MEASURMENT_COLLECTS_INTEGER
-  density_QFF_calculator.add_value( MSL_altitude * 100.0f, pressure);
-#else
-  // use values normalized around 1.0
-  density_QFF_calculator.add_value( MSL_altitude * 1e-3, pressure * 1e-5);
-#endif
+  pressure_decimation_filter.respond( pressure);
+  altitude_decimation_filter.respond( GNSS_altitude);
+  --decimation_counter;
+  if( decimation_counter > 0)
+    return air_data;
+  decimation_counter = AIR_DENSITY_DECIMATION;
 
-  if( MSL_altitude > max_altitude)
-    max_altitude = MSL_altitude;
+  density_QFF_calculator.add_value( GNSS_altitude * 100.0f, pressure);
 
-  if( MSL_altitude < min_altitude)
-    min_altitude = MSL_altitude;
+  // update elevation range
+  if( GNSS_altitude > max_altitude)
+    max_altitude = GNSS_altitude;
 
-  if( false == altitude_trigger.process(MSL_altitude))
+  if( GNSS_altitude < min_altitude)
+    min_altitude = GNSS_altitude;
+
+  // if range too low: continue
+  if( (max_altitude - min_altitude) < MINIMUM_ALTITUDE_RANGE)
     return air_data;
 
-  if( ((max_altitude - min_altitude) < MINIMUM_ALTITUDE_RANGE) // ... forget this measurement
-    || (density_QFF_calculator.get_count() < 3000))
-    {
-      max_altitude = min_altitude = MSL_altitude;
-      density_QFF_calculator.reset();
-      return air_data;
-    }
+  // elevation range triggering
+  if( (max_altitude - min_altitude < MAXIMUM_ALTITUDE_RANGE) &&
+      false == altitude_trigger.process(GNSS_altitude))
+    return air_data;
 
+  // if data points too rare: continue
+  if (density_QFF_calculator.get_count() < 100)
+    return air_data;
+
+  // process last acquisition phase data
   linear_least_square_result<evaluation_type> result;
   density_QFF_calculator.evaluate(result);
 
-//  Due to numeric effects, when using float the
-//  variance has been observed to be negative in some cases !
-//  Therefore using float this test can not be used.
- assert( result.variance_slope > 0);
- assert( result.variance_offset > 0);
+//  Due to numeric effects, the variance has been observed
+//  to be negative in some cases.
+//  If this is the case: Throw away this result.
+  if( ( result.variance_slope < 0) || ( result.variance_offset < 0))
+      {
+      density_QFF_calculator.reset();
+      air_data.valid=false;
+      return air_data;
+      }
 
- if( result.variance_slope < MAX_ALLOWED_VARIANCE)
+ if( (result.variance_slope < MAX_ALLOWED_SLOPE_VARIANCE) &&
+     (result.variance_offset < MAX_ALLOWED_OFFSET_VARIANCE) )
     {
       air_data.QFF = (float)(result.y_offset);
-      float density = 100.0f * (float)(result.slope) * -0.10194f; // div by -9.81f;
+      float density = 100.0f * (float)(result.slope) * -0.101936f; // div by -9.81f;
 
-#if DENSITY_MEASURMENT_COLLECTS_INTEGER
-      float pressure = density_QFF_calculator.get_mean_y();
-#else
-      float pressure = 1e5 * density_QFF_calculator.get_mean_y();
-#endif
-
-      float std_density = 1.0496346613e-5f * pressure + 0.1671546011f;
+      float reference_altitude = density_QFF_calculator.get_mean_x() * 0.01f;
+      float std_density =
+	  reference_altitude * reference_altitude *   0.000000003547494f
+	  -0.000115412739613f * reference_altitude +1.224096628212817f;
       air_data.density_correction = density / std_density;
+      air_data.density_variance = result.variance_slope;
       air_data.valid = true;
     }
 
-  max_altitude = min_altitude = MSL_altitude;
+  max_altitude = min_altitude = GNSS_altitude;
   density_QFF_calculator.reset();
 
   return air_data;

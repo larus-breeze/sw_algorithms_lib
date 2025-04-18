@@ -30,6 +30,7 @@
 
 enum { N_AREAS=8, N_COEFFICIENTS=10};
 
+//! struct containing magnetic induction data for a point
 typedef struct
 {
   float declination; //!< positive to the east
@@ -37,6 +38,7 @@ typedef struct
   bool valid;
 } induction_values;
 
+//! struct containing magnetic induction data for a regional region
 typedef struct
 {
   double longitude_limit_west;
@@ -47,6 +49,7 @@ typedef struct
   double coefficients_inclination[N_COEFFICIENTS];
 } induction_model_area_t;
 
+//! Providing worldwide magnetic induction data
 class earth_induction_model_t
 {
 private:

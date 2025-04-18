@@ -31,6 +31,7 @@
 #include "accumulating_averager.h"
 #include "persistent_data.h"
 
+//! mechanisms to filter wind data
 class wind_oberserver_t
 {
 public:
@@ -95,7 +96,7 @@ public:
     else
       wind_average_observer.update(
 	  instant_wind,
-	  ahrs.get_euler ().y,
+	  ahrs.get_euler ().yaw,
 	  circling_state);
 
     float3vector relative_wind_NAV  = wind_resampler_100_10Hz.get_output() - wind_average_observer.get_output();
@@ -109,11 +110,12 @@ public:
         if( old_circling_state == TRANSITION) // when starting to circle
   	{
   	  circling_wind_averager.reset( wind_average_observer.get_output(), 100);
+  	  corrected_wind_averager.settle(wind_average_observer.get_output());
   	  relative_wind_observer.reset({0});
   	}
         else
           {
-	    relative_wind_observer.update( relative_wind_BODY, ahrs.get_euler ().y, ahrs.get_circling_state ());
+	    relative_wind_observer.update( relative_wind_BODY, ahrs.get_euler ().yaw, ahrs.get_circling_state ());
 	    wind_correction_nav = ahrs.get_body2nav() * relative_wind_observer.get_output();
 	    wind_correction_nav[DOWN]=0.0f;
 
@@ -155,7 +157,7 @@ private:
   pt2<float3vector,float> wind_resampler_100_10Hz;
   pt2<float3vector,float> instant_wind_averager;
   soaring_flight_averager< float3vector, true> wind_average_observer; // configure wind average clamping on first circle
-  soaring_flight_averager< float3vector, false, false> relative_wind_observer;
+  soaring_flight_averager< float3vector, true, true> relative_wind_observer;
   pt2<float3vector,float> corrected_wind_averager;
   accumulating_averager < float3vector> circling_wind_averager;
   circle_state_t circling_state;

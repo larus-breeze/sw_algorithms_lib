@@ -31,8 +31,7 @@
 
 #pragma pack(push, 1)
 
-
-//! contains all calibrated data from the sensors
+//! contains all input data from the sensors
 typedef struct
 {
   float3vector acc;   //XSENSE MTi1 IMU
@@ -48,6 +47,15 @@ typedef struct
 #endif
 } measurement_data_t;
 
+//! this structure contains all the observations from all sensors and the GNSS-receiver
+typedef struct
+{
+  float3vector acc;
+  float3vector gyro;
+  float3vector mag;
+  float temperature;
+} extra_sensor_data_t;
+
 //! this structure contains all the observations from sensors and GNSS
 typedef struct
 {
@@ -57,6 +65,9 @@ typedef struct
   float dummy2;
 #endif
   coordinates_t c;
+#if WITH_EXTERNAL_IMU
+  extra_sensor_data_t extra;
+#endif
 #if RUN_MICROPHONE
   float sound_intensity;
 #endif
@@ -67,6 +78,9 @@ typedef struct
 {
   measurement_data_t m;
   coordinates_t c;
+#if WITH_EXTERNAL_IMU
+  extra_sensor_data_t extra;
+#endif
 #if RUN_MICROPHONE
   float sound_intensity;
 #endif
@@ -120,6 +134,7 @@ typedef struct
   float vario_wind_E;
   float3vector body_induction;
   float3vector body_induction_error;
+  float gyro_correction_power;
 #endif
 
 } output_data_t;
