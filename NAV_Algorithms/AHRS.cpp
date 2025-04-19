@@ -421,14 +421,7 @@ void AHRS_type::filter_magnetic_induction( const float3vector &gyro, float3vecto
 {
   float absolute_rotation = gyro.abs();
   for( unsigned i=0; i<3; ++i)
-    {
-	float max_expected_slope;
-	if( mag[i] > 0.95f)
-	  max_expected_slope = 0.3124f; // = sqrt( 1 - 0.95^2)
-	else
-	  max_expected_slope = SQRT( 1.0f - SQR( mag[i]));
-	mag[i] = mag_filter[i].respond(mag[i], absolute_rotation * Ts * max_expected_slope);
-    }
+	mag[i] = mag_filter[i].respond(mag[i], absolute_rotation * Ts * MAX_EXPECTED_INDUCTION_SLOPE);
 }
 
 
