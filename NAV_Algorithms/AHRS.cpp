@@ -416,7 +416,6 @@ void AHRS_type::handle_magnetic_calibration ( void)
     }
 #else
   (void)calibration_changed;
-  (void)type;
 #endif
 }
 
