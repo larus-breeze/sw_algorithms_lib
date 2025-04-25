@@ -41,10 +41,6 @@ typedef struct
   float static_pressure;
   float static_sensor_temperature;  //log temperature to monitor temperature in enclosure
   float supply_voltage;  //Measuring the supply voltage. Might be related to sensor noise.
-#if WITH_DENSITY_DATA
-  float outside_air_temperature; //!< OAT from external sensor if installed
-  float outside_air_humidity; //!< 0.0 -> 1.0 NOT percent
-#endif
 } measurement_data_t;
 
 //! this structure contains all the observations from all sensors and the GNSS-receiver
