@@ -30,6 +30,8 @@
 #define MAG_SCALE_CHANGE_LIMIT 0.02f
 #define USE_SOFT_IRON_COMPENSATION	0
 
+#define MAX_EXPECTED_INDUCTION_SLOPE	1.1f
+
 #define CIRCLE_LIMIT (10 * 100) //!< 10 * 1/100 s delay into / out of circling state
 
 // filters for CAN information (turn-coordinator, G-load ...)

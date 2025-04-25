@@ -298,7 +298,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 
   // when circling is finished eventually update the magnetic calibration
   if (automatic_magnetic_calibration && (old_circle_state == CIRCLING) && (circling_state == TRANSITION))
-	  handle_magnetic_calibration ('s');
+	  handle_magnetic_calibration();
 }
 
 /**
@@ -384,7 +384,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 
  // when circling is finished eventually update the magnetic calibration
  if (automatic_magnetic_calibration && (old_circle_state == CIRCLING) && (circling_state == TRANSITION))
-  handle_magnetic_calibration('m');
+  handle_magnetic_calibration();
 }
 
 void AHRS_type::write_calibration_into_EEPROM( void)
@@ -400,18 +400,18 @@ void AHRS_type::write_calibration_into_EEPROM( void)
   lock_EEPROM( true);
 }
 
-void AHRS_type::handle_magnetic_calibration ( char type)
+void AHRS_type::handle_magnetic_calibration ( void)
 {
   bool calibration_changed = compass_calibration.set_calibration_if_changed ( mag_calibration_data_collector_right_turn, mag_calibration_data_collector_left_turn, MAG_SCALE);
 
 #if REPORT_MAGNETIC_CALIBRATION == 1
+
   if( calibration_changed)
     {
       magnetic_induction_report_t magnetic_induction_report;
       for( unsigned i=0; i<3; ++i)
 	magnetic_induction_report.calibration[i] = (compass_calibration.get_calibration())[i];
 
-      report_magnetic_calibration_has_changed( &magnetic_induction_report, type);
       magnetic_calibration_updated = true;
     }
 #else
@@ -424,14 +424,5 @@ void AHRS_type::filter_magnetic_induction( const float3vector &gyro, float3vecto
 {
   float absolute_rotation = gyro.abs();
   for( unsigned i=0; i<3; ++i)
-    {
-	float max_expected_slope;
-	if( mag[i] > 0.95f)
-	  max_expected_slope = 0.3124f; // = sqrt( 1 - 0.95^2)
-	else
-	  max_expected_slope = SQRT( 1.0f - SQR( mag[i]));
-	mag[i] = mag_filter[i].respond(mag[i], absolute_rotation * Ts * max_expected_slope);
-    }
+	mag[i] = mag_filter[i].respond(mag[i], absolute_rotation * Ts * MAX_EXPECTED_INDUCTION_SLOPE);
 }
-
-

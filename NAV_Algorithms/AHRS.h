@@ -193,7 +193,7 @@ public:
   }
   enum magnetic_calibration_type { NONE, AUTO_1D, AUTO_SOFT_IRON_COMPENSATE};
 private:
-  void handle_magnetic_calibration( char type);
+  void handle_magnetic_calibration( void);
 
   void update_magnetic_loop_gain( void)
   {
