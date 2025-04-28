@@ -99,6 +99,8 @@ public:
 		  configuration (SENS_TILT_PITCH),
 		  configuration (SENS_TILT_YAW));
     q.get_rotation_matrix (sensor_mapping);
+
+    navigator.tune();
   }
 
   void update_magnetic_induction_data( double latitude, double longitude)

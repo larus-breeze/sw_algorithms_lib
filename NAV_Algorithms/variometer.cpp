@@ -1,5 +1,5 @@
 /***********************************************************************//**
- * @file		flight_observer.cpp
+ * @file		variometer.cpp
  * @brief		maintains important derived data for gliders
  * @author		Dr. Klaus Schaefer
  * @copyright 		Copyright 2021 Dr. Klaus Schaefer. All rights reserved.
@@ -29,7 +29,7 @@
 #define ONE_DIV_BY_GRAVITY_TIMES_2 0.0509684f
 #define RECIP_GRAVITY 0.1094f
 
-//! calculate instant windspeed and variometer data, update @ 100 Hz
+//! calculate variometer data, update @ 100 Hz
 void variometer_t::update_at_100Hz (
     const float3vector &gnss_velocity,
     const float3vector &ahrs_acceleration,

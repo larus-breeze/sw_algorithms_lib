@@ -166,6 +166,13 @@ AHRS_type::AHRS_type (float sampling_time)
     compass_calibration.set_default();
 }
 
+void AHRS_type::tune( void)
+{
+  antenna_DOWN_correction = configuration( ANT_SLAVE_DOWN)  / configuration( ANT_BASELENGTH);
+  antenna_RIGHT_correction = configuration( ANT_SLAVE_RIGHT) / configuration( ANT_BASELENGTH);
+  automatic_magnetic_calibration = (magnetic_calibration_type)(round)(configuration(MAG_AUTO_CALIB));
+}
+
 void
 AHRS_type::update (const float3vector &gyro,
 		   const float3vector &acc,

@@ -48,7 +48,11 @@ public:
 	  old( datatype()),
 	  very_old( datatype())
 	{
-		basetype delta = SIN( M_PI * (DESIGN_FREQUENCY - fcutoff)) / SIN( M_PI * (fcutoff + DESIGN_FREQUENCY));
+	  tune( fcutoff);
+	}
+	void tune( basetype f_cutoff)
+	{
+		basetype delta = SIN( M_PI * (DESIGN_FREQUENCY - f_cutoff)) / SIN( M_PI * (f_cutoff + DESIGN_FREQUENCY));
 		basetype a0x = A2 * SQR(delta) - A1 + ONE;
 		basetype a1x = -2.0 * delta * A2 + (SQR(delta) + ONE) * A1 - 2.0 * delta;
 		basetype a2x = A2 - delta * A1 + SQR(delta);

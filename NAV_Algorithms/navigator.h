@@ -47,7 +47,7 @@ public:
 	 ahrs_magnetic (0.01f),
 #endif
 	 atmosphere (101325.0f),
-	 flight_observer(),
+	 variometer(),
 	 wind_observer(),
 	 airborne_detector(),
 	 air_pressure_resampler_100Hz_10Hz(0.025f), // = 2.5 Hz @ 100Hz
@@ -66,6 +66,19 @@ public:
 	 TAS_averager(1.0f / 1.0f / 100.0f),
 	 IAS_averager(1.0f / 1.0f / 100.0f)
   {};
+
+  void tune(void)
+  {
+    variometer.tune();
+    vario_integrator.tune( configuration( VARIO_INT_TC) < 0.25f
+	   ? configuration( VARIO_INT_TC) // normalized stop frequency given, old version
+	   : (FAST_SAMPLING_TIME / configuration( VARIO_INT_TC) ) ); // time-constant given, new version
+    wind_observer.tune();
+    ahrs.tune();
+#if DEVELOPMENT_ADDITIONS
+    ahrs_magnetic.tune();
+#endif
+  }
 
   void update_magnetic_induction_data( float declination, float inclination)
   {
@@ -118,7 +131,7 @@ public:
 
   void reset_altitude( void)
   {
-    flight_observer.reset( atmosphere.get_negative_pressure_altitude(), GNSS_negative_altitude);
+    variometer.reset( atmosphere.get_negative_pressure_altitude(), GNSS_negative_altitude);
   }
   /**
    * @brief update pitot pressure
@@ -186,18 +199,13 @@ public:
 #endif
   }
 
-  float get_IAS( void) const
-  {
-    return IAS;
-  }
-
 private:
   AHRS_type	ahrs;
 #if DEVELOPMENT_ADDITIONS
   AHRS_type	ahrs_magnetic;
 #endif
-  atmosphere_t 		atmosphere;
-  variometer_t 	flight_observer;
+  atmosphere_t 	atmosphere;
+  variometer_t 	variometer;
   wind_oberserver_t wind_observer;
   airborne_detector_t	airborne_detector;
 

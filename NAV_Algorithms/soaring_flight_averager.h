@@ -51,6 +51,11 @@ template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false, bool SOFT_TAKEOF
 	  }
     };
 
+    void tune( float normalized_stop_frequency)
+    {
+	averager.tune( normalized_stop_frequency);
+    }
+
     const value_t & get_output (void) const
     {
       return present_output;

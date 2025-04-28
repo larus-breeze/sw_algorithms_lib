@@ -1,5 +1,5 @@
 /***********************************************************************//**
- * @file		flight_observer.h
+ * @file		variometer.h
  * @brief		maintains important derived data for gliders
  * @author		Dr. Klaus Schaefer
  * @copyright 		Copyright 2021 Dr. Klaus Schaefer. All rights reserved.
@@ -73,6 +73,13 @@ public:
     speed_compensation_projected_4(0.0f)
   {
   };
+
+  void tune( void)
+  {
+    vario_averager_pressure.tune( FAST_SAMPLING_TIME / configuration( VARIO_TC));
+    vario_averager_GNSS.tune( FAST_SAMPLING_TIME / configuration( VARIO_TC));
+  }
+
     void update_at_100Hz
     (
 	const float3vector &gnss_velocity,
