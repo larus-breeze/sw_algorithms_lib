@@ -61,6 +61,19 @@ ROM persistent_data_t PERSISTENT_DATA[]=
 
 ROM unsigned PERSISTENT_DATA_ENTRIES = sizeof(PERSISTENT_DATA) / sizeof(persistent_data_t);
 
+bool all_EEPROM_parameters_available( void)
+{
+  float dummy;
+  for( 	const persistent_data_t * parameter = PERSISTENT_DATA;
+	parameter < PERSISTENT_DATA + PERSISTENT_DATA_ENTRIES;
+	++parameter)
+    {
+      if( true == read_EEPROM_value( parameter->id, dummy)) // parameter missing
+	return false;
+    }
+  return true;
+}
+
 void ensure_EEPROM_parameter_integrity( void)
 {
   bool EEPROM_has_been_unlocked = false;
