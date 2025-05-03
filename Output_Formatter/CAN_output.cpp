@@ -89,7 +89,7 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
   float direction = ATAN2( - x.wind[EAST], - x.wind[NORTH]);
   // map into 0 .. 2 * pi
   if( direction < 0)
-    direction += 2.0f * M_PI;
+    direction += 2.0f * M_PI_F;
   p.data_f[0] = direction;
   p.data_f[1] = x.wind.abs();
   CAN_send(p, 1);
@@ -98,7 +98,7 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
   direction = ATAN2( - x.wind_average[EAST], - x.wind_average[NORTH]);
   // map into 0 .. 2 * pi
   if( direction < 0)
-    direction += 2.0f * M_PI;
+    direction += 2.0f * M_PI_F;
   p.data_f[0] = direction;
   p.data_f[1] = x.wind_average.abs();
   CAN_send(p, 1);
