@@ -29,8 +29,6 @@
 #include "system_state.h"
 #include "CAN_gateway.h"
 
-extern uint32_t UNIQUE_ID[4]; // MPU silicon ID
-
 enum CAN_ID_SENSOR
 {
   // all values in SI-STD- (metric) units, angles in radians
@@ -88,12 +86,20 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
   CAN_send(p, 1);
 
   p.id=CAN_Id_Wind;
-  p.data_f[0] = ATAN2( - x.wind[EAST], - x.wind[NORTH]);
+  float direction = ATAN2( - x.wind[EAST], - x.wind[NORTH]);
+  // map into 0 .. 2 * pi
+  if( direction < 0)
+    direction += 2.0f * M_PI_F;
+  p.data_f[0] = direction;
   p.data_f[1] = x.wind.abs();
   CAN_send(p, 1);
 
   p.id=CAN_Id_Wind_Average;
-  p.data_f[0] = ATAN2( - x.wind_average[EAST], - x.wind_average[NORTH]);
+  direction = ATAN2( - x.wind_average[EAST], - x.wind_average[NORTH]);
+  // map into 0 .. 2 * pi
+  if( direction < 0)
+    direction += 2.0f * M_PI_F;
+  p.data_f[0] = direction;
   p.data_f[1] = x.wind_average.abs();
   CAN_send(p, 1);
 
@@ -130,21 +136,24 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
 
   p.id=CAN_Id_GPS_Lat;
   p.dlc=8;
-  p.data_d = x.c.latitude;
+  // latitude handled in degrees internally
+  p.data_d = x.c.latitude * M_PI / 180.0;
   CAN_send(p, 1);
 
   p.id=CAN_Id_GPS_Lon;
-  p.data_d = x.c.longitude;
+  // longitude handled in degrees internally
+  p.data_d = x.c.longitude * M_PI / 180.0;
   CAN_send(p, 1);
 
-  p.id=CAN_Id_GPS_Alt;		// 0x106
+  p.id=CAN_Id_GPS_Alt;
   p.dlc=8;
-  p.data_f[0] = x.c.position[DOWN] * -1.0f;
+  p.data_f[0] = - x.c.position[DOWN];
   p.data_f[1] = x.c.geo_sep_dm * 0.1f; // dm -> m
   CAN_send(p, 1);
 
   p.id=CAN_Id_GPS_Trk_Spd;
-  p.data_f[0] = x.c.heading_motion;
+  // heading handled in degrees
+  p.data_f[0] = x.c.heading_motion * M_PI_F / 180.0f;
   p.data_f[1] = x.c.speed_motion;
   CAN_send(p, 1);
 
@@ -164,6 +173,8 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
   p.data_w[1] = GIT_TAG_DEC;
   CAN_send(p, 1);
 }
+
+extern uint32_t UNIQUE_ID[4]; // MPU silicon ID
 
 void CAN_heartbeat( void)
 {

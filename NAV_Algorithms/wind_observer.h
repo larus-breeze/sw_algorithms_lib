@@ -55,6 +55,22 @@ public:
     wind_correction_nav()
   {}
 
+  void tune( void)
+  {
+    instant_wind_averager.tune( configuration( WIND_TC)  < 0.25f
+    ? configuration( WIND_TC)
+    : (FAST_SAMPLING_TIME / configuration( WIND_TC) ) );
+   wind_average_observer.tune( configuration( MEAN_WIND_TC) < 0.25f
+    ? configuration( MEAN_WIND_TC)
+    : (SLOW_SAMPLING_TIME / configuration( MEAN_WIND_TC) ) );
+   relative_wind_observer.tune( configuration( MEAN_WIND_TC) < 0.25f
+    ? configuration( MEAN_WIND_TC) * 10.0f
+    : (SLOW_SAMPLING_TIME / configuration( MEAN_WIND_TC) ) );
+   corrected_wind_averager.tune( configuration( MEAN_WIND_TC)  < 0.25f
+    ? configuration( MEAN_WIND_TC) * 10.0f
+    : (SLOW_SAMPLING_TIME / configuration( MEAN_WIND_TC) ) );
+  }
+
   // wind reported to the user
   float3vector get_instant_value( void) const
   {

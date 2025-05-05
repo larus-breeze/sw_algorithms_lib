@@ -53,6 +53,8 @@ public:
 	AHRS_type(float sampling_time);
 	void attitude_setup( const float3vector & acceleration, const float3vector & induction);
 
+	void tune( void);
+
 	void update_magnetic_induction_data( float declination, float inclination)
 	{
 	  declination *= (M_PI_F / 180.0f); // degrees to radiant
