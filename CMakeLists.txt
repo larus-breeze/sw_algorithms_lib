@@ -5,17 +5,22 @@ set(SOURCE_FILES
     NAV_Algorithms/AHRS.cpp
     NAV_Algorithms/air_density_observer.cpp
     NAV_Algorithms/atmosphere.cpp
-    NAV_Algorithms/flight_observer.cpp
+    NAV_Algorithms/earth_induction_model.cpp
     NAV_Algorithms/KalmanVario.cpp
     NAV_Algorithms/KalmanVario_PVA.cpp
     NAV_Algorithms/navigator.cpp
     NAV_Algorithms/persistent_data.cpp
+    NAV_Algorithms/setup_tester.cpp
+    NAV_Algorithms/soft_iron_compensator.cpp
+    NAV_Algorithms/variometer.cpp
     Output_Formatter/ascii_support.cpp
     Output_Formatter/CAN_output.cpp
     Output_Formatter/NMEA_format.cpp
 )
 
 set(HEADER_FILES
+    Generic_Algorithms/accumulating_averager.h
+    Generic_Algorithms/boxcar_averager.h
     Generic_Algorithms/delay_line.h
     Generic_Algorithms/differentiator.h
     Generic_Algorithms/euler.h
@@ -25,18 +30,22 @@ set(HEADER_FILES
     Generic_Algorithms/integrator.h
     Generic_Algorithms/Linear_Least_Square_Fit.h
     Generic_Algorithms/matrix.h
+    Generic_Algorithms/mean_and_variance_finder.h
     Generic_Algorithms/pt2.h
     Generic_Algorithms/quaternion.h
     Generic_Algorithms/ringbuffer.h
     Generic_Algorithms/serial_io.h
+    Generic_Algorithms/slope_limiter.h
     Generic_Algorithms/trigger.h
     Generic_Algorithms/vector.h
     NAV_Algorithms/AHRS.h
     NAV_Algorithms/air_density_observer.h
+    NAV_Algorithms/airborne_detector.h
     NAV_Algorithms/atmosphere.h
     NAV_Algorithms/compass_calibration.h
     NAV_Algorithms/data_structures.h
-    NAV_Algorithms/flight_observer.h
+    NAV_Algorithms/earth_induction_model.h
+    NAV_Algorithms/variometer.h
     NAV_Algorithms/GNSS.h
     NAV_Algorithms/KalmanVario.h
     NAV_Algorithms/KalmanVario_PVA.h
@@ -47,9 +56,11 @@ set(HEADER_FILES
     NAV_Algorithms/soaring_flight_averager.h
     NAV_Algorithms/windobserver.h
     Output_Formatter/ascii_support.h
+    Output_Formatter/CAN_gateway.h
     Output_Formatter/CAN_output.h
     Output_Formatter/generic_CAN_driver.h
     Output_Formatter/NMEA_format.h
+    Output_Formatter/system_state.h
 )
 
 
