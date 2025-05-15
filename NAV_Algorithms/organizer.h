@@ -64,26 +64,55 @@ public:
     u_front_sensor.normalize();
 
     // calculate the new rotation matrix using our calibration data
-    sensor_mapping.e[0][0]=u_front_sensor[0];
-    sensor_mapping.e[0][1]=u_front_sensor[1];
-    sensor_mapping.e[0][2]=u_front_sensor[2];
+    float3matrix new_sensor_mapping;
+    new_sensor_mapping.e[0][0]=u_front_sensor[0];
+    new_sensor_mapping.e[0][1]=u_front_sensor[1];
+    new_sensor_mapping.e[0][2]=u_front_sensor[2];
 
-    sensor_mapping.e[1][0]=u_right_sensor[0];
-    sensor_mapping.e[1][1]=u_right_sensor[1];
-    sensor_mapping.e[1][2]=u_right_sensor[2];
+    new_sensor_mapping.e[1][0]=u_right_sensor[0];
+    new_sensor_mapping.e[1][1]=u_right_sensor[1];
+    new_sensor_mapping.e[1][2]=u_right_sensor[2];
 
-    sensor_mapping.e[2][0]=u_down_sensor[0];
-    sensor_mapping.e[2][1]=u_down_sensor[1];
-    sensor_mapping.e[2][2]=u_down_sensor[2];
+    new_sensor_mapping.e[2][0]=u_down_sensor[0];
+    new_sensor_mapping.e[2][1]=u_down_sensor[1];
+    new_sensor_mapping.e[2][2]=u_down_sensor[2];
 
     quaternion<float> q;
-    q.from_rotation_matrix( sensor_mapping);
+    q.from_rotation_matrix( new_sensor_mapping);
     eulerangle<float> euler = q;
 
     // make the change permanent
     write_EEPROM_value( SENS_TILT_ROLL,  euler.roll);
     write_EEPROM_value( SENS_TILT_PITCH, euler.pitch);
     write_EEPROM_value( SENS_TILT_YAW,   euler.yaw);
+  }
+
+  void fine_tune_sensor_orientation( const vector_average_collection_t & values)
+  {
+    float3vector observed_body_acc  = sensor_mapping * values.acc_observed_level;
+    float pitch_correction = - ATAN2( - observed_body_acc[FRONT], - observed_body_acc[DOWN]);
+    float roll_correction  = + ATAN2( - observed_body_acc[RIGHT], - observed_body_acc[DOWN]);
+
+    quaternion<float> q_correction;
+    q_correction.from_euler( roll_correction, pitch_correction, ZERO);
+
+    quaternion<float> q_present_setting;
+    q_present_setting.from_euler (
+	configuration (SENS_TILT_ROLL),
+	configuration (SENS_TILT_PITCH),
+	configuration (SENS_TILT_YAW));
+
+    quaternion<float> q_new_setting;
+    q_new_setting = q_correction * q_present_setting;
+
+    eulerangle<float> new_euler = q_new_setting;
+
+    // make the change permanent
+    lock_EEPROM( false);
+    write_EEPROM_value( SENS_TILT_ROLL,  new_euler.roll);
+    write_EEPROM_value( SENS_TILT_PITCH, new_euler.pitch);
+    write_EEPROM_value( SENS_TILT_YAW,   new_euler.yaw);
+    lock_EEPROM( true);
   }
 
   void initialize_before_measurement( void)

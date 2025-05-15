@@ -78,28 +78,6 @@ public:
 		return _euler;
 	}
 
-	//! quaternion chaining, multiplication
-	quaternion<datatype> operator *( const quaternion<datatype> right) const
-	{
-	  quaternion<datatype> result;
-	  datatype w1 = vector<datatype, 4>::e[0];
-	  datatype x1 = vector<datatype, 4>::e[1];
-	  datatype y1 = vector<datatype, 4>::e[2];
-	  datatype z1 = vector<datatype, 4>::e[3];
-
-	  datatype w2 = right[0];
-	  datatype x2 = right[1];
-	  datatype y2 = right[2];
-	  datatype z2 = right[3];
-
-	  result[0] = w1*w2 - x1*x2 - y1*y2 - z1*z2;
-	  result[1] = w1*x2 + x1*w2 + y1*z2 - z1*y2;
-	  result[2] = w1*y2 - x1*z2 + y1*w2 + z1*x2;
-	  result[3] = w1*z2 + x1*y2 - y1*x2 + z1*w2;
-
-	  return result;
-	}
-
 	//! get north component of attitude
 	inline datatype get_north( void) const
 	{
@@ -208,11 +186,17 @@ public:
 		datatype re1=right.e[1];
 		datatype re2=right.e[2];
 		datatype re3=right.e[3];
-		result.e[0] = e0 * re0 - e1 * re1 - e2 * re2 + e3 * re3;
+		result.e[0] = e0 * re0 - e1 * re1 - e2 * re2 - e3 * re3;
 		result.e[1] = e1 * re0 + e2 * re3 - e3 * re2 + e0 * re1;
 		result.e[2] = e3 * re1 + e0 * re2 - e1 * re3 + e2 * re0;
 		result.e[3] = e1 * re2 - e2 * re1 + e0 * re3 + e3 * re0;
 		return result;
+		}
+
+	quaternion <datatype> operator *= ( const quaternion <datatype> & right) //!< quaternion multiplication
+		{
+		  *this = *this * right;
+		  return *this;
 		}
 
 	void from_rotation_matrix( matrix<datatype, 3> &rotm) //!< rotation matrix -> quaternion transformation
@@ -229,5 +213,16 @@ public:
 		this->e[3] = tmp * (rotm.e[1][0] - rotm.e[0][1]);
 		normalize(); // compensate computational inaccuracies
 		};
+
+	quaternion <datatype> inverse( void)
+	{
+	  quaternion <datatype> retv;
+	  retv[0] = this->e[0];
+	  retv[1] = -this->e[1];
+	  retv[2] = -this->e[2];
+	  retv[3] = -this->e[3];
+	  retv.normalize();
+	  return retv;
+	}
 };
 #endif // QUATERNION_H
