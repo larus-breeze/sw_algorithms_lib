@@ -95,8 +95,6 @@ const persistent_data_t * find_parameter_from_ID( EEPROM_PARAMETER_ID id);
 float configuration( EEPROM_PARAMETER_ID id);
 bool write_EEPROM_value( EEPROM_PARAMETER_ID id, float value);
 bool read_EEPROM_value( EEPROM_PARAMETER_ID id, float &value);
-bool lock_EEPROM( bool lockit);
-bool EEPROM_initialize( void);
 void ensure_EEPROM_parameter_integrity(void);
 
 extern const persistent_data_t PERSISTENT_DATA[];

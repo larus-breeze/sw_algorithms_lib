@@ -81,11 +81,9 @@ public:
     eulerangle<float> euler = q;
 
     // make the change permanent
-    lock_EEPROM( false);
     write_EEPROM_value( SENS_TILT_ROLL,  euler.roll);
     write_EEPROM_value( SENS_TILT_PITCH, euler.pitch);
     write_EEPROM_value( SENS_TILT_YAW,   euler.yaw);
-    lock_EEPROM( true);
   }
 
   void initialize_before_measurement( void)
