@@ -108,11 +108,9 @@ public:
     eulerangle<float> new_euler = q_new_setting;
 
     // make the change permanent
-    lock_EEPROM( false);
     write_EEPROM_value( SENS_TILT_ROLL,  new_euler.roll);
     write_EEPROM_value( SENS_TILT_PITCH, new_euler.pitch);
     write_EEPROM_value( SENS_TILT_YAW,   new_euler.yaw);
-    lock_EEPROM( true);
   }
 
   void initialize_before_measurement( void)
