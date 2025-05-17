@@ -399,12 +399,8 @@ void AHRS_type::write_calibration_into_EEPROM( void)
   if( !magnetic_calibration_updated)
     return;
 
-  lock_EEPROM( false);
-
   compass_calibration.write_into_EEPROM();
   magnetic_calibration_updated = false; // done ...
-
-  lock_EEPROM( true);
 }
 
 void AHRS_type::handle_magnetic_calibration ( void)

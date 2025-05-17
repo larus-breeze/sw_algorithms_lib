@@ -76,24 +76,16 @@ bool all_EEPROM_parameters_available( void)
 
 void ensure_EEPROM_parameter_integrity( void)
 {
-  bool EEPROM_has_been_unlocked = false;
   float dummy;
   const persistent_data_t * parameter = PERSISTENT_DATA;
   while( parameter < PERSISTENT_DATA + PERSISTENT_DATA_ENTRIES)
     {
       if( true == read_EEPROM_value( parameter->id, dummy)) // parameter missing
 	{
-	  if( EEPROM_has_been_unlocked == false)
-	    {
-	      lock_EEPROM( false);
-	      EEPROM_has_been_unlocked = true;
-	    }
 	  (void) write_EEPROM_value( parameter->id, parameter->default_value);
 	}
       ++parameter;
     }
-  if( EEPROM_has_been_unlocked)
-    lock_EEPROM( true);
 }
 
 const persistent_data_t * find_parameter_from_name( char * name)
@@ -219,33 +211,19 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
   return false; // OK
 }
 
-bool lock_EEPROM( bool lockit)
-{
-  if( lockit)
-    return HAL_FLASH_Lock();
-
-  HAL_FLASH_Unlock();
-  return (EE_Init());
-}
-
 bool write_EEPROM_value( EEPROM_PARAMETER_ID id, float value)
 {
   EEPROM_data_t EEPROM_value;
   if( EEPROM_convert( id, EEPROM_value, value , WRITE))
       return true; // error
 
-  EEPROM_data_t read_value;
-  if( (HAL_OK != EE_ReadVariable( id, &read_value.u16))
-      ||
-      (read_value.u16 != EEPROM_value.u16) )
-	return EE_WriteVariable( id, EEPROM_value.u16);
-  return HAL_OK;
+  return EE_WriteVariableBuffered( id, EEPROM_value.u16);
 }
 
 bool read_EEPROM_value( EEPROM_PARAMETER_ID id, float &value)
 {
   uint16_t data;
-  if( HAL_OK != EE_ReadVariable( id, (uint16_t*)&data))
+  if( HAL_OK != EE_ReadVariableBuffered( id, (uint16_t*)&data))
     return true;
   return ( EEPROM_convert( id, (EEPROM_data_t &)data, value , READ));
 }
@@ -256,19 +234,6 @@ float configuration( EEPROM_PARAMETER_ID id)
   bool result = read_EEPROM_value( id, value);
   ASSERT( result == false);
   return value;
-}
-
-bool EEPROM_initialize( void)
-{
-  unsigned status;
-
-  status = HAL_FLASH_Unlock();
-  ASSERT(status == HAL_OK);
-
-  status = EE_Init();
-  ASSERT(status == HAL_OK);
-
-  return HAL_OK;
 }
 
 #endif
