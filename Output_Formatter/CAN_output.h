@@ -26,6 +26,7 @@
 #define SRC_CAN_OUTPUT_H_
 
 #include "data_structures.h"
+#include "generic_CAN_driver.h"
 
 /* Larus CAN definitions */
 #define  SYSWIDECONFIG_ITEM_ID_VOLUME 		0
@@ -60,5 +61,6 @@
 
 void CAN_output ( const output_data_t &x, bool horizon_activated);
 void CAN_heartbeat( void);
+bool CAN_enqueue( const CANpacket &p, unsigned max_delay = 0xffffffff);
 
 #endif /* SRC_CAN_OUTPUT_H_ */
