@@ -121,7 +121,7 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
   p.id=CAN_Id_Voltage_Circle;
   p.dlc=5;
   p.data_f[0] = x.m.supply_voltage;
-  p.data_b[4] = (uint8_t)(x.circle_mode);
+  p.data_b[4] = (uint8_t)(x.flight_mode);
   CAN_send(p, 1);
 
   p.id=CAN_Id_GPS_Date_Time;
