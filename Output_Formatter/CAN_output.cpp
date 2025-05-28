@@ -44,6 +44,7 @@ enum CAN_ID_SENSOR
   CAN_Id_SlipPitch	= 0x128,    //!< float slip angle from body-acc, float pitch angle from body-acc
   CAN_Id_Voltage_Circle	= 0x129,    //!< float supply voltage, uint8_t circle-mode
   CAN_Id_SystemState    = 0x12a,    //!< u32 system_state, u32 git_tag dec
+  CAN_Id_Sensor_Health	= 0x12b,    //!< float magnetic disturbance
 
   CAN_Id_GPS_Date_Time	= 0x140,    //!< uint8_t year-2000, month, day, hour, mins, secs
   CAN_Id_GPS_Lat	= 0x141,    //!< double latitude
@@ -51,7 +52,6 @@ enum CAN_ID_SENSOR
   CAN_Id_GPS_Alt	= 0x143,    //!< float MSL altitude, float geo separation
   CAN_Id_GPS_Trk_Spd	= 0x144,    //!< float ground track, float groundspeed / m/s
   CAN_Id_GPS_Sats	= 0x145,    //!< uin8_t No of Sats, (uint8_t)bool SAT FIX type
-  CAN_Id_Health		= 0x146,    //!< uin8_t No of Sats, (uint8_t)bool SAT FIX type
 
   CAN_Id_Heartbeat_Sens	= 0x520,
   CAN_Id_Heartbeat_GNSS	= 0x540,
@@ -125,6 +125,11 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
   p.data_b[4] = (uint8_t)(x.flight_mode);
   CAN_send(p, 1);
 
+  p.id=CAN_Id_Sensor_Health;
+  p.dlc=4;
+  p.data_f[0] = x.magnetic_disturbance;
+  CAN_send(p, 1);
+
   p.id=CAN_Id_GPS_Date_Time;
   p.dlc=7;
   p.data_h[0] = x.c.year + 2000; // GNSS reports only 2000 + x
@@ -162,11 +167,6 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
   p.dlc=2;
   p.data_b[0] = x.c.SATS_number;
   p.data_b[1] = x.c.sat_fix_type;
-  CAN_send(p, 1);
-
-  p.id=CAN_Id_Health;
-  p.dlc=4;
-  p.data_f[0] = x.magnetic_disturbance;
 
   if( CAN_send(p, 1)) // check CAN for timeout this time
     system_state |= CAN_OUTPUT_ACTIVE;

@@ -26,7 +26,7 @@ enum availability_bits
 	CAN_OUTPUT_ACTIVE	= 0x4000,
 	USART_2_OUTPUT_ACTIVE	= 0x8000,
 
-	HORIZON_AVAILABLE	= 0x10000
+	HORIZON_NOT_AVAILABLE	= 0x10000
 };
 
 extern uint32_t system_state; //!< bits collected from availability_bits
