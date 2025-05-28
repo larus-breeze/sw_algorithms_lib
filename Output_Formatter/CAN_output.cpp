@@ -51,6 +51,7 @@ enum CAN_ID_SENSOR
   CAN_Id_GPS_Alt	= 0x143,    //!< float MSL altitude, float geo separation
   CAN_Id_GPS_Trk_Spd	= 0x144,    //!< float ground track, float groundspeed / m/s
   CAN_Id_GPS_Sats	= 0x145,    //!< uin8_t No of Sats, (uint8_t)bool SAT FIX type
+  CAN_Id_Health		= 0x146,    //!< uin8_t No of Sats, (uint8_t)bool SAT FIX type
 
   CAN_Id_Heartbeat_Sens	= 0x520,
   CAN_Id_Heartbeat_GNSS	= 0x540,
@@ -161,6 +162,11 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
   p.dlc=2;
   p.data_b[0] = x.c.SATS_number;
   p.data_b[1] = x.c.sat_fix_type;
+  CAN_send(p, 1);
+
+  p.id=CAN_Id_Health;
+  p.dlc=4;
+  p.data_f[0] = x.magnetic_disturbance;
 
   if( CAN_send(p, 1)) // check CAN for timeout this time
     system_state |= CAN_OUTPUT_ACTIVE;
