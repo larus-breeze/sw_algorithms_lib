@@ -90,7 +90,7 @@ typedef struct
   float integrator_vario;
   float3vector wind;
   float3vector wind_average;
-  uint32_t circle_mode;
+  uint32_t flight_mode;
   quaternion<float> q;
   eulerangle<float> euler;
   float effective_vertical_acceleration;

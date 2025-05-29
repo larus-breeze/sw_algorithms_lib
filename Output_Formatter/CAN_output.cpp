@@ -44,6 +44,7 @@ enum CAN_ID_SENSOR
   CAN_Id_SlipPitch	= 0x128,    //!< float slip angle from body-acc, float pitch angle from body-acc
   CAN_Id_Voltage_Circle	= 0x129,    //!< float supply voltage, uint8_t circle-mode
   CAN_Id_SystemState    = 0x12a,    //!< u32 system_state, u32 git_tag dec
+  CAN_Id_Sensor_Health	= 0x12b,    //!< float magnetic disturbance
 
   CAN_Id_GPS_Date_Time	= 0x140,    //!< uint8_t year-2000, month, day, hour, mins, secs
   CAN_Id_GPS_Lat	= 0x141,    //!< double latitude
@@ -121,7 +122,12 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
   p.id=CAN_Id_Voltage_Circle;
   p.dlc=5;
   p.data_f[0] = x.m.supply_voltage;
-  p.data_b[4] = (uint8_t)(x.circle_mode);
+  p.data_b[4] = (uint8_t)(x.flight_mode);
+  CAN_send(p, 1);
+
+  p.id=CAN_Id_Sensor_Health;
+  p.dlc=4;
+  p.data_f[0] = x.magnetic_disturbance;
   CAN_send(p, 1);
 
   p.id=CAN_Id_GPS_Date_Time;

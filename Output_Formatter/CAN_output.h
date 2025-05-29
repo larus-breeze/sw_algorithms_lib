@@ -58,6 +58,7 @@
 #define  CMD_MEASURE_LEVEL			0x3002
 #define  CMD_CALCULATE				0x3003
 #define  CMD_TUNE				0x3004
+#define  CMD_RESET_SENSOR			0x3005
 
 void CAN_output ( const output_data_t &x, bool horizon_activated);
 void CAN_heartbeat( void);
