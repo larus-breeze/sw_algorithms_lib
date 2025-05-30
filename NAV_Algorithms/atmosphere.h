@@ -147,6 +147,9 @@ public:
 #else
 	  density_correction = result.density_correction;
 #endif
+	  // todo patch: emergency-brake for implausible values
+	  if( density_correction > 1.15f || density_correction < 0.85f)
+	    density_correction = ONE;
 	}
     }
 
