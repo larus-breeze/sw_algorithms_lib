@@ -72,9 +72,9 @@ public:
 		bool GNSS_heading_valid
 		);
 
-	inline void set_from_euler( float r, float n, float y)
+	inline void set_from_euler( float roll, float pitch, float yaw)
 	{
-		attitude.from_euler( r, n, y);
+		attitude.from_euler( roll, pitch, yaw);
 		attitude.get_rotation_matrix( body2nav);
 		euler = attitude;
 	}

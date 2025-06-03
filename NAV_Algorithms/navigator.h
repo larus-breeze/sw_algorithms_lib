@@ -191,11 +191,11 @@ public:
 //    return flight_observer;
 //    }
 
-  void set_attitude( float roll, float nick, float yaw)
+  void set_attitude( float roll, float pitch, float yaw)
   {
-    ahrs.set_from_euler(roll, nick, yaw);
+    ahrs.set_from_euler(roll, pitch, yaw);
 #if DEVELOPMENT_ADDITIONS
-    ahrs_magnetic.set_from_euler(roll, nick, yaw);
+    ahrs_magnetic.set_from_euler(roll, pitch, yaw);
 #endif
   }
 
