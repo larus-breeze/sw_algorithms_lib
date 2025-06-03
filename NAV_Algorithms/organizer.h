@@ -89,12 +89,45 @@ public:
 
   void fine_tune_sensor_orientation( const vector_average_collection_t & values)
   {
-    float3vector observed_body_acc  = sensor_mapping * values.acc_observed_level;
-    float pitch_correction = - ATAN2( - observed_body_acc[FRONT], - observed_body_acc[DOWN]);
-    float roll_correction  = + ATAN2( - observed_body_acc[RIGHT], - observed_body_acc[DOWN]);
+    float3vector gravity_measurement_body = sensor_mapping * values.acc_observed_level;
 
-    quaternion<float> q_correction;
-    q_correction.from_euler( roll_correction, pitch_correction, ZERO);
+    // correct for "gravity pointing to minus "down" "
+    gravity_measurement_body.negate();
+
+    // evaluate observed "down" direction in the body frame
+    float3vector unity_vector_down_body;
+    unity_vector_down_body = gravity_measurement_body;
+    unity_vector_down_body.normalize();
+
+    // find two more unity vectors defining the corrected coordinate system
+    float3vector unity_vector_front_body;
+    unity_vector_front_body[FRONT] = unity_vector_down_body[DOWN];
+    unity_vector_front_body[DOWN]  = unity_vector_down_body[FRONT];
+    unity_vector_front_body.normalize();
+
+    float3vector unity_vector_right_body;
+    unity_vector_right_body = unity_vector_down_body.vector_multiply( unity_vector_front_body);
+    unity_vector_right_body.normalize();
+
+    // fine tune the front vector using the other ones
+    unity_vector_front_body = unity_vector_right_body.vector_multiply( unity_vector_down_body);
+
+    // calculate the rotation matrix using our calibration data
+    float3matrix observed_correction_matrix;
+    observed_correction_matrix.e[FRONT][0]=unity_vector_front_body[0];
+    observed_correction_matrix.e[FRONT][1]=unity_vector_front_body[1];
+    observed_correction_matrix.e[FRONT][2]=unity_vector_front_body[2];
+
+    observed_correction_matrix.e[RIGHT][0]=unity_vector_right_body[0];
+    observed_correction_matrix.e[RIGHT][1]=unity_vector_right_body[1];
+    observed_correction_matrix.e[RIGHT][2]=unity_vector_right_body[2];
+
+    observed_correction_matrix.e[DOWN][0]=unity_vector_down_body[0];
+    observed_correction_matrix.e[DOWN][1]=unity_vector_down_body[1];
+    observed_correction_matrix.e[DOWN][2]=unity_vector_down_body[2];
+
+    quaternion<float> q_observed_correction;
+    q_observed_correction.from_rotation_matrix(observed_correction_matrix);
 
     quaternion<float> q_present_setting;
     q_present_setting.from_euler (
@@ -102,8 +135,11 @@ public:
 	configuration (SENS_TILT_PITCH),
 	configuration (SENS_TILT_YAW));
 
+    quaternion <float> q_sensor_orientation_corrected;
+    q_sensor_orientation_corrected = q_observed_correction * q_present_setting;
+
     quaternion<float> q_new_setting;
-    q_new_setting = q_correction * q_present_setting;
+    q_new_setting = q_observed_correction * q_present_setting;
 
     eulerangle<float> new_euler = q_new_setting;
 
