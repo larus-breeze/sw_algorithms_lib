@@ -138,18 +138,19 @@ public:
 #if USE_AIR_DENSITY_LETHARGY
 	  bool first_measurement = (weight_sum == 0.0f);
 
-	  weight_sum =  weight_sum * AIR_DENSITY_LETHARGY + (AIR_DENSITY_LETHARGY -1) / result.density_variance;
-	  density_factor_weighed_sum =  density_factor_weighed_sum * AIR_DENSITY_LETHARGY + (AIR_DENSITY_LETHARGY -1) * result.density_correction / result.density_variance;
+	  weight_sum =  weight_sum * AIR_DENSITY_LETHARGY + (1.0f - AIR_DENSITY_LETHARGY) / result.density_variance;
+	  density_factor_weighed_sum =  density_factor_weighed_sum * AIR_DENSITY_LETHARGY + (1.0f - AIR_DENSITY_LETHARGY) * result.density_correction / result.density_variance;
 
 	  // postpone update unless we have two measurements
 	  if( ! first_measurement)
 	    density_correction = density_factor_weighed_sum / weight_sum;
+
+extern void report_desity_parameters( float, float, float, float);
+	  report_desity_parameters( density_correction, density_factor_weighed_sum, weight_sum, result.density_variance);
+
 #else
 	  density_correction = result.density_correction;
 #endif
-	  // todo patch: emergency-brake for implausible values
-	  if( density_correction > 1.15f || density_correction < 0.85f)
-	    density_correction = ONE;
 	}
     }
 

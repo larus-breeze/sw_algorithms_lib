@@ -38,7 +38,7 @@ typedef uint64_t measurement_type;
 #define MINIMUM_ALTITUDE_RANGE		300.0f
 #define MAXIMUM_ALTITUDE_RANGE		800.0f
 #define USE_AIR_DENSITY_LETHARGY	1
-#define AIR_DENSITY_LETHARGY 		0.7
+#define AIR_DENSITY_LETHARGY 		0.7f
 #define AIR_DENSITY_DECIMATION		20
 
 //! Maintains offset and slope of the air density measurement
