@@ -90,51 +90,145 @@ void setup_tester(void)
   euler.yaw   *= 180/M_PI;
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
+  // quaternion chaining test
+  quaternion<float> first;
+  first.from_euler( ZERO, ZERO, 90.0f * M_PI_F / 180.0f);
 
-  // pitch and roll axis fine tuning
-  float pitch_angle = 0.5f; 	// sensor nose is higher than configured
-  float roll_angle =  -0.3f; 	// sensor is looking more left than configured
-  quaternion<float>q_sensor_ideal_2_misaligned;
-  q_sensor_ideal_2_misaligned.from_euler( roll_angle, pitch_angle, ZERO);
+  quaternion<float> second;
+  second.from_euler( ZERO, 10.0f * M_PI_F / 180.0f, ZERO);
 
-  quaternion<float>q_body_2_world; // looking NE horizontally
-  q_body_2_world.from_euler( ZERO, ZERO, 45.0f * M_PI_F / 180.0f);
-//  q_body_2_world.from_euler( ZERO, ZERO, -145.0f * M_PI_F / 180.0f);
+  quaternion<float> combi;
 
-  // provide simulated measurement
-  quaternion <float> q_misaligned_sensor_2_world = q_sensor_ideal_2_misaligned;
-  q_misaligned_sensor_2_world *= q_sensor_2_body;
-  q_misaligned_sensor_2_world *= q_body_2_world;
+  combi = second * first;
 
-  euler = q_misaligned_sensor_2_world;
+  euler = combi;
   euler.roll  *= 180/M_PI;
   euler.pitch *= 180/M_PI;
   euler.yaw   *= 180/M_PI;
 
-  float3matrix m_misaligned_sensor_to_world;
-  q_misaligned_sensor_2_world.get_rotation_matrix( m_misaligned_sensor_to_world);
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  // pitch and roll axis fine tuning
 
-  // simulate measurement
-  float3vector v_down;
-  v_down[DOWN] = -10.0f;
-  float3vector v_measurement_sensor = m_misaligned_sensor_to_world.reverse_map( v_down);
+  float sensor_orientation_roll  = 10.0f * M_PI_F / 180;
+  float sensor_orientation_pitch = 120.0f * M_PI_F / 180;
+  float sensor_orientation_yaw   = -30.0f * M_PI_F / 180;
 
-  q_sensor_2_body.get_rotation_matrix( m_sensor_2_body);
+  float pitch_angle_delta = 3.0  * M_PI_F / 180; 	// sensor nose is higher than configured
+  float roll_angle_delta  = -4.0 * M_PI_F / 180; 	// sensor is looking more left than configured
 
-  float3vector v_measurement_body = m_sensor_2_body * v_measurement_sensor;
+  quaternion<float> q_sensor_orientation_configured;
+  q_sensor_orientation_configured.from_euler( sensor_orientation_roll, sensor_orientation_pitch, sensor_orientation_yaw);
 
-  float3matrix m_body_2_world;
-  q_body_2_world.get_rotation_matrix(m_body_2_world);
-  float3vector v_measurement_world = m_body_2_world * v_measurement_body;
+  quaternion<float> q_sensor_2_body_real;
+  q_sensor_2_body_real.from_euler( sensor_orientation_roll + roll_angle_delta, sensor_orientation_pitch + pitch_angle_delta, sensor_orientation_yaw);
 
-  float pitch_angle_measured = ATAN2( -v_measurement_world[0], -v_measurement_world[2]);
-  float roll_angle_measured = ATAN2( -v_measurement_world[1], -v_measurement_world[2]);
+  quaternion<float> q_body_2_sensor_real = q_sensor_2_body_real.inverse();
 
-  // compute corrected sensor alignment quaternion
-  quaternion <float> q_correction;
-  q_correction.from_euler( roll_angle_measured, pitch_angle_measured, ZERO);
+  float airframe_orientation_roll  = 0.0f;
+  float airframe_orientation_pitch = 0.0f;
+  float airframe_orientation_yaw   = 123.4f;
+  quaternion<float> q_airframe_orientation;
+  q_airframe_orientation.from_euler( airframe_orientation_roll, airframe_orientation_pitch, airframe_orientation_yaw);
 
-  quaternion<float> q_corrected_sensor_orientation;
+  quaternion<float> q_world_to_misaligned_sensor;
+  q_world_to_misaligned_sensor = q_body_2_sensor_real * q_airframe_orientation;
+  float3matrix m_world_to_misaligned_sensor;
+  q_world_to_misaligned_sensor.get_rotation_matrix( m_world_to_misaligned_sensor);
+
+  eulerangle<float> euler_misaligned_sensor = q_world_to_misaligned_sensor;
+  euler_misaligned_sensor.roll  *= 180/M_PI;
+  euler_misaligned_sensor.pitch *= 180/M_PI;
+  euler_misaligned_sensor.yaw   *= 180/M_PI;
+
+  // make a measurement of the gravity vector,
+  // assuming no velocity change at this moment
+  float3vector gravity;
+  gravity[DOWN] = -9.81;
+
+  // compute what the sensor will see
+  float3vector gravity_measurement_sensor;
+  gravity_measurement_sensor  = m_world_to_misaligned_sensor * gravity;
+
+  // map this to the airframe using the configured sensor orientation
+  float3matrix m_sensor_orientation_configured;
+  q_sensor_orientation_configured.get_rotation_matrix( m_sensor_orientation_configured);
+
+  float3vector gravity_measurement_body;
+  gravity_measurement_body = m_sensor_orientation_configured * gravity_measurement_sensor;
+
+  // correct for "gravity pointing to minus "down" "
+  gravity_measurement_body.negate();
+
+  // evaluate observed "down" direction in the body frame
+  float3vector unity_vector_down_body;
+  unity_vector_down_body = gravity_measurement_body;
+  unity_vector_down_body.normalize();
+
+  // find two more unity vectors defining the corrected coordinate system
+  float3vector unity_vector_front_body;
+  unity_vector_front_body[FRONT] = unity_vector_down_body[DOWN];
+  unity_vector_front_body[DOWN]  = unity_vector_down_body[FRONT];
+  unity_vector_front_body.normalize();
+
+  float3vector unity_vector_right_body;
+#if 1
+  unity_vector_right_body = unity_vector_down_body.vector_multiply( unity_vector_front_body);
+#else
+  unity_vector_right_body[RIGHT] = unity_vector_down_body[DOWN];
+  unity_vector_right_body[DOWN]  = - unity_vector_down_body[RIGHT];
+#endif
+  unity_vector_right_body.normalize();
+
+  // fine tune the front vector using the other ones
+  unity_vector_front_body = unity_vector_right_body.vector_multiply( unity_vector_down_body);
+
+  // calculate the rotation matrix using our calibration data
+  float3matrix observed_correction_matrix;
+  observed_correction_matrix.e[FRONT][0]=unity_vector_front_body[0];
+  observed_correction_matrix.e[FRONT][1]=unity_vector_front_body[1];
+  observed_correction_matrix.e[FRONT][2]=unity_vector_front_body[2];
+
+  observed_correction_matrix.e[RIGHT][0]=unity_vector_right_body[0];
+  observed_correction_matrix.e[RIGHT][1]=unity_vector_right_body[1];
+  observed_correction_matrix.e[RIGHT][2]=unity_vector_right_body[2];
+
+  observed_correction_matrix.e[DOWN][0]=unity_vector_down_body[0];
+  observed_correction_matrix.e[DOWN][1]=unity_vector_down_body[1];
+  observed_correction_matrix.e[DOWN][2]=unity_vector_down_body[2];
+
+  quaternion<float> q_observed_correction;
+  q_observed_correction.from_rotation_matrix(observed_correction_matrix);
+
+  eulerangle<float> correction_euler = q_observed_correction;
+
+  correction_euler.roll  *= 180/M_PI;
+  correction_euler.pitch *= 180/M_PI;
+  correction_euler.yaw   *= 180/M_PI;
+
+  // check if correction combined with old orientation setting fits
+  quaternion <float> q_sensor_orientation_corrected;
+  q_sensor_orientation_corrected = q_observed_correction * q_sensor_orientation_configured;
+
+  float3matrix m_sensor_orientation_corrected;
+  q_sensor_orientation_corrected.get_rotation_matrix( m_sensor_orientation_corrected);
+
+  // now we check if gravity points down using the corrected sensor orientation
+  gravity_measurement_body = m_sensor_orientation_corrected * gravity_measurement_sensor;
+
+  // now we check if the north unit vector stays north
+  float3vector north;
+  north[NORTH] = 1.0f;
+
+  float3vector attitude_measurement_sensor;
+  attitude_measurement_sensor  = m_world_to_misaligned_sensor * north;
+  float3vector attitude_measurement_body;
+  attitude_measurement_body = m_sensor_orientation_corrected * attitude_measurement_sensor;
+
+  float3matrix m_world_2_body;
+  q_airframe_orientation.get_rotation_matrix( m_world_2_body);
+
+  float3vector attitude_measurement_world;
+  attitude_measurement_world = m_world_2_body.reverse_map( attitude_measurement_body);
 }
 
 
