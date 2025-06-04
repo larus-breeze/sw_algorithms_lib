@@ -29,7 +29,7 @@
 #include "embedded_math.h"
 #include <air_density_observer.h>
 #include "NAV_tuning_parameters.h"
-#include <pt2.h>
+#include "system_configuration.h"
 
 #define RECIP_STD_DENSITY_TIMES_2 1.632f
 
@@ -56,8 +56,8 @@ public:
     extrapolated_sea_level_pressure(101325),
     GNSS_altitude_based_density_available(false),
     GNSS_altitude_based_density(1.2255f),
-    old_density_correction(1.0f),
     weight_sum(0.0f),
+    density_measurement_number(0),
     density_factor_weighed_sum(0.0f)
   {
   }
@@ -130,28 +130,48 @@ public:
     return extrapolated_sea_level_pressure;
   }
 
-  void air_density_metering( float pressure, float MSL_altitude)
-    {
-    air_data_result result = air_density_observer.feed_metering( pressure, MSL_altitude);
-      if( result.valid)
-	{
-#if USE_AIR_DENSITY_LETHARGY
-	  bool first_measurement = (weight_sum == 0.0f);
+  void air_density_metering (float pressure, float MSL_altitude)
+  {
+    air_data_result result = air_density_observer.feed_metering (pressure,
+								 MSL_altitude);
+    if (result.valid)
+      {
+	if (density_measurement_number < 3)
+	  ++density_measurement_number;
 
-	  weight_sum =  weight_sum * AIR_DENSITY_LETHARGY + (AIR_DENSITY_LETHARGY -1) / result.density_variance;
-	  density_factor_weighed_sum =  density_factor_weighed_sum * AIR_DENSITY_LETHARGY + (AIR_DENSITY_LETHARGY -1) * result.density_correction / result.density_variance;
+	weight_sum = weight_sum * AIR_DENSITY_LETHARGY
+	    + (1.0f - AIR_DENSITY_LETHARGY) / result.density_variance;
+	density_factor_weighed_sum = density_factor_weighed_sum
+	    * AIR_DENSITY_LETHARGY
+	    + (1.0f - AIR_DENSITY_LETHARGY) * result.density_correction
+		/ result.density_variance;
 
-	  // postpone update unless we have two measurements
-	  if( ! first_measurement)
+	// postpone update unless we have two measurements
+	switch (density_measurement_number)
+	  {
+	  case 1:
+	    first_result = result; // remember and wait for better statistics
+	    // honorize trend for the moment
+	    density_correction = (1.0f + result.density_correction) * 0.5f;
+	    break;
+	  case 2:
+	    // use variance-weighed sum of both measurements
+	    density_correction = (first_result.density_correction
+		/ first_result.density_variance
+		+ result.density_correction / result.density_variance)
+		/ (1.0f / first_result.density_variance
+		    + 1.0f / result.density_variance);
+	    break;
+	  default:
+	    // use IIR-filtered weighed sum of measurements
 	    density_correction = density_factor_weighed_sum / weight_sum;
-#else
-	  density_correction = result.density_correction;
-#endif
-	  // todo patch: emergency-brake for implausible values
-	  if( density_correction > 1.15f || density_correction < 0.85f)
-	    density_correction = ONE;
-	}
-    }
+	    break;
+
+	  }
+
+	LIMIT_DENSITY_CORRECTION (density_correction);
+      }
+  }
 
 private:
   float calculateGasConstantHumAir(
@@ -168,8 +188,9 @@ private:
   air_density_observer_t air_density_observer;
   bool GNSS_altitude_based_density_available;
   float GNSS_altitude_based_density;
-  float old_density_correction;
+  air_data_result first_result;
   float weight_sum;
+  uint8_t density_measurement_number;
   float density_factor_weighed_sum;
 };
 
