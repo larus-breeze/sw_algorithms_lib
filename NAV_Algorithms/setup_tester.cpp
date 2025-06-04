@@ -110,8 +110,8 @@ void setup_tester(void)
   // pitch and roll axis fine tuning
 
   float sensor_orientation_roll  = 10.0f * M_PI_F / 180;
-  float sensor_orientation_pitch = 120.0f * M_PI_F / 180;
-  float sensor_orientation_yaw   = -30.0f * M_PI_F / 180;
+  float sensor_orientation_pitch = +120.0f * M_PI_F / 180;
+  float sensor_orientation_yaw   = -145.0f * M_PI_F / 180;
 
   float pitch_angle_delta = 3.0  * M_PI_F / 180; 	// sensor nose is higher than configured
   float roll_angle_delta  = -4.0 * M_PI_F / 180; 	// sensor is looking more left than configured
@@ -158,30 +158,46 @@ void setup_tester(void)
 
   // correct for "gravity pointing to minus "down" "
   gravity_measurement_body.negate();
+  gravity_measurement_body.normalize();
 
   // evaluate observed "down" direction in the body frame
   float3vector unity_vector_down_body;
   unity_vector_down_body = gravity_measurement_body;
   unity_vector_down_body.normalize();
-
+#if 0
   // find two more unity vectors defining the corrected coordinate system
   float3vector unity_vector_front_body;
-  unity_vector_front_body[FRONT] = unity_vector_down_body[DOWN];
-  unity_vector_front_body[DOWN]  = unity_vector_down_body[FRONT];
+  unity_vector_front_body[FRONT] = + gravity_measurement_body[DOWN];
+  unity_vector_front_body[DOWN]  = - gravity_measurement_body[FRONT];
   unity_vector_front_body.normalize();
 
   float3vector unity_vector_right_body;
-#if 1
-  unity_vector_right_body = unity_vector_down_body.vector_multiply( unity_vector_front_body);
+  unity_vector_right_body[RIGHT] = + gravity_measurement_body[DOWN];
+  unity_vector_right_body[DOWN]  = - gravity_measurement_body[RIGHT];
+  unity_vector_right_body.normalize();
 #else
-  unity_vector_right_body[RIGHT] = unity_vector_down_body[DOWN];
-  unity_vector_right_body[DOWN]  = - unity_vector_down_body[RIGHT];
-#endif
+  // find two more unity vectors defining the corrected coordinate system
+  float3vector unity_vector_front_body;
+  unity_vector_front_body[FRONT] = unity_vector_down_body[DOWN];
+  unity_vector_front_body[DOWN]  = - unity_vector_down_body[FRONT]; // todo patch + sign appears to be wrong
+  unity_vector_front_body.normalize();
+
+  float3vector unity_vector_right_body;
+  unity_vector_right_body = unity_vector_down_body.vector_multiply( unity_vector_front_body);
   unity_vector_right_body.normalize();
 
   // fine tune the front vector using the other ones
   unity_vector_front_body = unity_vector_right_body.vector_multiply( unity_vector_down_body);
 
+#endif
+#if 0
+  float3vector unity_vector_right_body2 = unity_vector_down_body.vector_multiply( unity_vector_front_body);
+  float3vector unity_vector_front_body2 = unity_vector_right_body.vector_multiply( unity_vector_down_body);
+
+  unity_vector_right_body = (unity_vector_right_body + unity_vector_right_body2) * 0.5f;
+  unity_vector_front_body = (unity_vector_front_body + unity_vector_front_body2) * 0.5f;
+
+#endif
   // calculate the rotation matrix using our calibration data
   float3matrix observed_correction_matrix;
   observed_correction_matrix.e[FRONT][0]=unity_vector_front_body[0];
@@ -199,11 +215,17 @@ void setup_tester(void)
   quaternion<float> q_observed_correction;
   q_observed_correction.from_rotation_matrix(observed_correction_matrix);
 
-  eulerangle<float> correction_euler = q_observed_correction;
+  eulerangle<float> correction_euler_degrees = q_observed_correction;
 
-  correction_euler.roll  *= 180/M_PI;
-  correction_euler.pitch *= 180/M_PI;
-  correction_euler.yaw   *= 180/M_PI;
+  correction_euler_degrees.roll  *= 180/M_PI;
+  correction_euler_degrees.pitch *= 180/M_PI;
+  correction_euler_degrees.yaw   *= 180/M_PI;
+
+#if 0 // force yaw component to zero
+  eulerangle<float> correction_euler = q_observed_correction;
+  correction_euler.yaw = ZERO;
+  q_observed_correction.from_euler( correction_euler.roll, correction_euler.pitch, correction_euler.yaw);
+#endif
 
   // check if correction combined with old orientation setting fits
   quaternion <float> q_sensor_orientation_corrected;
