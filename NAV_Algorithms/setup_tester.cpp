@@ -11,8 +11,10 @@ const float test1[] ={ 1.0f, 0.0f, 0.0f};
 const float test2[] ={ 0.57735f, 0.57735f, -0.57735f};
 const float test3[] ={ 0.57735f, -0.57735f, 0.57735f};
 
-void setup_tester(void)
+void
+setup_tester (void)
 {
+#if 0
   // create measurements in aircraft body frame
   float3vector left_down_body( ldi);
   float3vector right_down_body( rdi);
@@ -108,149 +110,248 @@ void setup_tester(void)
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // pitch and roll axis fine tuning
+#endif
 
-  float sensor_orientation_roll  = 10.0f * M_PI_F / 180;
-  float sensor_orientation_pitch = +120.0f * M_PI_F / 180;
-  float sensor_orientation_yaw   = -145.0f * M_PI_F / 180;
+  double power_sum_1 = 0;
+  double power_sum_2 = 0;
+  unsigned outlier = 0;
 
-  float pitch_angle_delta = 3.0  * M_PI_F / 180; 	// sensor nose is higher than configured
-  float roll_angle_delta  = -4.0 * M_PI_F / 180; 	// sensor is looking more left than configured
+  unsigned count=0;
 
-  quaternion<float> q_sensor_orientation_configured;
-  q_sensor_orientation_configured.from_euler( sensor_orientation_roll, sensor_orientation_pitch, sensor_orientation_yaw);
+  for ( int  i = -180; i < 180; i += 10)
+      for ( int k = -180; k < 180; k += 10)
+	for ( int l = -180; l < 180; l += 10)
+	  for ( int m = -5; m < 5; ++m)
+	    for ( int n = -5; n < 5; ++n)
+	    {
+	      ++count;
+	      float sensor_orientation_roll  = i * M_PI_F / 180;
+	      float sensor_orientation_pitch = k * M_PI_F / 180;
+	      float sensor_orientation_yaw   = l * M_PI_F / 180;
 
-  quaternion<float> q_sensor_2_body_real;
-  q_sensor_2_body_real.from_euler( sensor_orientation_roll + roll_angle_delta, sensor_orientation_pitch + pitch_angle_delta, sensor_orientation_yaw);
+	      float pitch_angle_delta = m * M_PI_F / 180; // sensor nose is higher than configured
+	      float roll_angle_delta = n * M_PI_F / 180; // sensor is looking more left than configured
 
-  quaternion<float> q_body_2_sensor_real = q_sensor_2_body_real.inverse();
+	      quaternion<float> q_sensor_orientation_configured;
+	      q_sensor_orientation_configured.from_euler (
+		  sensor_orientation_roll, sensor_orientation_pitch,
+		  sensor_orientation_yaw);
 
-  float airframe_orientation_roll  = 0.0f;
-  float airframe_orientation_pitch = 0.0f;
-  float airframe_orientation_yaw   = 123.4f;
-  quaternion<float> q_airframe_orientation;
-  q_airframe_orientation.from_euler( airframe_orientation_roll, airframe_orientation_pitch, airframe_orientation_yaw);
+	      quaternion<float> q_sensor_2_body_real;
+	      q_sensor_2_body_real.from_euler (
+		  sensor_orientation_roll + roll_angle_delta,
+		  sensor_orientation_pitch + pitch_angle_delta,
+		  sensor_orientation_yaw);
 
-  quaternion<float> q_world_to_misaligned_sensor;
-  q_world_to_misaligned_sensor = q_body_2_sensor_real * q_airframe_orientation;
-  float3matrix m_world_to_misaligned_sensor;
-  q_world_to_misaligned_sensor.get_rotation_matrix( m_world_to_misaligned_sensor);
+	      quaternion<float> q_body_2_sensor_real =
+		  q_sensor_2_body_real.inverse ();
 
-  eulerangle<float> euler_misaligned_sensor = q_world_to_misaligned_sensor;
-  euler_misaligned_sensor.roll  *= 180/M_PI;
-  euler_misaligned_sensor.pitch *= 180/M_PI;
-  euler_misaligned_sensor.yaw   *= 180/M_PI;
+	      float airframe_orientation_roll = 0.0f;
+	      float airframe_orientation_pitch = 0.0f;
+	      float airframe_orientation_yaw = 123.4f;
+	      quaternion<float> q_airframe_orientation;
+	      q_airframe_orientation.from_euler (airframe_orientation_roll,
+						 airframe_orientation_pitch,
+						 airframe_orientation_yaw);
 
-  // make a measurement of the gravity vector,
-  // assuming no velocity change at this moment
-  float3vector gravity;
-  gravity[DOWN] = -9.81;
+	      quaternion<float> q_world_to_misaligned_sensor;
+	      q_world_to_misaligned_sensor = q_body_2_sensor_real
+		  * q_airframe_orientation;
+	      float3matrix m_world_to_misaligned_sensor;
+	      q_world_to_misaligned_sensor.get_rotation_matrix (
+		  m_world_to_misaligned_sensor);
 
-  // compute what the sensor will see
-  float3vector gravity_measurement_sensor;
-  gravity_measurement_sensor  = m_world_to_misaligned_sensor * gravity;
+	      eulerangle<float> euler_misaligned_sensor =
+		  q_world_to_misaligned_sensor;
+	      euler_misaligned_sensor.roll *= 180 / M_PI;
+	      euler_misaligned_sensor.pitch *= 180 / M_PI;
+	      euler_misaligned_sensor.yaw *= 180 / M_PI;
 
-  // map this to the airframe using the configured sensor orientation
-  float3matrix m_sensor_orientation_configured;
-  q_sensor_orientation_configured.get_rotation_matrix( m_sensor_orientation_configured);
+	      // make a measurement of the gravity vector,
+	      // assuming no velocity change at this moment
+	      float3vector gravity;
+	      gravity[DOWN] = -9.81;
 
-  float3vector gravity_measurement_body;
-  gravity_measurement_body = m_sensor_orientation_configured * gravity_measurement_sensor;
+	      // compute what the sensor will see
+	      float3vector gravity_measurement_sensor;
+	      gravity_measurement_sensor = m_world_to_misaligned_sensor
+		  * gravity;
 
-  // correct for "gravity pointing to minus "down" "
-  gravity_measurement_body.negate();
-  gravity_measurement_body.normalize();
+	      // map this to the airframe using the configured sensor orientation
+	      float3matrix m_sensor_orientation_configured;
+	      q_sensor_orientation_configured.get_rotation_matrix (
+		  m_sensor_orientation_configured);
 
-  // evaluate observed "down" direction in the body frame
-  float3vector unity_vector_down_body;
-  unity_vector_down_body = gravity_measurement_body;
-  unity_vector_down_body.normalize();
-#if 0
-  // find two more unity vectors defining the corrected coordinate system
-  float3vector unity_vector_front_body;
-  unity_vector_front_body[FRONT] = + gravity_measurement_body[DOWN];
-  unity_vector_front_body[DOWN]  = - gravity_measurement_body[FRONT];
-  unity_vector_front_body.normalize();
+	      float3vector gravity_measurement_body;
+	      gravity_measurement_body = m_sensor_orientation_configured
+		  * gravity_measurement_sensor;
 
-  float3vector unity_vector_right_body;
-  unity_vector_right_body[RIGHT] = + gravity_measurement_body[DOWN];
-  unity_vector_right_body[DOWN]  = - gravity_measurement_body[RIGHT];
-  unity_vector_right_body.normalize();
-#else
-  // find two more unity vectors defining the corrected coordinate system
-  float3vector unity_vector_front_body;
-  unity_vector_front_body[FRONT] = unity_vector_down_body[DOWN];
-  unity_vector_front_body[DOWN]  = - unity_vector_down_body[FRONT]; // todo patch + sign appears to be wrong
-  unity_vector_front_body.normalize();
+	      // correct for "gravity pointing to minus "down" "
+	      gravity_measurement_body.negate ();
+	      gravity_measurement_body.normalize ();
 
-  float3vector unity_vector_right_body;
-  unity_vector_right_body = unity_vector_down_body.vector_multiply( unity_vector_front_body);
-  unity_vector_right_body.normalize();
+	      // evaluate observed "down" direction in the body frame
+	      float3vector unity_vector_down_body;
+	      unity_vector_down_body = gravity_measurement_body;
+	      unity_vector_down_body.normalize ();
+#if 1
+	// find two more unity vectors defining the corrected coordinate system
+	float3vector unity_vector_front_body;
+	unity_vector_front_body[FRONT] = + gravity_measurement_body[DOWN];
+	unity_vector_front_body[DOWN] =  - gravity_measurement_body[FRONT];
+	unity_vector_front_body.normalize();
 
-  // fine tune the front vector using the other ones
-  unity_vector_front_body = unity_vector_right_body.vector_multiply( unity_vector_down_body);
+	float3vector unity_vector_right_body;
+	unity_vector_right_body[RIGHT] = + gravity_measurement_body[DOWN];
+	unity_vector_right_body[DOWN] = - gravity_measurement_body[RIGHT];
+	unity_vector_right_body.normalize();
+
+	unity_vector_front_body = unity_vector_right_body.vector_multiply( unity_vector_down_body);
+
+	#else
+	      // find two more unity vectors defining the corrected coordinate system
+	      float3vector unity_vector_front_body;
+	      unity_vector_front_body[FRONT] = unity_vector_down_body[DOWN];
+	      unity_vector_front_body[DOWN] = - unity_vector_down_body[FRONT]; // todo patch + sign appears to be wrong
+	      unity_vector_front_body.normalize ();
+
+	      float3vector unity_vector_right_body;
+	      unity_vector_right_body = unity_vector_down_body.vector_multiply (
+		  unity_vector_front_body);
+	      unity_vector_right_body.normalize ();
+
+	      // fine tune the front vector using the other ones
+	      unity_vector_front_body =
+		  unity_vector_right_body.vector_multiply (
+		      unity_vector_down_body);
 
 #endif
 #if 0
-  float3vector unity_vector_right_body2 = unity_vector_down_body.vector_multiply( unity_vector_front_body);
-  float3vector unity_vector_front_body2 = unity_vector_right_body.vector_multiply( unity_vector_down_body);
+		float3vector unity_vector_right_body2 = unity_vector_down_body.vector_multiply( unity_vector_front_body);
+		float3vector unity_vector_front_body2 = unity_vector_right_body.vector_multiply( unity_vector_down_body);
 
-  unity_vector_right_body = (unity_vector_right_body + unity_vector_right_body2) * 0.5f;
-  unity_vector_front_body = (unity_vector_front_body + unity_vector_front_body2) * 0.5f;
+		unity_vector_right_body = (unity_vector_right_body + unity_vector_right_body2) * 0.5f;
+		unity_vector_front_body = (unity_vector_front_body + unity_vector_front_body2) * 0.5f;
 
 #endif
-  // calculate the rotation matrix using our calibration data
-  float3matrix observed_correction_matrix;
-  observed_correction_matrix.e[FRONT][0]=unity_vector_front_body[0];
-  observed_correction_matrix.e[FRONT][1]=unity_vector_front_body[1];
-  observed_correction_matrix.e[FRONT][2]=unity_vector_front_body[2];
+	      // calculate the rotation matrix using our calibration data
+	      float3matrix observed_correction_matrix;
+	      observed_correction_matrix.e[FRONT][0] =
+		  unity_vector_front_body[0];
+	      observed_correction_matrix.e[FRONT][1] =
+		  unity_vector_front_body[1];
+	      observed_correction_matrix.e[FRONT][2] =
+		  unity_vector_front_body[2];
 
-  observed_correction_matrix.e[RIGHT][0]=unity_vector_right_body[0];
-  observed_correction_matrix.e[RIGHT][1]=unity_vector_right_body[1];
-  observed_correction_matrix.e[RIGHT][2]=unity_vector_right_body[2];
+	      observed_correction_matrix.e[RIGHT][0] =
+		  unity_vector_right_body[0];
+	      observed_correction_matrix.e[RIGHT][1] =
+		  unity_vector_right_body[1];
+	      observed_correction_matrix.e[RIGHT][2] =
+		  unity_vector_right_body[2];
 
-  observed_correction_matrix.e[DOWN][0]=unity_vector_down_body[0];
-  observed_correction_matrix.e[DOWN][1]=unity_vector_down_body[1];
-  observed_correction_matrix.e[DOWN][2]=unity_vector_down_body[2];
+	      observed_correction_matrix.e[DOWN][0] = unity_vector_down_body[0];
+	      observed_correction_matrix.e[DOWN][1] = unity_vector_down_body[1];
+	      observed_correction_matrix.e[DOWN][2] = unity_vector_down_body[2];
 
-  quaternion<float> q_observed_correction;
-  q_observed_correction.from_rotation_matrix(observed_correction_matrix);
+	      quaternion<float> q_observed_correction;
+	      q_observed_correction.from_rotation_matrix (
+		  observed_correction_matrix);
 
-  eulerangle<float> correction_euler_degrees = q_observed_correction;
+	      eulerangle<float> correction_euler_degrees = q_observed_correction;
 
-  correction_euler_degrees.roll  *= 180/M_PI;
-  correction_euler_degrees.pitch *= 180/M_PI;
-  correction_euler_degrees.yaw   *= 180/M_PI;
+	      correction_euler_degrees.roll *= 180 / M_PI;
+	      correction_euler_degrees.pitch *= 180 / M_PI;
+	      correction_euler_degrees.yaw *= 180 / M_PI;
 
 #if 0 // force yaw component to zero
-  eulerangle<float> correction_euler = q_observed_correction;
-  correction_euler.yaw = ZERO;
-  q_observed_correction.from_euler( correction_euler.roll, correction_euler.pitch, correction_euler.yaw);
+	eulerangle<float> correction_euler = q_observed_correction;
+	correction_euler.yaw = ZERO;
+	q_observed_correction.from_euler( correction_euler.roll, correction_euler.pitch, correction_euler.yaw);
 #endif
 
-  // check if correction combined with old orientation setting fits
-  quaternion <float> q_sensor_orientation_corrected;
-  q_sensor_orientation_corrected = q_observed_correction * q_sensor_orientation_configured;
+	      // check if correction combined with old orientation setting fits
+	      quaternion<float> q_sensor_orientation_corrected;
+	      q_sensor_orientation_corrected = q_observed_correction
+		  * q_sensor_orientation_configured;
 
-  float3matrix m_sensor_orientation_corrected;
-  q_sensor_orientation_corrected.get_rotation_matrix( m_sensor_orientation_corrected);
+	      float3matrix m_sensor_orientation_corrected;
+	      q_sensor_orientation_corrected.get_rotation_matrix (
+		  m_sensor_orientation_corrected);
 
-  // now we check if gravity points down using the corrected sensor orientation
-  gravity_measurement_body = m_sensor_orientation_corrected * gravity_measurement_sensor;
+	      // now we check if gravity points down using the corrected sensor orientation
+	      gravity_measurement_body = m_sensor_orientation_corrected
+		  * gravity_measurement_sensor;
 
-  // now we check if the north unit vector stays north
-  float3vector north;
-  north[NORTH] = 1.0f;
+	      // now we check if the orientation vectors are stable
+	      float3vector orientation;
 
-  float3vector attitude_measurement_sensor;
-  attitude_measurement_sensor  = m_world_to_misaligned_sensor * north;
-  float3vector attitude_measurement_body;
-  attitude_measurement_body = m_sensor_orientation_corrected * attitude_measurement_sensor;
+	      orientation[NORTH] = 1.0f;
+	      orientation[EAST] = 0.0f;
+	      orientation[DOWN] = 0.0f;
 
-  float3matrix m_world_2_body;
-  q_airframe_orientation.get_rotation_matrix( m_world_2_body);
+	      float3vector attitude_measurement_sensor;
+	      attitude_measurement_sensor = m_world_to_misaligned_sensor
+		  * orientation;
+	      float3vector attitude_measurement_body;
+	      attitude_measurement_body = m_sensor_orientation_corrected
+		  * attitude_measurement_sensor;
 
-  float3vector attitude_measurement_world;
-  attitude_measurement_world = m_world_2_body.reverse_map( attitude_measurement_body);
+	      float3matrix m_world_2_body;
+	      q_airframe_orientation.get_rotation_matrix (m_world_2_body);
+
+	      float3vector attitude_measurement_world;
+	      attitude_measurement_world = m_world_2_body.reverse_map (
+		  attitude_measurement_body);
+
+	      if ( SQR(attitude_measurement_world[1]) > 0.008)
+		++outlier;
+
+	      power_sum_1 += SQR(attitude_measurement_world[1]);
+	      power_sum_2 += SQR(attitude_measurement_world[2]);
+
+	      orientation[NORTH] = 0.0f;
+	      orientation[EAST] = 1.0f;
+	      orientation[DOWN] = 0.0f;
+
+	      attitude_measurement_sensor = m_world_to_misaligned_sensor
+		  * orientation;
+	      attitude_measurement_body = m_sensor_orientation_corrected
+		  * attitude_measurement_sensor;
+
+	      q_airframe_orientation.get_rotation_matrix (m_world_2_body);
+
+	      attitude_measurement_world = m_world_2_body.reverse_map (
+		  attitude_measurement_body);
+
+	      if ( SQR(attitude_measurement_world[0]) > 0.008)
+		++outlier;
+
+	      power_sum_1 += SQR(attitude_measurement_world[0]);
+	      power_sum_2 += SQR(attitude_measurement_world[2]);
+
+	      orientation[NORTH] = 0.0f;
+	      orientation[EAST] = 0.0f;
+	      orientation[DOWN] = 1.0f;
+
+	      attitude_measurement_sensor = m_world_to_misaligned_sensor
+		  * orientation;
+	      attitude_measurement_body = m_sensor_orientation_corrected
+		  * attitude_measurement_sensor;
+
+	      q_airframe_orientation.get_rotation_matrix (m_world_2_body);
+
+	      attitude_measurement_world = m_world_2_body.reverse_map (
+		  attitude_measurement_body);
+
+	      if ( SQR(attitude_measurement_world[0]) > 0.008)
+		++outlier;
+
+	      power_sum_1 += SQR(attitude_measurement_world[0]);
+	      power_sum_2 += SQR(attitude_measurement_world[1]);
+
+	    }
+  double rms1 = sqrt(power_sum_1 / count);
+  double rms2 = sqrt(power_sum_2 / count);
 }
-
 
