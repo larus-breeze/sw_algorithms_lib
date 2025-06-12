@@ -29,6 +29,11 @@
 #include "system_state.h"
 #include "CAN_gateway.h"
 
+#ifndef   ACQUIRE_GNSS_DATA_GUARD
+#define   ACQUIRE_GNSS_DATA_GUARD()
+#define   RELEASE_GNSS_DATA_GUARD()
+#endif
+
 enum CAN_ID_SENSOR
 {
   // all values in SI-STD- (metric) units, angles in radians
@@ -130,6 +135,8 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
   p.data_f[0] = x.magnetic_disturbance;
   CAN_send(p, 1);
 
+  ACQUIRE_GNSS_DATA_GUARD();
+
   p.id=CAN_Id_GPS_Date_Time;
   p.dlc=7;
   p.data_h[0] = x.c.year + 2000; // GNSS reports only 2000 + x
@@ -150,6 +157,8 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
   // longitude handled in degrees internally
   p.data_d = x.c.longitude * M_PI / 180.0;
   CAN_send(p, 1);
+
+  RELEASE_GNSS_DATA_GUARD();
 
   p.id=CAN_Id_GPS_Alt;
   p.dlc=8;
