@@ -29,6 +29,11 @@
 #include "system_state.h"
 #include "CAN_gateway.h"
 
+#ifndef   ACQUIRE_GNSS_DATA_GUARD
+#define   ACQUIRE_GNSS_DATA_GUARD()
+#define   RELEASE_GNSS_DATA_GUARD()
+#endif
+
 enum CAN_ID_SENSOR
 {
   // all values in SI-STD- (metric) units, angles in radians
@@ -130,26 +135,34 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
   p.data_f[0] = x.magnetic_disturbance;
   CAN_send(p, 1);
 
+
   p.id=CAN_Id_GPS_Date_Time;
   p.dlc=7;
+
+  ACQUIRE_GNSS_DATA_GUARD();
+
   p.data_h[0] = x.c.year + 2000; // GNSS reports only 2000 + x
   p.data_b[2] = x.c.month;
   p.data_b[3] = x.c.day;
   p.data_b[4] = x.c.hour;
   p.data_b[5] = x.c.minute;
   p.data_b[6] = x.c.second;
-  CAN_send(p, 1);
 
-  p.id=CAN_Id_GPS_Lat;
-  p.dlc=8;
-  // latitude handled in degrees internally
-  p.data_d = x.c.latitude * M_PI / 180.0;
-  CAN_send(p, 1);
+  {
+    CANpacket q( CAN_Id_GPS_Lat, 8);
+    // latitude handled in degrees internally
+    q.data_d = x.c.latitude * M_PI / 180.0;
 
-  p.id=CAN_Id_GPS_Lon;
-  // longitude handled in degrees internally
-  p.data_d = x.c.longitude * M_PI / 180.0;
-  CAN_send(p, 1);
+    CANpacket r( CAN_Id_GPS_Lon, 8);
+    // longitude handled in degrees internally
+    r.data_d = x.c.longitude * M_PI / 180.0;
+
+    RELEASE_GNSS_DATA_GUARD();
+
+    CAN_send(p, 1);
+    CAN_send(q, 1);
+    CAN_send(r, 1);
+  }
 
   p.id=CAN_Id_GPS_Alt;
   p.dlc=8;
