@@ -22,6 +22,10 @@ public:
 
     return retv;
   }
+  void set( const data_t & input)
+  {
+    last_output = input;
+  }
 private:
   data_t last_output;
 };

@@ -50,6 +50,9 @@ AHRS_type::attitude_setup (const float3vector &acceleration,
   else
     induction = mag;
 
+  for( unsigned i=0; i<3; ++i)
+    mag_filter[i].set( induction[i]);
+
   down = acceleration;
 
   down.negate ();
