@@ -131,10 +131,10 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
   CAN_send(p, 1);
 
   p.id=CAN_Id_Sensor_Health;
-  p.dlc=4;
+  p.dlc=8;
   p.data_f[0] = x.magnetic_disturbance;
+  p.data_f[1] = x.c.speed_acc;
   CAN_send(p, 1);
-
 
   p.id=CAN_Id_GPS_Date_Time;
   p.dlc=7;
