@@ -180,11 +180,7 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
   p.dlc=2;
   p.data_b[0] = x.c.SATS_number;
   p.data_b[1] = x.c.sat_fix_type;
-
-  if( CAN_send(p, 1)) // check CAN for timeout this time
-    system_state |= CAN_OUTPUT_ACTIVE;
-  else
-    system_state &= ~CAN_OUTPUT_ACTIVE;
+  CAN_send(p, 1);
 
   p.id=CAN_Id_SystemState;
   p.dlc=8;
