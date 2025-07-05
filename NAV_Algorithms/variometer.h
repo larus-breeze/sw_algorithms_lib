@@ -50,7 +50,7 @@ class variometer_t
 public:
   variometer_t( void)
   :
-    vario_averager_pressure( FAST_SAMPLING_TIME / configuration( VARIO_TC)),
+    vario_averager_pressure( FAST_SAMPLING_TIME / configuration( VARIO_P_TC)),
     vario_averager_GNSS( FAST_SAMPLING_TIME / configuration( VARIO_TC)),
     kinetic_energy_differentiator( 1.0f, FAST_SAMPLING_TIME),
     KalmanVario_GNSS( 0.0f, 0.0f, 0.0f, - GRAVITY),
@@ -76,7 +76,7 @@ public:
 
   void tune( void)
   {
-    vario_averager_pressure.tune( FAST_SAMPLING_TIME / configuration( VARIO_TC));
+    vario_averager_pressure.tune( FAST_SAMPLING_TIME / configuration( VARIO_P_TC));
     vario_averager_GNSS.tune( FAST_SAMPLING_TIME / configuration( VARIO_TC));
   }
 
