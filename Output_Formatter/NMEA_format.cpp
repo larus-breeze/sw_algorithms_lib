@@ -385,6 +385,7 @@ ROM char PLARS_MC[]="MC,";
 ROM char PLARS_BAL[]="BAL,";
 ROM char PLARS_BUGS[]="BUGS,";
 ROM char PLARS_QNH[]="QNH,";
+ROM char PLARS_CIR[]="CIR,";
 //! format setting NMEA for MacCready, Ballast, Bugs, QNH
 void format_PLARS ( float value, PLARS_TYPES option, char * &p)
 {
@@ -396,23 +397,30 @@ void format_PLARS ( float value, PLARS_TYPES option, char * &p)
     case MC:   //MC MacCready m/s (0.0 - 9.9)
       p = append_string( p, PLARS_MC);
       p=to_ascii_1_decimal(float32_t(value * 10.0), p);
-
       break;
     case BAL:  //BAL Ballast (fraction of water ballast 0.000 - 1.000)
       p = append_string( p, PLARS_BAL);
       p=to_ascii_2_decimals(float32_t(value * 100.0), p);
-
       break;
     case BUGS:  //BUGS Bugs in % (0 - 50)
       p = append_string( p, PLARS_BUGS);
       p=to_ascii_2_decimals(float32_t(value * 100.0), p);
-
         break;
     case QNH:  //QNH QNH in hPa
       p = append_string( p, PLARS_QNH);
       p=to_ascii_2_decimals(float32_t(value * 100.0), p);
-
         break;
+    case CIR: //1 == Circling or 0 == Cruising
+      p = append_string( p, PLARS_CIR);
+      if (value < 0.5)  // CAN definition 0 == Vario
+	{
+	  p = append_string( p, "1"); // NMEA Circling CIR,1
+	}
+      else  // 1 == SpeedToFly
+	{
+	  p = append_string( p, "0"); // NMEA Cruise Mode CIR,0
+	}
+      break;
     default:
       //NOTE: this shall not happen
       break;
