@@ -22,7 +22,8 @@ enum PLARS_TYPES{
   MC = 0,
   BAL,
   BUGS,
-  QNH
+  QNH,
+  CIR
 };
 
 //! combine all data to be output to the NMEA port
