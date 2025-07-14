@@ -410,19 +410,15 @@ void AHRS_type::handle_magnetic_calibration ( void)
 {
   bool calibration_changed = compass_calibration.set_calibration_if_changed ( mag_calibration_data_collector_right_turn, mag_calibration_data_collector_left_turn, MAG_SCALE);
 
-#if REPORT_MAGNETIC_CALIBRATION == 1
-
   if( calibration_changed)
     {
+#if REPORT_MAGNETIC_CALIBRATION == 1
       magnetic_induction_report_t magnetic_induction_report;
       for( unsigned i=0; i<3; ++i)
 	magnetic_induction_report.calibration[i] = (compass_calibration.get_calibration())[i];
-
+#endif
       magnetic_calibration_updated = true;
     }
-#else
-  (void)calibration_changed;
-#endif
 }
 
 void AHRS_type::filter_magnetic_induction( const float3vector &gyro, float3vector &mag)
