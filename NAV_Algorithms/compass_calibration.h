@@ -107,12 +107,16 @@ public:
   bool set_calibration_if_changed(
       linear_least_square_fit<sample_type, evaluation_type> mag_calibrator_right[3],
       linear_least_square_fit<sample_type, evaluation_type> mag_calibrator_left[3],
-      float scale_factor)
+      float scale_factor,
+      bool mag_calibration_poor)
   {
-    if( ( mag_calibrator_right[0].get_count() < MINIMUM_MAG_CALIBRATION_SAMPLES) )
-      return false;
-    if( ( mag_calibrator_left[0].get_count() < MINIMUM_MAG_CALIBRATION_SAMPLES) )
-      return false;
+    bool have_left = false;
+    bool have_right = false;
+
+    if( ( mag_calibrator_right[0].get_count() > MINIMUM_MAG_CALIBRATION_SAMPLES) )
+      have_right = true;
+    if( ( mag_calibrator_left[0].get_count() > MINIMUM_MAG_CALIBRATION_SAMPLES) )
+      have_left = true;
 
     // now we have enough entropy and evaluate our result
     linear_least_square_result< float> new_calibration_data_right[3];
@@ -121,23 +125,45 @@ public:
 
     for (unsigned i = 0; i < 3; ++i)
       {
-	mag_calibrator_right[i].evaluate( new_calibration_data_right[i]);
-	mag_calibrator_left[i].evaluate( new_calibration_data_left[i]);
+	if( have_right)
+	  mag_calibrator_right[i].evaluate( new_calibration_data_right[i]);
+	if( have_left)
+	  mag_calibrator_left[i].evaluate( new_calibration_data_left[i]);
 
-	calibration_candidate[i].refresh(
-	    (new_calibration_data_right[i].y_offset + new_calibration_data_left[i].y_offset) / scale_factor / TWO,
-	    (new_calibration_data_right[i].slope    + new_calibration_data_left[i].slope)    /  TWO,
-	    (new_calibration_data_right[i].variance_offset + new_calibration_data_left[i].variance_offset) / SQR(scale_factor) / TWO,
-	    (new_calibration_data_right[i].variance_slope  + new_calibration_data_left[i].variance_slope)  / TWO);
+	if( have_right && have_left)
+	  {
+		  calibration_candidate[i].refresh(
+		    (new_calibration_data_right[i].y_offset + new_calibration_data_left[i].y_offset) / scale_factor / TWO,
+		    (new_calibration_data_right[i].slope    + new_calibration_data_left[i].slope)    /  TWO,
+		    (new_calibration_data_right[i].variance_offset + new_calibration_data_left[i].variance_offset) / SQR(scale_factor) / TWO,
+		    (new_calibration_data_right[i].variance_slope  + new_calibration_data_left[i].variance_slope)  / TWO);
 
-	mag_calibrator_right[i].reset();
-	mag_calibrator_left[i].reset();
+		    mag_calibrator_right[i].reset();
+		    mag_calibrator_left[i].reset();
+	  }
+	else
+	  {
+	    if( mag_calibration_poor && have_right)
+	      {
+		  calibration_candidate[i].refresh(
+		    (new_calibration_data_right[i].y_offset) / scale_factor,
+		    new_calibration_data_right[i].slope,
+		    new_calibration_data_right[i].variance_offset / SQR(scale_factor),
+		    new_calibration_data_right[i].variance_slope);
+	      }
+	    else if( mag_calibration_poor && have_left)
+	      {
+		  calibration_candidate[i].refresh(
+		    (new_calibration_data_left[i].y_offset) / scale_factor,
+		    new_calibration_data_left[i].slope,
+		    new_calibration_data_left[i].variance_offset / SQR(scale_factor),
+		    new_calibration_data_left[i].variance_slope);
+	      }
+	    else
+	      return false; // have none
+	  }
       }
 
-    if( ! parameters_changed_significantly ( calibration_candidate))
-	return false; // we keep the old calibration
-
-    // now we take the new calibration
     for (unsigned i = 0; i < 3; ++i)
       calibration[i] = calibration_candidate[i];
 
@@ -152,22 +178,6 @@ public:
   const single_axis_calibration_t *get_calibration(void) const
   {
     return calibration_done ? calibration : 0;
-  }
-
-  bool parameters_changed_significantly ( single_axis_calibration_t const *new_calibration) const
-  {
-    for( unsigned i=0; i<3; ++i)
-      {
-	if( fabs( new_calibration[i].offset - calibration[i].offset) > MAG_OFFSET_CHANGE_LIMIT)
-	  return true;
-
-	if( fabs( new_calibration[i].scale - calibration[i].scale) > MAG_SCALE_CHANGE_LIMIT)
-	  return true;
-
-	if( new_calibration[i].variance < calibration[i].variance)
-	  return true;
-}
-    return false;
   }
 
   void write_into_EEPROM (void) const
