@@ -157,7 +157,7 @@ AHRS_type::AHRS_type (float sampling_time)
   antenna_RIGHT_correction( configuration( ANT_SLAVE_RIGHT) / configuration( ANT_BASELENGTH)),
   heading_difference_AHRS_DGNSS(0.0f),
   cross_acc_correction(0.0f),
-  magnetic_disturbance(0.0f),
+  magnetic_disturbance_averager( 0.001f),
   magnetic_control_gain(1.0f),
   automatic_magnetic_calibration( (magnetic_calibration_type)(round)(configuration(MAG_AUTO_CALIB))),
   magnetic_calibration_updated( false)
@@ -223,7 +223,7 @@ AHRS_type::update_attitude ( const float3vector &acc,
   slip_angle_averager.respond( ATAN2( -acc[RIGHT], -acc[DOWN]));
   pitch_angle_averager.respond( ATAN2( +acc[FRONT], -acc[DOWN]));
   G_load_averager.respond( acc.abs());
-  magnetic_disturbance = (induction_nav_frame - expected_nav_induction).abs();
+  magnetic_disturbance_averager.feed( (induction_nav_frame - expected_nav_induction).abs() );
 }
 
 /**
@@ -399,7 +399,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 
 void AHRS_type::write_calibration_into_EEPROM( void)
 {
-  if( !magnetic_calibration_updated)
+  if( ! magnetic_calibration_updated)
     return;
 
   compass_calibration.write_into_EEPROM();
@@ -408,7 +408,8 @@ void AHRS_type::write_calibration_into_EEPROM( void)
 
 void AHRS_type::handle_magnetic_calibration ( void)
 {
-  bool calibration_changed = compass_calibration.set_calibration_if_changed ( mag_calibration_data_collector_right_turn, mag_calibration_data_collector_left_turn, MAG_SCALE);
+  bool poor_mag_calibration = magnetic_disturbance_averager.get_output() > MAGNETIC_DISTURBANCE_LIMIT;
+  bool calibration_changed = compass_calibration.set_calibration_if_changed ( mag_calibration_data_collector_right_turn, mag_calibration_data_collector_left_turn, MAG_SCALE, poor_mag_calibration);
 
 #if REPORT_MAGNETIC_CALIBRATION == 1
 

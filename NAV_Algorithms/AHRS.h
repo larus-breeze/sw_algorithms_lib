@@ -35,6 +35,7 @@
 #include "HP_LP_fusion.h"
 #include "pt2.h"
 #include "slope_limiter.h"
+#include "RMS_rectifier.h"
 
 extern float3vector nav_induction;
 
@@ -176,7 +177,7 @@ public:
 
   float getMagneticDisturbance () const
   {
-    return magnetic_disturbance;
+    return magnetic_disturbance_averager.get_output();
   }
 
   float3vector getBodyInductionError () const
@@ -242,7 +243,7 @@ private:
   float antenna_RIGHT_correction; //!< slave antenna more right / DGNSS base length
   float heading_difference_AHRS_DGNSS;
   float cross_acc_correction;
-  float magnetic_disturbance; //!< abs( observed_induction - expected_induction)
+  RMS_rectifier <float> magnetic_disturbance_averager; //!< abs( observed_induction - expected_induction)
   float magnetic_control_gain; //!< declination-dependent magnetic control loop gain
   magnetic_calibration_type automatic_magnetic_calibration;
   bool magnetic_calibration_updated;
