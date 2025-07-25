@@ -84,8 +84,6 @@ void navigator_t::update_GNSS_data( const coordinates_t &coordinates)
 // to be called at 10 Hz
 bool navigator_t::update_at_10Hz ()
 {
-  bool landing_detected=false;
-
   atmosphere.update_density( -GNSS_negative_altitude, GNSS_fix_type > 0);
 
   wind_observer.process_at_10_Hz( ahrs);
@@ -94,29 +92,33 @@ bool navigator_t::update_at_10Hz ()
 			   ahrs.get_euler ().yaw,
 			   ahrs.get_circling_state ());
 
-  unsigned airborne_criteria_fulfilled = 0;
-  if( abs( variometer.get_speed_compensation_GNSS()) > AIRBORNE_TRIGGER_SPEED_COMP)
-    ++ airborne_criteria_fulfilled;
+  bool landing_detected=false;
 
-  if( GNSS_velocity.abs() > AIRBORNE_TRIGGER_SPEED)
-    ++ airborne_criteria_fulfilled;
-
-  if( IAS > AIRBORNE_TRIGGER_SPEED)
-    ++ airborne_criteria_fulfilled;
-
-  // if at least 2 of 3 criteria apply, we believe to be airborne
-  airborne_detector.report_to_be_airborne( airborne_criteria_fulfilled > 1);
-  if( airborne_detector.detect_just_landed())
+  if( GNSS_fix_type > 0)
     {
-      ahrs.write_calibration_into_EEPROM();
-      landing_detected = true;
+      unsigned airborne_criteria_fulfilled = 0;
+      if( abs( variometer.get_speed_compensation_GNSS()) > AIRBORNE_TRIGGER_SPEED_COMP)
+	++ airborne_criteria_fulfilled;
+
+      if( GNSS_velocity.abs() > AIRBORNE_TRIGGER_SPEED)
+	++ airborne_criteria_fulfilled;
+
+      if( IAS > AIRBORNE_TRIGGER_SPEED)
+	++ airborne_criteria_fulfilled;
+
+      // if at least 2 of 3 criteria apply, we believe to be airborne
+      airborne_detector.report_to_be_airborne( airborne_criteria_fulfilled > 1);
+      if( airborne_detector.detect_just_landed())
+	{
+	  ahrs.write_calibration_into_EEPROM();
+	  landing_detected = true;
+	}
+
+      if( airborne_detector.is_airborne())
+	atmosphere.air_density_metering(
+	    air_pressure_resampler_100Hz_10Hz.get_output(),
+	    variometer.get_filtered_GNSS_altitude());
     }
-
-  if( airborne_detector.is_airborne())
-    atmosphere.air_density_metering(
-	air_pressure_resampler_100Hz_10Hz.get_output(),
-	variometer.get_filtered_GNSS_altitude());
-
 
   return landing_detected;
 }
