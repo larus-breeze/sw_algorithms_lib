@@ -326,7 +326,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   expected_body_induction = body2nav.reverse_map( expected_nav_induction);
 
 #if USE_SOFT_IRON_COMPENSATION
-  if( automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE)
+//  if( automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE)
     body_induction = body_induction - soft_iron_compensator.compensate( expected_body_induction, attitude);
 #endif
 

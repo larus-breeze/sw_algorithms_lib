@@ -169,7 +169,7 @@ bool soft_iron_compensator_t::calculate( void)
 	  start_learning(); // discard data
 	  return false;
 	}
-#if 0	    // use average between new and old parameter set
+#if 1	    // use average between new and old parameter set
       if( buffer_used_for_calibration != INVALID) // if we already had a valid parameter set
 	{
 	  int other_buffer = next_buffer == 1 ? 0 : 1;
