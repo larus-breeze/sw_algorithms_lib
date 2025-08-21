@@ -237,8 +237,8 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 			     float GNSS_heading)
 {
   float3vector mag = mag_sensor; // make it writable
-  filter_magnetic_induction( gyro, mag);
   body_induction = compass_calibration.calibrate(mag);
+  filter_magnetic_induction( gyro, body_induction);
 
   expected_body_induction = body2nav.reverse_map( expected_nav_induction);
 
@@ -320,13 +320,13 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 			   const float3vector &GNSS_acceleration)
 {
   float3vector mag = mag_sensor;
-  filter_magnetic_induction( gyro, mag);
   body_induction = compass_calibration.calibrate(mag);
+  filter_magnetic_induction( gyro, body_induction);
 
   expected_body_induction = body2nav.reverse_map( expected_nav_induction);
 
 #if USE_SOFT_IRON_COMPENSATION
-//  if( automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE)
+  if( automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE)
     body_induction = body_induction - soft_iron_compensator.compensate( expected_body_induction, attitude);
 #endif
 
