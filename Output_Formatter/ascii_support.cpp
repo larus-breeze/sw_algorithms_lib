@@ -126,7 +126,7 @@ char * my_ftoa( char * target, float value)
  		--exponent;
  	}
 
- 	value += 0.0000005; // rounding, not truncating ...
+ 	value += 0.0000005f; // rounding, not truncating ...
 
  	uint8_t digit = (uint8_t)value;
  	value -= (float)digit;
