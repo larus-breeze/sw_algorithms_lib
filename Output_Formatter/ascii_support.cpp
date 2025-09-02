@@ -103,7 +103,7 @@ char * my_ftoa( char * target, float value)
  		*target++='-';
  		value = -value;
  	}
- 	else if( value == 0.0f)
+ 	if( value < 0.0000001f)
  	{
  		*target++='0';
  		*target++='.';
@@ -126,14 +126,12 @@ char * my_ftoa( char * target, float value)
  		--exponent;
  	}
 
- 	value += 0.0000005f; // rounding, not truncating ...
-
  	uint8_t digit = (uint8_t)value;
  	value -= (float)digit;
  	*target++ = (char)(digit + '0');
  	*target++ = '.';
 
- 	for( unsigned i=0; i<6; ++i)
+ 	for( unsigned i=0; i<7; ++i)
  	  {
  	    value *= 10.0f;
 	    digit = (uint8_t)value;
