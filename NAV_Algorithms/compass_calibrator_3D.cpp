@@ -39,7 +39,7 @@ bool compass_calibrator_3D_t::learn (const float3vector &observed_induction,cons
   if( present_heading <0.0f)
     present_heading += M_PI_F * TWO;
 
-  unsigned sector_index = (turning_right ? OBSERVATIONS / TWO : 0) + (unsigned)(present_heading * RECIP_SECTOR_SIZE);
+  int sector_index = (turning_right ? OBSERVATIONS / TWO : 0) + (unsigned)(present_heading * RECIP_SECTOR_SIZE);
 
   // if we have just left the last sector to be collected: report ready for computation
   if( ( last_sector_collected != -1) && ( sector_index != last_sector_collected) && (++measurement_counter > 10000))

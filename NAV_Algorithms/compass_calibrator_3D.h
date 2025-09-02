@@ -102,8 +102,8 @@ public:
 private:
   int buffer_used_for_calibration;
   unsigned populated_sectors;
-  unsigned last_sector_collected;
-  unsigned measurement_counter;
+  int last_sector_collected;
+  int measurement_counter;
   computation_float_type c[2][AXES][PARAMETERS]; // double buffering for multi-thrading support
   computation_float_type target_vector[AXES][OBSERVATIONS];
   computation_float_type observation_matrix[AXES][OBSERVATIONS][PARAMETERS];
