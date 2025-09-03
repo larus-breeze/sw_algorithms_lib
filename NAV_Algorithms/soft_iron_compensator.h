@@ -99,6 +99,11 @@ float3vector compensate( const float3vector &induction, const quaternion<float> 
     buffer_used_for_calibration = next_buffer;
   }
 
+  unsigned get_parameters_size( void)
+  {
+    return sizeof(computation_float_type) * AXES * PARAMETERS;
+  }
+
 private:
   int buffer_used_for_calibration;
   unsigned populated_sectors;

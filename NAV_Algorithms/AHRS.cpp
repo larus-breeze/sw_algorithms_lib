@@ -118,7 +118,7 @@ void AHRS_type::feed_magnetic_induction_observer( const float3vector &mag_sensor
   bool turning_right = turn_rate_averager.get_output() > 0.0f;
 
 #if USE_SOFT_IRON_COMPENSATION
-  if( mag_delta.abs() < 0.05) // only if the precision is already reasonably good ...
+  if( mag_delta.abs() < 0.05) // only if the precision is already reasonably good
     {
       bool calibration_data_complete = soft_iron_compensator.learn( mag_delta, attitude, turning_right, error_margin);
       if( calibration_data_complete)
@@ -226,7 +226,7 @@ AHRS_type::update_attitude ( const float3vector &acc,
   magnetic_disturbance_averager.feed( (induction_nav_frame - expected_nav_induction).abs() );
 }
 
-/**
+ /**
  * @brief  update attitude from IMU data D-GNSS compass
  */
 void
@@ -238,16 +238,26 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 {
   float3vector mag = mag_sensor; // make it writable
   filter_magnetic_induction( gyro, mag);
+
   body_induction = compass_calibration.calibrate(mag);
 
   expected_body_induction = body2nav.reverse_map( expected_nav_induction);
+
+  float3vector error;
+  error[0] = 0.17f;
+  error[1] = 0.19f;
+  error[2] = -0.23f;
+
+  float error_magnitude = error.operator *( expected_body_induction);
+  error = error.operator *( error_magnitude);
+  body_induction += error;
+
+  body_induction_error = body_induction - expected_body_induction;
 
 #if USE_SOFT_IRON_COMPENSATION
   if( automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE)
     body_induction = body_induction - soft_iron_compensator.compensate( expected_body_induction, attitude);
 #endif
-
-  body_induction_error = body_induction - expected_body_induction;
 
   float3vector nav_acceleration = body2nav * acc;
 
