@@ -28,6 +28,7 @@
 #endif
 
 #include "soft_iron_compensator.h"
+#include "NAV_tuning_parameters.h"
 #include "embedded_math.h"
 
 #include <matrix_functions.h>
@@ -169,12 +170,12 @@ bool soft_iron_compensator_t::calculate( void)
 	  start_learning(); // discard data
 	  return false;
 	}
-#if 0	    // use average between new and old parameter set
+#ifdef SOFT_IRON_LETHARGY  // if != 0 : use average between new and old parameter set
       if( buffer_used_for_calibration != INVALID) // if we already had a valid parameter set
 	{
 	  int other_buffer = next_buffer == 1 ? 0 : 1;
 	  for( unsigned i=0; i<PARAMETERS; ++i)
-	    c[next_buffer][axis][i] = c[next_buffer][axis][i] * 0.25 + c[other_buffer][axis][i] * 0.75;
+	    c[next_buffer][axis][i] = c[next_buffer][axis][i] * (1.0f - SOFT_IRON_LETHARGY) + c[other_buffer][axis][i] * (SOFT_IRON_LETHARGY);
 	}
 #endif
     }

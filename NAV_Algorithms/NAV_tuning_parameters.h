@@ -28,7 +28,7 @@
 #define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
 #define MAGNETIC_DISTURBANCE_LIMIT 0.1f
 #define USE_SOFT_IRON_COMPENSATION	1
-
+#define SOFT_IRON_LETHARGY		0.8f
 #define MAX_EXPECTED_INDUCTION_SLOPE	1.1f
 
 #define CIRCLE_LIMIT (10 * 100) //!< 10 * 1/100 s delay into / out of circling state
