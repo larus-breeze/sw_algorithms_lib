@@ -319,18 +319,18 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 			   const float3vector &mag_sensor,
 			   const float3vector &GNSS_acceleration)
 {
-  float3vector mag = mag_sensor;
+  float3vector mag = mag_sensor; // make it writable
   filter_magnetic_induction( gyro, mag);
+
   body_induction = compass_calibration.calibrate(mag);
 
   expected_body_induction = body2nav.reverse_map( expected_nav_induction);
+  body_induction_error = body_induction - expected_body_induction;
 
 #if USE_SOFT_IRON_COMPENSATION
   if( automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE)
     body_induction = body_induction - soft_iron_compensator.compensate( expected_body_induction, attitude);
 #endif
-
-  body_induction_error = body_induction - expected_body_induction;
 
   float3vector nav_acceleration = body2nav * acc;
   float3vector nav_induction = body2nav * body_induction;
@@ -390,7 +390,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   // only here we get fresh magnetic entropy
   // and: wait for low control loop error
   if ( (circling_state == CIRCLING) && ( nav_correction.abs() < NAV_CORRECTION_LIMIT))
-    feed_magnetic_induction_observer (mag_sensor, body_induction_error);
+    feed_magnetic_induction_observer (mag, body_induction_error);
 
  // when circling is finished eventually update the magnetic calibration
  if (automatic_magnetic_calibration && (old_circle_state == CIRCLING) && (circling_state == TRANSITION))
