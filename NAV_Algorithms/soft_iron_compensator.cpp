@@ -183,12 +183,21 @@ bool soft_iron_compensator_t::calculate( void)
   buffer_used_for_calibration = next_buffer; // switch now in a thread-save manner
 
 #if PRINT_PARAMETERS
-
+  float max;
+  unsigned index;
   for( unsigned k=0; k < AXES; ++k)
     {
+      max = 0.0f;
       for( unsigned i=0; i<PARAMETERS; ++i)
-	printf("%e\t", (double)(c[next_buffer][k][i]));
-      printf("\n");
+	{
+	  if( abs(c[next_buffer][k][i] ) > max)
+	    {
+	      max = abs(c[next_buffer][k][i]);
+	      index = i;
+	    }
+	  printf("%e\t", (double)(c[next_buffer][k][i]));
+	}
+      printf("max = c(%d) = %e\n", index, max);
     }
   printf("\n");
 #endif
