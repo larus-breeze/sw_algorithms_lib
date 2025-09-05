@@ -103,7 +103,7 @@ char * my_ftoa( char * target, float value)
  		*target++='-';
  		value = -value;
  	}
- 	else if( value == 0.0f)
+ 	if( value < 0.0000001f)
  	{
  		*target++='0';
  		*target++='.';
@@ -131,66 +131,17 @@ char * my_ftoa( char * target, float value)
  	*target++ = (char)(digit + '0');
  	*target++ = '.';
 
- 	value *= 1000000.0f;
- 	unsigned fractional_number = round( value);
- 	for( unsigned digit=0; digit<6; ++digit)
+ 	for( unsigned i=0; i<7; ++i)
  	  {
- 	    target[5-digit] = (char)(fractional_number % 10 + '0');
- 	    fractional_number /= 10;
+ 	    value *= 10.0f;
+	    digit = (uint8_t)value;
+	    value -= (float)digit;
+	    *target++ = (char)(digit + '0');
  	  }
- 	target+=6;
+
  	*target++='e';
  	return( my_itoa( target, (int)exponent));
  }
-
-void portable_ftoa ( char* res, float value, unsigned  no_of_decimals, unsigned res_len )
-{
-//	ASSERT( no_of_decimals <= res_len-2);
-
-	unsigned i=no_of_decimals;
-	while( i-- > 0)
-		value *=10.0f;
-
-	int number;
-	char sign;
-
-	if( value < 0.0f)
-	{
-		sign = '-';
-		number = (int)( -value + 0.5f);
-	}
-	else
-		{
-		sign = ' ';
-		number = (int)( value + 0.5f);
-		}
-
-	char * target = res + res_len;
-	*target-- = 0;
-
-	for( i=no_of_decimals; i; --i)
-	{
-		*target-- = (char)(number % 10 + '0');
-		number /= 10;
-	}
-
-	*target-- = '.';
-	if( number == 0)
-	{
-		*target -- = '0';
-	}
-	else while(( number > 0) && ( target > res+1))
-	{
-		*target-- = (char)(number % 10 + '0');
-		number /= 10;
-	}
-
-	*target-- = sign;
-
-	while( target >= res)
-		*target-- = ' ';
-
-}
 
 //! signed integer to ASCII returning the string end
 char * format_integer( char *s, int32_t value)
