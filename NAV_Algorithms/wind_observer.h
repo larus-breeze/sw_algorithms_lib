@@ -90,7 +90,7 @@ public:
 
   void process_at_100_Hz( const float3vector &instant_wind)
   {
-    if( (instant_wind_averager.get_last_input().abs() < NEGLECTABLE_WIND) && instant_wind.abs() < NEGLECTABLE_WIND) // avoid float instability
+    if( (instant_wind_averager.get_last_input().abs() < NEGLECTABLE_WIND) && instant_wind.abs() < NEGLECTABLE_WIND) // avoid FPU underflow
       {
 	 wind_resampler_100_10Hz.settle({0});
 	 instant_wind_averager.settle({0});
@@ -107,7 +107,7 @@ public:
     circling_state = ahrs.get_circling_state ();
 
     float3vector instant_wind = wind_resampler_100_10Hz.get_output();
-    if( (wind_average_observer.get_output().abs() < NEGLECTABLE_WIND) && (instant_wind.abs()< NEGLECTABLE_WIND)) // avoid float instability
+    if( (wind_average_observer.get_output().abs() < NEGLECTABLE_WIND) && (instant_wind.abs()< NEGLECTABLE_WIND)) // avoid FPU underflow
       wind_average_observer.relax();
     else
       wind_average_observer.update(
