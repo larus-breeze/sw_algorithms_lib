@@ -29,7 +29,7 @@
 
 #include "soft_iron_compensator.h"
 #include "embedded_math.h"
-
+#include "NAV_tuning_parameters.h"
 #include <matrix_functions.h>
 
 ROM float RECIP_SECTOR_SIZE = soft_iron_compensator_t::OBSERVATIONS / M_PI_F / TWO / TWO;
@@ -169,25 +169,32 @@ bool soft_iron_compensator_t::calculate( void)
 	  start_learning(); // discard data
 	  return false;
 	}
-#if 0	    // use average between new and old parameter set
       if( buffer_used_for_calibration != INVALID) // if we already had a valid parameter set
 	{
 	  int other_buffer = next_buffer == 1 ? 0 : 1;
 	  for( unsigned i=0; i<PARAMETERS; ++i)
-	    c[next_buffer][axis][i] = c[next_buffer][axis][i] * 0.25 + c[other_buffer][axis][i] * 0.75;
+	    c[next_buffer][axis][i] = c[next_buffer][axis][i] * (1.0f - SOFT_IRON_LETHARGY) + c[other_buffer][axis][i] * (SOFT_IRON_LETHARGY);
 	}
-#endif
     }
 
   buffer_used_for_calibration = next_buffer; // switch now in a thread-save manner
 
 #if PRINT_PARAMETERS
-
+  float max;
+  unsigned index;
   for( unsigned k=0; k < AXES; ++k)
     {
+      max = 0.0f;
       for( unsigned i=0; i<PARAMETERS; ++i)
-	printf("%e\t", (double)(c[next_buffer][k][i]));
-      printf("\n");
+	{
+	  if( abs(c[next_buffer][k][i] ) > max)
+	    {
+	      max = abs(c[next_buffer][k][i]);
+	      index = i;
+	    }
+	  printf("%e\t", (double)(c[next_buffer][k][i]));
+	}
+      printf("max = c(%d) = %e\n", index, max);
     }
   printf("\n");
 #endif

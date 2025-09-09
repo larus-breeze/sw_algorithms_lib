@@ -84,6 +84,11 @@ float3vector compensate( const float3vector &induction, const quaternion<float> 
     return &(c[buffer_used_for_calibration][0][0]);
   }
 
+  unsigned get_parameters_size( void) const
+  {
+    return sizeof( computation_float_type) * AXES * PARAMETERS;
+  }
+
   void set_current_parameters( const float * source)
   {
     int next_buffer;
