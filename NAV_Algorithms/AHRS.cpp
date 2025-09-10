@@ -168,6 +168,7 @@ AHRS_type::AHRS_type (float sampling_time)
   GNSS_delay_compensation.set_used_length(
       configuration(GNSS_CONFIGURATION) > GNSS_M9N
 	  ? D_GNSS_GNSS_DELAY : SINGLE_GNSS_DELAY);
+  GNSS_heading_delay_compensation.set_used_length( D_GNSS_HEADING_DELAY);
 }
 
 void AHRS_type::tune( void)
@@ -239,24 +240,22 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 {
   float3vector mag = mag_sensor; // make it writable
   filter_magnetic_induction( gyro, mag);
-  body_induction = compass_calibration.calibrate(mag);
+  body_induction = mag;
+  float3vector body_induction_work = compass_calibration.calibrate(mag);
 
   expected_body_induction = body2nav.reverse_map( expected_nav_induction);
 
   if( automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE)
-    body_induction = body_induction - soft_iron_compensator.compensate( expected_body_induction, attitude);
+    body_induction_work = body_induction_work - soft_iron_compensator.compensate( expected_body_induction, attitude);
 
   body_induction_error = body_induction - expected_body_induction;
 
   float3vector nav_acceleration = body2nav * acc;
-	// make INS acceleration as slow as GNSS acceleration
-  nav_acceleration = GNSS_delay_compensation.respond(nav_acceleration);
-
   float heading_gnss_work = GNSS_heading	// correct for antenna alignment
       + antenna_DOWN_correction  * SIN (euler.roll)
       - antenna_RIGHT_correction * COS (euler.roll);
 
-  heading_gnss_work = heading_gnss_work - euler.yaw; // = heading difference D-GNSS - AHRS
+  heading_gnss_work = heading_gnss_work - GNSS_heading_delay_compensation.respond(euler.yaw); // = heading difference D-GNSS - AHRS
 
   if (heading_gnss_work > M_PI_F) // map into { -PI PI}
     heading_gnss_work -= 2.0f * M_PI_F;
@@ -264,6 +263,9 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
     heading_gnss_work += 2.0f * M_PI_F;
 
   heading_difference_AHRS_DGNSS = heading_gnss_work;
+
+  // make INS acceleration as slow as GNSS acceleration
+  nav_acceleration = GNSS_delay_compensation.respond(nav_acceleration);
 
   nav_correction[NORTH] = - nav_acceleration[EAST]  + GNSS_acceleration[EAST];
   nav_correction[EAST]  = + nav_acceleration[NORTH] - GNSS_acceleration[NORTH];
@@ -277,7 +279,6 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 
   if( circling_state == CIRCLING) // heading correction using acceleration cross product GNSS * INS
     {
-
 #if USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING
       nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
 #else
@@ -300,7 +301,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
   gyro_correction_power = SQR( gyro_correction[0]) + SQR( gyro_correction[1]) +SQR( gyro_correction[2]);
 
-  update_attitude (acc, gyro + gyro_correction, body_induction);
+  update_attitude (acc, gyro + gyro_correction, body_induction_work);
 
   // only here we get fresh magnetic entropy
   // and: wait for low control loop error
@@ -333,10 +334,14 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 
   float3vector nav_acceleration = body2nav * acc;
 
+  float3vector nav_induction = body2nav * body_induction;
+
   // make INS acceleration as slow as GNSS acceleration
   nav_acceleration = GNSS_delay_compensation.respond(nav_acceleration);
 
-  float3vector nav_induction = body2nav * body_induction;
+  cross_acc_correction = // vector cross product GNSS-acc and INS-acc -> heading error
+	   + nav_acceleration[NORTH] * GNSS_acceleration[EAST]
+	   - nav_acceleration[EAST]  * GNSS_acceleration[NORTH];
 
   // calculate horizontal leveling error
   nav_correction[NORTH] = -nav_acceleration[EAST] + GNSS_acceleration[EAST];
@@ -349,10 +354,6 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   float mag_correction =
       + nav_induction[NORTH] * expected_nav_induction[EAST]
       - nav_induction[EAST]  * expected_nav_induction[NORTH];
-
-  cross_acc_correction = // vector cross product GNSS-acc und INS-acc -> heading error
-	   + nav_acceleration[NORTH] * GNSS_acceleration[EAST]
-	   - nav_acceleration[EAST]  * GNSS_acceleration[NORTH];
 
   circle_state_t old_circle_state = circling_state;
   update_circling_state ();

@@ -253,6 +253,7 @@ private:
   float gyro_correction_power;
   slope_limiter <float> mag_filter[3];
   delay_line <float3vector, MAX_GNSS_DELAY> GNSS_delay_compensation;
+  delay_line <float, MAX_GNSS_DELAY> GNSS_heading_delay_compensation;
 };
 
 #endif /* AHRS_H_ */
