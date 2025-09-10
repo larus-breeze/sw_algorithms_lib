@@ -240,13 +240,19 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 {
   float3vector mag = mag_sensor; // make it writable
   filter_magnetic_induction( gyro, mag);
+#if MAG_TEST_NO_CALIBRATION
   body_induction = mag;
+#endif
   float3vector body_induction_work = compass_calibration.calibrate(mag);
 
   expected_body_induction = body2nav.reverse_map( expected_nav_induction);
 
   if( automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE)
     body_induction_work = body_induction_work - soft_iron_compensator.compensate( expected_body_induction, attitude);
+
+#if ! MAG_TEST_NO_CALIBRATION
+  body_induction = body_induction_work;
+#endif
 
   body_induction_error = body_induction - expected_body_induction;
 

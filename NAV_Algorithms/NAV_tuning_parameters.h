@@ -63,8 +63,10 @@
 #define SPEED_COMPENSATION_FUSIONER_FEEDBACK 0.998f // empirically tuned alpha
 #define USE_OLD_FASHIONED_PRESSURE_VARIO 0 // for vario comparison tests (offline)
 
-#define USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING 1 	//!< if 1: do not use induction to control attitude while circling
-#define DISABLE_CIRCLING_STATE		1	//!< for tests only: never use circling AHRS algorithm
+#define USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING 1 //!< if 1: do not use induction to control attitude while circling
+#define DISABLE_CIRCLING_STATE		0	//!< for tests only: never use circling AHRS algorithm
+#define MAG_TEST_NO_CALIBRATION		1
+
 #define INDUCTION_STD_DEVIATION_LIMIT	0.03 	//!< results outperforming this number will be used further on
 
 #define AIRBORNE_TRIGGER_SPEED_COMP	0.5f //!< speed-compensator vario value m/s
