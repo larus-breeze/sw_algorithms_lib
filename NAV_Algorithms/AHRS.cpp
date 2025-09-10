@@ -165,6 +165,9 @@ AHRS_type::AHRS_type (float sampling_time)
   bool fail = compass_calibration.read_from_EEPROM();
   if( fail)
     compass_calibration.set_default();
+  GNSS_delay_compensation.set_used_length(
+      configuration(GNSS_CONFIGURATION) > GNSS_M9N
+	  ? D_GNSS_GNSS_DELAY : SINGLE_GNSS_DELAY);
 }
 
 void AHRS_type::tune( void)
@@ -246,6 +249,8 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   body_induction_error = body_induction - expected_body_induction;
 
   float3vector nav_acceleration = body2nav * acc;
+	// make INS acceleration as slow as GNSS acceleration
+  nav_acceleration = GNSS_delay_compensation.respond(nav_acceleration);
 
   float heading_gnss_work = GNSS_heading	// correct for antenna alignment
       + antenna_DOWN_correction  * SIN (euler.roll)
@@ -327,6 +332,10 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   body_induction_error = body_induction - expected_body_induction;
 
   float3vector nav_acceleration = body2nav * acc;
+
+  // make INS acceleration as slow as GNSS acceleration
+  nav_acceleration = GNSS_delay_compensation.respond(nav_acceleration);
+
   float3vector nav_induction = body2nav * body_induction;
 
   // calculate horizontal leveling error

@@ -36,6 +36,7 @@
 #include "pt2.h"
 #include "slope_limiter.h"
 #include "RMS_rectifier.h"
+#include "delay_line.h"
 
 extern float3vector nav_induction;
 
@@ -251,6 +252,7 @@ private:
   float3vector body_induction_error;
   float gyro_correction_power;
   slope_limiter <float> mag_filter[3];
+  delay_line <float3vector, MAX_GNSS_DELAY> GNSS_delay_compensation;
 };
 
 #endif /* AHRS_H_ */
