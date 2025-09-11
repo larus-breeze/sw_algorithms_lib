@@ -139,6 +139,8 @@ AHRS_type::AHRS_type (float sampling_time)
   gyro_integrator({0}),
   circling_counter(0),
   circling_state( STRAIGHT_FLIGHT),
+  heading_source( MAGNETIC),
+  heading_source_changed( false),
   nav_correction(),
   gyro_correction(),
   acceleration_nav_frame(),
@@ -190,9 +192,23 @@ AHRS_type::update (const float3vector &gyro,
   update_compass(gyro, acc, mag, GNSS_acceleration);
 #else
   if( GNSS_heading_valid)
-    update_diff_GNSS (gyro, acc, mag, GNSS_acceleration, GNSS_heading);
+    {
+      if( heading_source == MAGNETIC)
+	{
+	  heading_source = D_GNSS;
+	  heading_source_changed = true;
+	}
+      update_diff_GNSS (gyro, acc, mag, GNSS_acceleration, GNSS_heading);
+    }
   else
-    update_compass(gyro, acc, mag, GNSS_acceleration);
+    {
+      if( heading_source == D_GNSS)
+	{
+	  heading_source = MAGNETIC;
+	  heading_source_changed = true;
+	}
+      update_compass(gyro, acc, mag, GNSS_acceleration);
+    }
 #endif
 }
 
@@ -261,6 +277,11 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
       + antenna_DOWN_correction  * SIN (euler.roll)
       - antenna_RIGHT_correction * COS (euler.roll);
 
+  if( heading_source_changed)
+    {
+      heading_source_changed = false;
+      GNSS_heading_delay_compensation.initialize(euler.yaw);
+    }
   heading_gnss_work = heading_gnss_work - GNSS_heading_delay_compensation.respond(euler.yaw); // = heading difference D-GNSS - AHRS
 
   if (heading_gnss_work > M_PI_F) // map into { -PI PI}
@@ -339,15 +360,8 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   body_induction_error = body_induction - expected_body_induction;
 
   float3vector nav_acceleration = body2nav * acc;
-
-  float3vector nav_induction = body2nav * body_induction;
-
-  // make INS acceleration as slow as GNSS acceleration
   nav_acceleration = GNSS_delay_compensation.respond(nav_acceleration);
-
-  cross_acc_correction = // vector cross product GNSS-acc and INS-acc -> heading error
-	   + nav_acceleration[NORTH] * GNSS_acceleration[EAST]
-	   - nav_acceleration[EAST]  * GNSS_acceleration[NORTH];
+  float3vector nav_induction = body2nav * body_induction;
 
   // calculate horizontal leveling error
   nav_correction[NORTH] = -nav_acceleration[EAST] + GNSS_acceleration[EAST];
@@ -360,6 +374,17 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   float mag_correction =
       + nav_induction[NORTH] * expected_nav_induction[EAST]
       - nav_induction[EAST]  * expected_nav_induction[NORTH];
+
+  if( heading_source_changed)
+    {
+      heading_source_changed = false;
+      GNSS_heading_delay_compensation.initialize(mag_correction);
+    }
+  mag_correction = GNSS_heading_delay_compensation.respond(mag_correction);
+
+  cross_acc_correction = // vector cross product GNSS-acc und INS-acc -> heading error
+	   + nav_acceleration[NORTH] * GNSS_acceleration[EAST]
+	   - nav_acceleration[EAST]  * GNSS_acceleration[NORTH];
 
   circle_state_t old_circle_state = circling_state;
   update_circling_state ();
@@ -382,8 +407,9 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 #if USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING
 	    nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN; // no MAG or D-GNSS use here ! (old version)
 #else
-	nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN
-	    + mag_correction * M_H_GAIN; // use cross-acceleration and induction: better !
+	nav_correction[DOWN] = 
+		cross_acc_correction * CROSS_GAIN
+	    + mag_correction * magnetic_control_gain; // use cross-acceleration and induction: better !
 #endif
 	gyro_correction = body2nav.reverse_map (nav_correction);
 	gyro_correction *= P_GAIN;

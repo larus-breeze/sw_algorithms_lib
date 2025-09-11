@@ -51,6 +51,11 @@ public:
     if( value <= length)
 	used_length = value;
   }
+  void initialize( data_t value)
+  {
+    for( unsigned i=0; i<used_length; ++i)
+      storage[i] = value;
+  }
 private:
   data_t storage[length];
   data_t * ptr;
