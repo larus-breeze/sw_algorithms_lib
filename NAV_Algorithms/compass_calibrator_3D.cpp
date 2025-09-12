@@ -22,8 +22,7 @@
 
  **************************************************************************/
 
-#define PRINT_PARAMETERS 1
-#if PRINT_PARAMETERS
+#if PRINT_3D_MAG_PARAMETERS
 #include "stdio.h"
 #endif
 
@@ -167,7 +166,7 @@ bool compass_calibrator_3D_t::calculate( void)
 
   buffer_used_for_calibration = next_buffer; // switch now in a thread-save manner
   
-#if PRINT_PARAMETERS
+#if PRINT_3D_MAG_PARAMETERS
 
   for( unsigned k=0; k < AXES; ++k)
     {

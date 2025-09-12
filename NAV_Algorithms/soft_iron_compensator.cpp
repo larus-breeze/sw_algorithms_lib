@@ -22,8 +22,7 @@
 
  **************************************************************************/
 
-#define PRINT_PARAMETERS 1
-#if PRINT_PARAMETERS
+#if PRINT_SOFT_IRON_PARAMETERS
 #include "stdio.h"
 #endif
 
@@ -179,7 +178,7 @@ bool soft_iron_compensator_t::calculate( void)
 
   buffer_used_for_calibration = next_buffer; // switch now in a thread-save manner
 
-#if PRINT_PARAMETERS
+#if PRINT_SOFT_IRON_PARAMETERS
   float max;
   unsigned index;
   for( unsigned k=0; k < AXES; ++k)
