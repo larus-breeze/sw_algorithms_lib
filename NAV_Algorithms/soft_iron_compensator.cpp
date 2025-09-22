@@ -41,8 +41,10 @@ bool soft_iron_compensator_t::learn ( const float3vector &induction_error, const
 
   int sector_index = (turning_right ? OBSERVATIONS / TWO : 0) + (unsigned)(present_heading * RECIP_SECTOR_SIZE);
 
+  ++measurement_counter;
+
   // if we have just left the last sector to be collected: report ready for computation
-  if( ( last_sector_collected != -1) && ( sector_index != last_sector_collected) && (++measurement_counter > 10000))
+  if( ( last_sector_collected != -1) && ( sector_index != last_sector_collected) && (measurement_counter > MINIMUM_NO_OF_MEASUREMENTS))
     return true;
 
   if( heading_sector_error[sector_index] > 1e19) // this sector has not been written before
