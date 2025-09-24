@@ -22,14 +22,15 @@
 
  **************************************************************************/
 
-#if PRINT_SOFT_IRON_PARAMETERS
-#include "stdio.h"
-#endif
-
+#include "system_configuration.h"
 #include "soft_iron_compensator.h"
 #include "embedded_math.h"
 #include "NAV_tuning_parameters.h"
 #include <matrix_functions.h>
+
+#if PRINT_SOFT_IRON_PARAMETERS == 1
+#include "stdio.h"
+#endif
 
 ROM float RECIP_SECTOR_SIZE = soft_iron_compensator_t::OBSERVATIONS / M_PI_F / TWO / TWO;
 
