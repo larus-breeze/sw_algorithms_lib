@@ -46,8 +46,6 @@ typedef float computation_float_type;
 #define ARM_MAT_INVERSE arm_mat_inverse_f32
 #endif
 
-#define SOFT_IRON_DATA_SIZE 1024 // cross check size with AXES PARAMETERS OBSERVATIONS !
-
 //! 3 dimensional magnetic calibration and error compensation mechanism
 class soft_iron_compensator_t
 {
@@ -117,6 +115,7 @@ private:
   computation_float_type heading_sector_error[OBSERVATIONS];
 };
 
+#define SOFT_IRON_DATA_SIZE 4096 // sizeof(soft_iron_compensator_t) rounded up
 extern soft_iron_compensator_t soft_iron_compensator;
 void trigger_soft_iron_compensator_calculation(void);
 
