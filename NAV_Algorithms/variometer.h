@@ -62,6 +62,7 @@ public:
     Kalman_v_a_observer_N(),
     Kalman_v_a_observer_E(),
     GNSS_INS_speedcomp_fusioner(SPEED_COMPENSATION_FUSIONER_FEEDBACK),
+    GNSS_availability_counter(0),
     vario_uncompensated_pressure( ZERO),
     speed_compensation_IAS( ZERO),
     speed_compensation_GNSS( 0.0f),
@@ -167,6 +168,7 @@ private:
 	Kalman_V_A_Aoff_observer_t Kalman_v_a_observer_N;
 	Kalman_V_A_Aoff_observer_t Kalman_v_a_observer_E;
 	HP_LP_fusion <float, float> GNSS_INS_speedcomp_fusioner;
+	unsigned GNSS_availability_counter;
 
 	// variometer-related signals
 	float vario_uncompensated_pressure;
