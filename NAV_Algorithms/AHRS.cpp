@@ -306,7 +306,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 #if USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING
       nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
 #else
-      float3vector nav_induction    = body2nav * body_induction;
+      float3vector nav_induction    = body2nav * corrected_body_induction;
       float mag_correction =
     	+ nav_induction[NORTH] * expected_nav_induction[EAST]
     	- nav_induction[EAST]  * expected_nav_induction[NORTH];
