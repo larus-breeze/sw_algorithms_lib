@@ -112,8 +112,8 @@ AHRS_type::update_circling_state ()
 void AHRS_type::feed_magnetic_induction_observer( const float3vector &mag_sensor, const float3vector &mag_delta)
 {
   float error_margin = nav_correction.abs();
-//  if(  error_margin > NAV_CORRECTION_LIMIT)
-//    return;
+  if(  error_margin > NAV_CORRECTION_LIMIT)
+    return;
 
   bool turning_right = turn_rate_averager.get_output() > 0.0f;
 
