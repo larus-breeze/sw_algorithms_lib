@@ -65,7 +65,6 @@
 
 #define USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING 0 //!< if 1: do not use induction to control attitude while circling
 #define DISABLE_CIRCLING_STATE		0	//!< for tests only: never use circling AHRS algorithm
-#define MAG_TEST_NO_CALIBRATION		0
 
 #define INDUCTION_STD_DEVIATION_LIMIT	0.03 	//!< results outperforming this number will be used further on
 
