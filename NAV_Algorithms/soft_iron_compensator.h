@@ -50,7 +50,7 @@ typedef float computation_float_type;
 class soft_iron_compensator_t
 {
 public:
-  enum { AXES=3, PARAMETERS=10, OBSERVATIONS=24, INVALID=-1, MINIMUM_NO_OF_MEASUREMENTS=10000};
+  enum { AXES=3, PARAMETERS=10, OBSERVATIONS=34, INVALID=-1, MINIMUM_NO_OF_MEASUREMENTS=10000};
 
   soft_iron_compensator_t( void)
     : buffer_used_for_calibration(INVALID),
