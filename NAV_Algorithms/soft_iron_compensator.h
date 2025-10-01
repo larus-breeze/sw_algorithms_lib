@@ -50,7 +50,7 @@ typedef float computation_float_type;
 class soft_iron_compensator_t
 {
 public:
-  enum { AXES=3, PARAMETERS=10, OBSERVATIONS=34, INVALID=-1, MINIMUM_NO_OF_MEASUREMENTS=10000};
+  enum { AXES=3, PARAMETERS=10, OBSERVATIONS=32, INVALID=-1, MINIMUM_NO_OF_MEASUREMENTS=10000};
 
   soft_iron_compensator_t( void)
     : buffer_used_for_calibration(INVALID),
@@ -109,13 +109,23 @@ private:
   unsigned populated_sectors;
   int last_sector_collected;
   unsigned measurement_counter;
+
+  // the parameter set to be used in normal operation
   computation_float_type c[2][AXES][PARAMETERS]; // double buffering for multi-thrading support
-  computation_float_type target_vector[AXES][OBSERVATIONS];
+
+  // observation data
   computation_float_type observation_matrix[AXES][OBSERVATIONS][PARAMETERS];
   computation_float_type heading_sector_error[OBSERVATIONS];
+
+  // temporary computation data ( to save stack space)
+  computation_float_type target_vector[AXES][OBSERVATIONS];
+  computation_float_type temporary_solution_matrix[PARAMETERS][PARAMETERS];
+  computation_float_type transposed_matrix[PARAMETERS][OBSERVATIONS];
+  computation_float_type matrix_to_be_inverted_data[PARAMETERS][PARAMETERS];
+  computation_float_type solution_mapping_data[PARAMETERS][OBSERVATIONS];
 };
 
-#define SOFT_IRON_DATA_SIZE 4096 // sizeof(soft_iron_compensator_t) rounded up
+#define SOFT_IRON_DATA_SIZE 8192 // sizeof(soft_iron_compensator_t) rounded up
 extern soft_iron_compensator_t soft_iron_compensator;
 void trigger_soft_iron_compensator_calculation(void);
 

@@ -80,10 +80,6 @@ bool soft_iron_compensator_t::learn ( const float3vector &induction_error, const
 
 bool soft_iron_compensator_t::calculate( void)
 {
-//  if( buffer_used_for_calibration != INVALID)
-//    return false;
-
-  computation_float_type temporary_solution_matrix[PARAMETERS][PARAMETERS];
   ARM_MATRIX_INSTANCE solution;
   solution.numCols=PARAMETERS;
   solution.numRows=PARAMETERS;
@@ -93,19 +89,16 @@ bool soft_iron_compensator_t::calculate( void)
   observations.numCols=PARAMETERS;
   observations.numRows=OBSERVATIONS;
 
-  computation_float_type transposed_matrix[PARAMETERS][OBSERVATIONS];
   ARM_MATRIX_INSTANCE observations_transposed;
   observations_transposed.numCols=OBSERVATIONS;
   observations_transposed.numRows=PARAMETERS;
   observations_transposed.pData = (computation_float_type *)transposed_matrix;
 
-  computation_float_type matrix_to_be_inverted_data[PARAMETERS][PARAMETERS];
   ARM_MATRIX_INSTANCE matrix_to_be_inverted;
   matrix_to_be_inverted.numCols=PARAMETERS;
   matrix_to_be_inverted.numRows=PARAMETERS;
   matrix_to_be_inverted.pData = (computation_float_type *)matrix_to_be_inverted_data;
 
-  computation_float_type solution_mapping_data[PARAMETERS][OBSERVATIONS];
   ARM_MATRIX_INSTANCE solution_mapping;
   solution_mapping.numCols=OBSERVATIONS;
   solution_mapping.numRows=PARAMETERS;
