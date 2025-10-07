@@ -112,8 +112,8 @@ void variometer_t::update_at_100Hz (
       speed_compensation_projected_4 = air_velocity_projected * acceleration_projected * RECIP_GRAVITY;
 
       // blending of three mechanisms for speed-compensation
-//      speed_compensation_GNSS = GNSS_INS_speedcomp_fusioner.respond( 0.3333333f * (speed_compensation_INS_GNSS_1 + speed_compensation_kalman_2 + speed_compensation_projected_4), speed_compensation_energy_3);
-      GNSS_INS_speedcomp_fusioner.respond( 0.5 * (speed_compensation_INS_GNSS_1 + speed_compensation_kalman_2), speed_compensation_energy_3);
+      GNSS_INS_speedcomp_fusioner.respond( 0.3333333f * (speed_compensation_INS_GNSS_1 + speed_compensation_kalman_2 + speed_compensation_projected_4), speed_compensation_energy_3);
+//      GNSS_INS_speedcomp_fusioner.respond( 0.5 * (speed_compensation_INS_GNSS_1 + speed_compensation_kalman_2), speed_compensation_energy_3);
       vario_averager_GNSS.respond ( vario_uncompensated_GNSS + speed_compensation_GNSS);
     }
 
@@ -129,7 +129,9 @@ void variometer_t::update_at_100Hz (
     {
       // use GNSS vario data for output
       vario_uncompensated_GNSS = -KalmanVario_GNSS.get_x( KalmanVario_PVA_t::VARIO);
-      speed_compensation_GNSS = GNSS_INS_speedcomp_fusioner.get_value();
+//      speed_compensation_GNSS = GNSS_INS_speedcomp_fusioner.get_value();
+//      speed_compensation_GNSS = 0.5 * (speed_compensation_INS_GNSS_1 + speed_compensation_kalman_2);
+      speed_compensation_GNSS = 0.3333333f * (speed_compensation_INS_GNSS_1 + speed_compensation_kalman_2 + speed_compensation_projected_4);
       vario_averager_GNSS.respond ( vario_uncompensated_GNSS + speed_compensation_GNSS);
     }
 }
