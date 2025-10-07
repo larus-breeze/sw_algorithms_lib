@@ -60,7 +60,7 @@
 #define NAV_CORRECTION_LIMIT 5.0f	//!< limit for "low AHRS correcting variable"
 #define HIGH_TURN_RATE 8.0*M_PI/180.0f	//!< turn rate high limit
 #define LOW_TURN_RATE  1.0*M_PI/180.0f	//!< turn rate low limit
-#define SPEED_COMPENSATION_FUSIONER_FEEDBACK 0.998f // empirically tuned alpha
+#define SPEED_COMPENSATION_FUSIONER_FEEDBACK 0.9995f // empirically tuned alpha
 #define USE_OLD_FASHIONED_PRESSURE_VARIO 0 // for vario comparison tests (offline)
 
 #define USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING 0 //!< if 1: do not use induction to control attitude while circling
