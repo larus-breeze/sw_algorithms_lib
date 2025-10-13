@@ -35,6 +35,8 @@
 #include "EEPROM_emulation.h"
 #endif
 
+#include "stdio.h"
+
 /**
  * @brief initial attitude setup from observables
  */
@@ -160,7 +162,10 @@ AHRS_type::AHRS_type (float sampling_time)
   magnetic_disturbance_averager( 0.001f),
   magnetic_control_gain(1.0f),
   automatic_magnetic_calibration( (magnetic_calibration_type)(round)(configuration(MAG_AUTO_CALIB))),
-  magnetic_calibration_updated( false)
+  magnetic_calibration_updated( false),
+  gyro_gain_right( 1.0f),
+  gyro_gain_down( 1.0f)
+
 {
   update_magnetic_loop_gain(); // adapt to magnetic inclination
 
@@ -254,6 +259,10 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 			     const float3vector &GNSS_acceleration,
 			     float GNSS_heading)
 {
+  float3vector gyro_adjusted = gyro;
+//  gyro_adjusted[RIGHT] *= gyro_gain_right;
+//  gyro_adjusted[DOWN] *= gyro_gain_down;
+
   float3vector measured_induction = mag_sensor; // make it writable
   filter_magnetic_induction( gyro, measured_induction);
 
@@ -312,6 +321,8 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
     	- nav_induction[EAST]  * expected_nav_induction[NORTH];
       nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN + mag_correction * magnetic_control_gain ; // use X-ACC and MAG: better !
 #endif
+      gyro_gain_adjuster_right.learn( gyro_adjusted[RIGHT], gyro_correction[RIGHT]);
+      gyro_gain_adjuster_down.learn ( gyro_adjusted[DOWN], gyro_correction[DOWN]);
     }
   else
       nav_correction[DOWN]  =   heading_gnss_work * H_GAIN;
@@ -325,16 +336,28 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
   gyro_correction_power = SQR( gyro_correction[0]) + SQR( gyro_correction[1]) +SQR( gyro_correction[2]);
 
-  update_attitude (acc, gyro + gyro_correction, corrected_body_induction);
+  update_attitude (acc, gyro_adjusted + gyro_correction, corrected_body_induction);
 
   // only here we get fresh magnetic entropy
   // and: wait for low control loop error
   if ( circling_state == CIRCLING)
     feed_magnetic_induction_observer (mag_sensor, calibrated_body_induction - expected_body_induction);
 
-  // when circling is finished eventually update the magnetic calibration
-  if (automatic_magnetic_calibration && (old_circle_state == CIRCLING) && (circling_state == TRANSITION))
-	  handle_magnetic_calibration();
+  // when circling is finished eventually update the calibration
+  if( (old_circle_state == CIRCLING) && (circling_state == TRANSITION))
+    {
+	  if( automatic_magnetic_calibration)
+	    handle_magnetic_calibration();
+//	  gyro_gain_adjuster_right.calculate();
+//	  gyro_gain_adjuster_right.update_gain( gyro_gain_right);
+#if 1
+	  if( gyro_gain_adjuster_down.calculate())
+	    {
+	      gyro_gain_adjuster_down.update_gain( gyro_gain_down);
+	      printf( "Gain = %8.6f\n",  gyro_gain_down);
+	    }
+#endif
+    }
 }
 
 /**
@@ -345,6 +368,10 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 			   const float3vector &mag_sensor,
 			   const float3vector &GNSS_acceleration)
 {
+  float3vector gyro_adjusted = gyro;
+  gyro_adjusted[RIGHT] *= gyro_gain_right;
+  gyro_adjusted[DOWN]  *= gyro_gain_down;
+
   float3vector measured_induction = mag_sensor; // make it writable
   filter_magnetic_induction( gyro, measured_induction);
 
@@ -415,6 +442,9 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 #endif
 	gyro_correction = body2nav.reverse_map (nav_correction);
 	gyro_correction *= P_GAIN;
+
+	gyro_gain_adjuster_right.learn( gyro_adjusted[RIGHT], gyro_correction[RIGHT]);
+	gyro_gain_adjuster_down.learn ( gyro_adjusted[DOWN], gyro_correction[DOWN]);
       }
       break;
     }
@@ -423,16 +453,28 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   gyro_correction_power = SQR( gyro_correction[0]) + SQR( gyro_correction[1]) +SQR( gyro_correction[2]);
 
   // feed quaternion update with corrected sensor readings
-  update_attitude (acc, gyro + gyro_correction, corrected_body_induction);
+  update_attitude (acc, gyro_adjusted + gyro_correction, corrected_body_induction);
 
   // only here we get fresh magnetic entropy
   // and: wait for low control loop error
   if ( circling_state == CIRCLING)
     feed_magnetic_induction_observer (mag_sensor, calibrated_body_induction - expected_body_induction);
 
-  // when circling is finished eventually update the magnetic calibration
-  if (automatic_magnetic_calibration && (old_circle_state == CIRCLING) && (circling_state == TRANSITION))
-	  handle_magnetic_calibration();
+  // when circling is finished eventually update the calibration
+  if( (old_circle_state == CIRCLING) && (circling_state == TRANSITION))
+    {
+	  if( automatic_magnetic_calibration)
+	    handle_magnetic_calibration();
+//	  gyro_gain_adjuster_right.calculate();
+//	  gyro_gain_adjuster_right.update_gain( gyro_gain_right);
+#if 1
+	  if( gyro_gain_adjuster_down.calculate())
+	    {
+	      gyro_gain_adjuster_down.update_gain( gyro_gain_down);
+	      printf( "Gain = %8.6f\n",  gyro_gain_down);
+	    }
+#endif
+    }
 }
 
 void AHRS_type::write_calibration_into_EEPROM( void)

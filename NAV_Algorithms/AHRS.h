@@ -37,7 +37,7 @@
 #include "slope_limiter.h"
 #include "RMS_rectifier.h"
 #include "delay_line.h"
-
+#include "gyro_gain_adjust.h"
 extern float3vector nav_induction;
 
 enum { ROLL, PITCH, YAW};
@@ -257,6 +257,10 @@ private:
   slope_limiter <float> mag_filter[3];
   delay_line <float3vector, MAX_GNSS_DELAY> GNSS_delay_compensation;
   delay_line <float, MAX_GNSS_DELAY> GNSS_heading_delay_compensation;
+  gyro_gain_adjust gyro_gain_adjuster_right;
+  double gyro_gain_right;
+  gyro_gain_adjust gyro_gain_adjuster_down;
+  double gyro_gain_down;
 };
 
 #endif /* AHRS_H_ */
