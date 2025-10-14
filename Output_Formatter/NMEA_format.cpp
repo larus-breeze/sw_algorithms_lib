@@ -236,10 +236,10 @@ void format_GGA( const coordinates_t &coordinates, char * &p)
   p = append_string( p, GPGGA);
   format_GNSS_timestamp( coordinates, p);
 
-  angle_format (coordinates.latitude, 'N', 'S', p);
+  angle_format (coordinates.latitude, 'N', 'S', p, false);
   *p++ = ',';
 
-  angle_format (coordinates.longitude, 'E', 'W', p);
+  angle_format (coordinates.longitude, 'E', 'W', p, true);
   *p++ = ',';
 
   *p++ = coordinates.sat_fix_type  > 0 ? '1' : '0';
