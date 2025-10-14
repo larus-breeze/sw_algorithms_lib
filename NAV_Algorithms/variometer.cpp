@@ -37,7 +37,7 @@ void variometer_t::update_at_100Hz (
     const float3vector &ahrs_acceleration,
     const float3vector &heading_vector,
     float GNSS_negative_altitude,
-    float pressure_altitude,
+    float negative_pressure_altitude,
     float IAS,
     const float3vector &speed_compensator_wind,
     bool GNSS_fix_available
@@ -52,10 +52,10 @@ void variometer_t::update_at_100Hz (
 	GNSS_availability_counter = 0;
 
 #if USE_OLD_FASHIONED_PRESSURE_VARIO
-  vario_uncompensated_pressure = pressure_vario_differentiator.respond( pressure_altitude);
+  vario_uncompensated_pressure = pressure_vario_differentiator.respond( negative_pressure_altitude);
 #else
   vario_uncompensated_pressure = KalmanVario_pressure.update (
-      pressure_altitude, ahrs_acceleration[DOWN]);
+      negative_pressure_altitude, ahrs_acceleration[DOWN]);
 #endif
   speed_compensation_IAS = kinetic_energy_differentiator.respond (
       IAS * IAS * ONE_DIV_BY_GRAVITY_TIMES_2);
