@@ -102,7 +102,7 @@ char * to_ascii_1_decimal( int32_t number, char *s)
 }
 
 //! append an angle in ASCII into a NMEA string
-void angle_format ( double angle, char posc, char negc, char * &p)
+void angle_format ( double angle, char posc, char negc, char * &p, bool force_5_digits=false)
 {
   bool pos = angle > 0.0f;
   if (!pos)
@@ -111,8 +111,8 @@ void angle_format ( double angle, char posc, char negc, char * &p)
   int degree = (int) angle;
   double minutes = (angle - (double)degree) * 60.0;
 
-  // add 3rd digit if required
-  if( degree >= 100)
+  // add 5th digit if requested
+  if( force_5_digits)
     {
       *p++ = (char)(degree / 100 + '0');
       degree %= 100;
@@ -180,10 +180,10 @@ void format_RMC (const coordinates_t &coordinates, char * &p)
   *p++ = coordinates.sat_fix_type != 0 ? 'A' : 'V';
   *p++ = ',';
 
-  angle_format (coordinates.latitude, 'N', 'S', p);
+  angle_format (coordinates.latitude, 'N', 'S', p, false);
   *p++ = ',';
 
-  angle_format (coordinates.longitude, 'E', 'W', p);
+  angle_format (coordinates.longitude, 'E', 'W', p, true);
   *p++ = ',';
 
   float value = coordinates.speed_motion * MPS_TO_NMPH;
@@ -236,10 +236,10 @@ void format_GGA( const coordinates_t &coordinates, char * &p)
   p = append_string( p, GPGGA);
   format_GNSS_timestamp( coordinates, p);
 
-  angle_format (coordinates.latitude, 'N', 'S', p);
+  angle_format (coordinates.latitude, 'N', 'S', p, false);
   *p++ = ',';
 
-  angle_format (coordinates.longitude, 'E', 'W', p);
+  angle_format (coordinates.longitude, 'E', 'W', p, true);
   *p++ = ',';
 
   *p++ = coordinates.sat_fix_type  > 0 ? '1' : '0';
