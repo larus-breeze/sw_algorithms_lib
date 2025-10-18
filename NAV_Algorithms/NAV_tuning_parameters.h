@@ -25,10 +25,10 @@
 #ifndef NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_
 #define NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_
 
-#define D_GNSS_GNSS_DELAY	13
-#define D_GNSS_HEADING_DELAY	6
-#define SINGLE_GNSS_DELAY	30
-#define MAX_GNSS_DELAY		30
+#define D_GNSS_GNSS_DELAY	7
+#define D_GNSS_HEADING_DELAY	3
+#define SINGLE_GNSS_DELAY	15
+#define MAX_GNSS_DELAY		15
 
 #define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
 #define MAGNETIC_DISTURBANCE_LIMIT 0.1f
@@ -61,7 +61,7 @@
 #define HIGH_TURN_RATE 8.0*M_PI/180.0f	//!< turn rate high limit
 #define LOW_TURN_RATE  1.0*M_PI/180.0f	//!< turn rate low limit
 #define SPEED_COMPENSATION_FUSIONER_FEEDBACK 0.99995f // empirically tuned alpha
-#define USE_OLD_FASHIONED_PRESSURE_VARIO 0 // for vario comparison tests (offline)
+#define USE_OLD_FASHIONED_PRESSURE_VARIO 1 // for vario comparison tests (offline)
 
 #define USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING 0 //!< if 1: do not use induction to control attitude while circling
 #define DISABLE_CIRCLING_STATE		0	//!< for tests only: never use circling AHRS algorithm
