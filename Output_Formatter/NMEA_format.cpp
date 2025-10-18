@@ -403,8 +403,18 @@ void format_PLARS ( float value, PLARS_TYPES option, char * &p)
       p=to_ascii_2_decimals(float32_t(value * 100.0), p);
       break;
     case BUGS:  //BUGS Bugs in % (0 - 50)
+      if (value < 1.0)
+        {
+	  value = 1.0;
+        }
+      if (value > 1.5)
+	{
+	  value = 1.5;
+	}
+      value = (value - 1.0f) * 100.0f; // Scale CAN value 1.0 ... 1.5 to 0 ... 50
       p = append_string( p, PLARS_BUGS);
-      p=to_ascii_2_decimals(float32_t(value * 100.0), p);
+      p = format_integer(p, (int32_t)value);
+
         break;
     case QNH:  //QNH QNH in hPa
       p = append_string( p, PLARS_QNH);
