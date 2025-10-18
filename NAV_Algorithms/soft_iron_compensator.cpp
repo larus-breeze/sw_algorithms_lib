@@ -22,15 +22,15 @@
 
  **************************************************************************/
 
-#define PRINT_PARAMETERS 1
-#if PRINT_PARAMETERS
-#include "stdio.h"
-#endif
-
+#include "system_configuration.h"
 #include "soft_iron_compensator.h"
 #include "embedded_math.h"
-
+#include "NAV_tuning_parameters.h"
 #include <matrix_functions.h>
+
+#if PRINT_SOFT_IRON_PARAMETERS == 1
+#include "stdio.h"
+#endif
 
 ROM float RECIP_SECTOR_SIZE = soft_iron_compensator_t::OBSERVATIONS / M_PI_F / TWO / TWO;
 
@@ -42,8 +42,10 @@ bool soft_iron_compensator_t::learn ( const float3vector &induction_error, const
 
   int sector_index = (turning_right ? OBSERVATIONS / TWO : 0) + (unsigned)(present_heading * RECIP_SECTOR_SIZE);
 
+  ++measurement_counter;
+
   // if we have just left the last sector to be collected: report ready for computation
-  if( ( last_sector_collected != -1) && ( sector_index != last_sector_collected) && (++measurement_counter > 10000))
+  if( ( last_sector_collected != -1) && ( sector_index != last_sector_collected) && (measurement_counter > MINIMUM_NO_OF_MEASUREMENTS))
     return true;
 
   if( heading_sector_error[sector_index] > 1e19) // this sector has not been written before
@@ -78,10 +80,6 @@ bool soft_iron_compensator_t::learn ( const float3vector &induction_error, const
 
 bool soft_iron_compensator_t::calculate( void)
 {
-//  if( buffer_used_for_calibration != INVALID)
-//    return false;
-
-  computation_float_type temporary_solution_matrix[PARAMETERS][PARAMETERS];
   ARM_MATRIX_INSTANCE solution;
   solution.numCols=PARAMETERS;
   solution.numRows=PARAMETERS;
@@ -91,19 +89,16 @@ bool soft_iron_compensator_t::calculate( void)
   observations.numCols=PARAMETERS;
   observations.numRows=OBSERVATIONS;
 
-  computation_float_type transposed_matrix[PARAMETERS][OBSERVATIONS];
   ARM_MATRIX_INSTANCE observations_transposed;
   observations_transposed.numCols=OBSERVATIONS;
   observations_transposed.numRows=PARAMETERS;
   observations_transposed.pData = (computation_float_type *)transposed_matrix;
 
-  computation_float_type matrix_to_be_inverted_data[PARAMETERS][PARAMETERS];
   ARM_MATRIX_INSTANCE matrix_to_be_inverted;
   matrix_to_be_inverted.numCols=PARAMETERS;
   matrix_to_be_inverted.numRows=PARAMETERS;
   matrix_to_be_inverted.pData = (computation_float_type *)matrix_to_be_inverted_data;
 
-  computation_float_type solution_mapping_data[PARAMETERS][OBSERVATIONS];
   ARM_MATRIX_INSTANCE solution_mapping;
   solution_mapping.numCols=OBSERVATIONS;
   solution_mapping.numRows=PARAMETERS;
@@ -169,25 +164,32 @@ bool soft_iron_compensator_t::calculate( void)
 	  start_learning(); // discard data
 	  return false;
 	}
-#if 0	    // use average between new and old parameter set
       if( buffer_used_for_calibration != INVALID) // if we already had a valid parameter set
 	{
 	  int other_buffer = next_buffer == 1 ? 0 : 1;
 	  for( unsigned i=0; i<PARAMETERS; ++i)
-	    c[next_buffer][axis][i] = c[next_buffer][axis][i] * 0.25 + c[other_buffer][axis][i] * 0.75;
+	    c[next_buffer][axis][i] = c[next_buffer][axis][i] * (1.0f - SOFT_IRON_LETHARGY) + c[other_buffer][axis][i] * (SOFT_IRON_LETHARGY);
 	}
-#endif
     }
 
   buffer_used_for_calibration = next_buffer; // switch now in a thread-save manner
 
-#if PRINT_PARAMETERS
-
+#if PRINT_SOFT_IRON_PARAMETERS
+  float max;
+  unsigned index;
   for( unsigned k=0; k < AXES; ++k)
     {
+      max = 0.0f;
       for( unsigned i=0; i<PARAMETERS; ++i)
-	printf("%e\t", (double)(c[next_buffer][k][i]));
-      printf("\n");
+	{
+	  if( abs(c[next_buffer][k][i] ) > max)
+	    {
+	      max = abs(c[next_buffer][k][i]);
+	      index = i;
+	    }
+	  printf("%e\t", (double)(c[next_buffer][k][i]));
+	}
+      printf("max = c(%d) = %e\n", index, max);
     }
   printf("\n");
 #endif

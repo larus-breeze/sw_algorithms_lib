@@ -36,7 +36,8 @@
 #include "pt2.h"
 #include "slope_limiter.h"
 #include "RMS_rectifier.h"
-
+#include "delay_line.h"
+#include "gyro_gain_adjust.h"
 extern float3vector nav_induction;
 
 enum { ROLL, PITCH, YAW};
@@ -196,6 +197,7 @@ public:
   }
   enum magnetic_calibration_type { NONE, AUTO_1D, AUTO_SOFT_IRON_COMPENSATE};
 private:
+  enum heading_type{ MAGNETIC, D_GNSS};
   void handle_magnetic_calibration( void);
 
   void update_magnetic_loop_gain( void)
@@ -224,6 +226,8 @@ private:
   float3vector gyro_integrator;
   unsigned circling_counter;
   circle_state_t circling_state;
+  heading_type heading_source;
+  bool heading_source_changed;
   float3vector nav_correction;
   float3vector gyro_correction;
   float3vector acceleration_nav_frame;
@@ -251,6 +255,12 @@ private:
   float3vector body_induction_error;
   float gyro_correction_power;
   slope_limiter <float> mag_filter[3];
+  delay_line <float3vector, MAX_GNSS_DELAY> GNSS_delay_compensation;
+  delay_line <float, MAX_GNSS_DELAY> GNSS_heading_delay_compensation;
+  gyro_gain_adjust gyro_gain_adjuster_right;
+  double gyro_gain_right;
+  gyro_gain_adjust gyro_gain_adjuster_down;
+  double gyro_gain_down;
 };
 
 #endif /* AHRS_H_ */
