@@ -49,6 +49,7 @@ public:
   void refresh ( linear_least_square_result<float> &result)
     {
       offset = result.y_offset;
+      assert( result.slope != 0.0f);
       scale = 1.0f / result.slope;
       variance = (result.variance_offset + result.variance_slope) * 0.5f; // use variance average
     }
