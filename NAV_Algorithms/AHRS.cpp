@@ -321,8 +321,10 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
     	- nav_induction[EAST]  * expected_nav_induction[NORTH];
       nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN + mag_correction * magnetic_control_gain ; // use X-ACC and MAG: better !
 #endif
+#if USE_GYRO_CALIBRATOR
       gyro_gain_adjuster_right.learn( gyro_adjusted[RIGHT], gyro_correction[RIGHT]);
       gyro_gain_adjuster_down.learn ( gyro_adjusted[DOWN], gyro_correction[DOWN]);
+#endif
     }
   else
       nav_correction[DOWN]  =   heading_gnss_work * H_GAIN;
@@ -350,7 +352,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 	    handle_magnetic_calibration();
 //	  gyro_gain_adjuster_right.calculate();
 //	  gyro_gain_adjuster_right.update_gain( gyro_gain_right);
-#if 1
+#if USE_GYRO_CALIBRATOR
 	  if( gyro_gain_adjuster_down.calculate())
 	    {
 	      gyro_gain_adjuster_down.update_gain( gyro_gain_down);
@@ -443,8 +445,10 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 	gyro_correction = body2nav.reverse_map (nav_correction);
 	gyro_correction *= P_GAIN;
 
+#if USE_GYRO_CALIBRATOR
 	gyro_gain_adjuster_right.learn( gyro_adjusted[RIGHT], gyro_correction[RIGHT]);
 	gyro_gain_adjuster_down.learn ( gyro_adjusted[DOWN], gyro_correction[DOWN]);
+#endif
       }
       break;
     }
@@ -467,7 +471,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 	    handle_magnetic_calibration();
 //	  gyro_gain_adjuster_right.calculate();
 //	  gyro_gain_adjuster_right.update_gain( gyro_gain_right);
-#if 1
+#if USE_GYRO_CALIBRATOR
 	  if( gyro_gain_adjuster_down.calculate())
 	    {
 	      gyro_gain_adjuster_down.update_gain( gyro_gain_down);

@@ -259,7 +259,9 @@ private:
   delay_line <float, MAX_GNSS_DELAY> GNSS_heading_delay_compensation;
   gyro_gain_adjust gyro_gain_adjuster_right;
   double gyro_gain_right;
+#if USE_GYRO_CALIBRATOR
   gyro_gain_adjust gyro_gain_adjuster_down;
+#endif
   double gyro_gain_down;
 };
 
