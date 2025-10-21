@@ -57,6 +57,34 @@ char * NMEA_append_tail( char *p)
  	return p + 5;
  }
 
+//! format an float into ASCII with 1 to 4 digits after the decimal point
+char * to_ascii_x_decimals( float number, int32_t decimals, char *s)
+{
+  if (decimals < 1 || decimals > 4)
+    return s;
+
+  int32_t whole = (int32_t) number;
+  s = format_integer(s, whole);
+
+  *s++ = '.';
+  float remaining = number - (int32_t)number;
+  if (remaining < 0.0)
+    remaining = remaining * -1;
+  float dec = 10;
+  for(int32_t i = 0; i < decimals - 1; i++)
+    {
+      if( remaining < 1 / dec )
+        *s++ = '0';
+      dec = dec * 10;
+    }
+
+  float parts = number * dec - (float)whole * dec;
+  if (parts < 0.0)
+    parts = parts * -1;
+  s = format_integer(s, (int32_t)parts);
+  return s;
+}
+
 //! format an integer into ASCII with exactly two digits after the decimal point
 //! @param number value * 100
 char * to_ascii_2_decimals( int32_t number, char *s)
@@ -399,8 +427,16 @@ void format_PLARS ( float value, PLARS_TYPES option, char * &p)
       p=to_ascii_1_decimal(float32_t(value * 10.0), p);
       break;
     case BAL:  //BAL Ballast (fraction of water ballast 0.000 - 1.000)
-      p = append_string( p, PLARS_BAL);
-      p=to_ascii_2_decimals(float32_t(value * 100.0), p);
+      if (value < 0.0)
+	{
+	  value = 0.0;
+	}
+      if (value > 1.0)
+	{
+	  value = 1.0;
+	}
+      p = append_string(p, PLARS_BAL);
+      p = to_ascii_x_decimals(value, 3, p);
       break;
     case BUGS:  //BUGS Bugs in % (0 - 50)
       if (value < 1.0)
@@ -411,7 +447,7 @@ void format_PLARS ( float value, PLARS_TYPES option, char * &p)
 	{
 	  value = 1.5;
 	}
-      value = (value - 1.0f) * 100.0f; // Scale CAN value 1.0 ... 1.5 to 0 ... 50
+      value = (value - 1.0f) * 100.0f + 0.5f; // Scale CAN value 1.0 ... 1.5 to 0 ... 50
       p = append_string( p, PLARS_BUGS);
       p = format_integer(p, (int32_t)value);
 
