@@ -60,12 +60,14 @@ char * NMEA_append_tail( char *p)
 //! format an float into ASCII with 1 to 4 digits after the decimal point
 char * to_ascii_x_decimals( float number, int32_t decimals, char *s)
 {
-  if (decimals < 1 || decimals > 4)
+  if (decimals < 1 || decimals > 9)
     return s;
 
   int32_t whole = (int32_t) number;
-  s = format_integer(s, whole);
 
+  if ((number < 0.0f) && (whole == 0))
+  	  *s++ = '-'; //Add a - if < 0 && >= -1;
+  s = format_integer(s, whole);
   *s++ = '.';
   float remaining = number - (int32_t)number;
   if (remaining < 0.0)
