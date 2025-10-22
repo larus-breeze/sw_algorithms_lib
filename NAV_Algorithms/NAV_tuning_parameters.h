@@ -31,7 +31,8 @@
 #define MAX_GNSS_DELAY		15
 
 #define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
-#define MAGNETIC_DISTURBANCE_LIMIT 0.1f
+#define MAGNETIC_DISTURBANCE_LIMIT 	0.1f
+#define UNCOMPENSATED_MAG_DISTURBANCE_LIMIT	0.05f
 #define SOFT_IRON_LETHARGY		0.8f
 #define MAX_EXPECTED_INDUCTION_SLOPE	1.1f
 
@@ -63,7 +64,7 @@
 #define SPEED_COMPENSATION_FUSIONER_FEEDBACK 0.99995f // empirically tuned alpha
 #define USE_OLD_FASHIONED_PRESSURE_VARIO 1 // for vario comparison tests (offline)
 
-#define USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING 0 //!< if 1: do not use induction to control attitude while circling
+#define USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING 1 //!< if 1: do not use induction to control attitude while circling
 #define DISABLE_CIRCLING_STATE		0	//!< for tests only: never use circling AHRS algorithm
 
 #define INDUCTION_STD_DEVIATION_LIMIT	0.03 	//!< results outperforming this number will be used further on

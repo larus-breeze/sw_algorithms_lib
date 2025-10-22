@@ -193,7 +193,8 @@ public:
 
   float getGyro_correction_Power () const
   {
-    return gyro_correction_power;
+//    return gyro_correction_power; todo patch
+    return uncompensated_magnetic_disturbance_averager.get_output();
   }
   enum magnetic_calibration_type { NONE, AUTO_1D, AUTO_SOFT_IRON_COMPENSATE};
 private:
@@ -248,6 +249,7 @@ private:
   float heading_difference_AHRS_DGNSS;
   float cross_acc_correction;
   RMS_rectifier <float> magnetic_disturbance_averager; //!< abs( observed_induction - expected_induction)
+  RMS_rectifier <float> uncompensated_magnetic_disturbance_averager; //!< abs( observed_induction - expected_induction)
   float magnetic_control_gain; //!< declination-dependent magnetic control loop gain
   magnetic_calibration_type automatic_magnetic_calibration;
   bool magnetic_calibration_updated;
@@ -257,12 +259,12 @@ private:
   slope_limiter <float> mag_filter[3];
   delay_line <float3vector, MAX_GNSS_DELAY> GNSS_delay_compensation;
   delay_line <float, MAX_GNSS_DELAY> GNSS_heading_delay_compensation;
+#if USE_GYRO_CALIBRATOR
   gyro_gain_adjust gyro_gain_adjuster_right;
   double gyro_gain_right;
-#if USE_GYRO_CALIBRATOR
+  double gyro_gain_down;
   gyro_gain_adjust gyro_gain_adjuster_down;
 #endif
-  double gyro_gain_down;
 };
 
 #endif /* AHRS_H_ */
