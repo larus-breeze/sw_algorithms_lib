@@ -119,7 +119,8 @@ void AHRS_type::feed_magnetic_induction_observer( const float3vector &mag_sensor
 
   bool turning_right = turn_rate_averager.get_output() > 0.0f;
 
-  if(( automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE) ) // && ( mag_delta.abs() < 0.05)) // only if the precision is already reasonably good ...
+  if(( automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE) 
+  	&& (uncompensated_magnetic_disturbance_averager.get_output() < UNCOMPENSATED_MAG_DISTURBANCE_LIMIT)) // only if the precision is already reasonably good ...
     {
       bool calibration_data_complete = soft_iron_compensator.learn( mag_delta, attitude, turning_right, error_margin);
       if( calibration_data_complete)
@@ -160,12 +161,14 @@ AHRS_type::AHRS_type (float sampling_time)
   heading_difference_AHRS_DGNSS(0.0f),
   cross_acc_correction(0.0f),
   magnetic_disturbance_averager( 0.001f),
+  uncompensated_magnetic_disturbance_averager( 0.001f),
   magnetic_control_gain(1.0f),
   automatic_magnetic_calibration( (magnetic_calibration_type)(round)(configuration(MAG_AUTO_CALIB))),
-  magnetic_calibration_updated( false),
+  magnetic_calibration_updated( false)
+#if USE_GYRO_CALIBRATOR
   gyro_gain_right( 1.0f),
   gyro_gain_down( 1.0f)
-
+#endif
 {
   update_magnetic_loop_gain(); // adapt to magnetic inclination
 
@@ -260,8 +263,10 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 			     float GNSS_heading)
 {
   float3vector gyro_adjusted = gyro;
-//  gyro_adjusted[RIGHT] *= gyro_gain_right;
-//  gyro_adjusted[DOWN] *= gyro_gain_down;
+#if USE_GYRO_CALIBRATOR
+  gyro_adjusted[RIGHT] *= gyro_gain_right;
+  gyro_adjusted[DOWN] *= gyro_gain_down;
+#endif
 
   float3vector measured_induction = mag_sensor; // make it writable
   filter_magnetic_induction( gyro, measured_induction);
@@ -277,6 +282,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
     corrected_body_induction = calibrated_body_induction;
 
   body_induction_error = corrected_body_induction - expected_body_induction;
+  uncompensated_magnetic_disturbance_averager.feed((calibrated_body_induction - expected_body_induction).abs());
 
   float3vector nav_acceleration = body2nav * acc;
   float heading_gnss_work = GNSS_heading	// correct for antenna alignment
@@ -371,8 +377,10 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 			   const float3vector &GNSS_acceleration)
 {
   float3vector gyro_adjusted = gyro;
+#if USE_GYRO_CALIBRATOR
   gyro_adjusted[RIGHT] *= gyro_gain_right;
   gyro_adjusted[DOWN]  *= gyro_gain_down;
+#endif
 
   float3vector measured_induction = mag_sensor; // make it writable
   filter_magnetic_induction( gyro, measured_induction);
@@ -388,6 +396,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
     corrected_body_induction = calibrated_body_induction;
 
   body_induction_error = corrected_body_induction - expected_body_induction;
+  uncompensated_magnetic_disturbance_averager.feed((calibrated_body_induction - expected_body_induction).abs());
 
   float3vector nav_acceleration = body2nav * acc;
   float3vector nav_induction = body2nav * corrected_body_induction;
