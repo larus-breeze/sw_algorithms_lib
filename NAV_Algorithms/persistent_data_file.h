@@ -1,11 +1,51 @@
+/***********************************************************************//**
+ * @file		persistent_data_file.h
+ * @brief		tiny file system for configuration data
+ * @author		Dr. Klaus Schaefer
+ * @copyright 		Copyright 2021 Dr. Klaus Schaefer. All rights reserved.
+ * @license 		This project is released under the GNU Public License GPL-3.0
+
+    <Larus Flight Sensor Firmware>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ **************************************************************************/
+
 #ifndef NAV_ALGORITHMS_PERSISTENT_DATA_FILE_H_
 #define NAV_ALGORITHMS_PERSISTENT_DATA_FILE_H_
 
 #define DEBUG
 
-#include "stdint.h"
-#include "assert.h"
+#include "embedded_math.h"
 #include "CRC.h"
+
+#ifdef DEBUG
+#include "stdio.h"
+#include "stdint.h"
+#include "string.h"
+#endif
+
+void FLASH_write( uint32_t * dest, uint32_t * source, unsigned n_words);
+
+enum EEPROM_PARAMETER_FILE_ID
+{
+  SENS_TILT_RPY=50,		// roll pitch yaw angle
+  MAG_SENSOR_CALIBRATION,	// xoff xscale yoff yscale zoff zscale std-deviation : 7 floats
+  SOFT_IRON_PARAMETERS,		// 10 float values for x,y,z each : 30 floats
+  EXT_MAG_SENSOR_XFER_MATRIX	// 4 input 3 output channels : 12 floats
+} ;
+
 
 class node
 {
@@ -23,15 +63,6 @@ public:
   uint8_t size; // size in 32-bit units of entry including sizeof( node)
   uint16_t data; // direct 8bit + checksum OR crc of 32bit data file
 };
-
-#ifdef DEBUG
-
-void FLASH_write( uint32_t * dest, uint32_t * source, unsigned n_words)
-{
-  memcpy( dest, source, n_words * sizeof( uint32_t));
-}
-
-#endif
 
 class file_system
 {
@@ -216,83 +247,5 @@ private:
   void * free_space;
   void * end;
 };
-
-#ifdef DEBUG
-
-#define STORAGE_SIZE 1024
-uint32_t storage[STORAGE_SIZE];
-
-void test_storage( void)
-{
-  bool success;
-  memset( storage, 0xff, STORAGE_SIZE * sizeof(uint32_t));
-  file_system file( storage, storage+STORAGE_SIZE);
-
-  uint8_t datum1 = 0x34;
-  file.store_data(1, node::DIRECT_8_BIT, &datum1);
-
-  success = file.is_consistent();
-
-  file.dump_all_entries();
-
-  unsigned datum2[10]={ 1, 2, 3, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff};
-  file.store_data(2, 3, datum2);
-
-  success = file.is_consistent();
-  file.dump_all_entries();
-
-  datum1 = 0x21;
-  file.store_data(1, datum1);
-
-  success = file.is_consistent();
-  file.dump_all_entries();
-
-  uint16_t test = 0xff;
-  success = file.retrieve_data( 1, test);
-
-  datum2[0]=4;
-  datum2[1]=5;
-  datum2[2]=6;
-  success = file.retrieve_data( 2, datum2, 3);
-
-  success = file.is_consistent();
-  file.dump_all_entries();
-
-  do
-    {
-      ++datum2[0];
-      success = file.store_data(2, 3, datum2);
-    }
-  while( success == true);
-
-  success = file.is_consistent();
-  file.dump_all_entries();
-
-  datum2[0]=0;
-  datum2[1]=0;
-  datum2[2]=0;
-  success = file.retrieve_data( 2, datum2, 3);
-
-  success = file.is_consistent();
-  file.dump_all_entries();
-
-  do
-    {
-      ++datum1;
-      success = file.store_data(1, 0, &datum1);
-    }
-  while( success);
-
-  success = file.is_consistent();
-  file.dump_all_entries();
-
-  success = file.retrieve_data( 1, test);
-  file.dump_all_entries();
-
-  success = file.retrieve_data( 13, test);
-  success = file.retrieve_data( 0xff, test);
-}
-
-#endif
 
 #endif /* NAV_ALGORITHMS_PERSISTENT_DATA_FILE_H_ */
