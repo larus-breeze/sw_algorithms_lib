@@ -69,10 +69,12 @@ void test_storage( void)
   success = file.is_consistent();
   file.dump_all_entries();
 
+  unsigned id=5;
   do
     {
       ++datum2[0];
-      success = file.store_data(2, 3, datum2);
+      success = file.store_data( id, 3, datum2);
+      ++id;
     }
   while( success == true);
 
@@ -100,7 +102,7 @@ void test_storage( void)
   success = file.retrieve_data( 1, test);
   file.dump_all_entries();
 
-  success = file.retrieve_data( 13, test);
+  success = file.retrieve_data( 13, test); // test non existing nodes
   success = file.retrieve_data( 0xff, test);
 }
 

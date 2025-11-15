@@ -93,16 +93,17 @@ public:
 
     if( data_size_words == node::DIRECT_8_BIT) // if direct 16bit data
       {
-	uint16_t checked_datum = *(uint8_t *)data; // take only 8 bits
-	checked_datum |= ( (~checked_datum) << 8);
-	temp_node.data = checked_datum;
+
+	uint16_t checked_datum = *(uint8_t *)data; 	// take only 8 bits
+	temp_node.data = check_and_pack_id_len_and_data( temp_node, checked_datum);
 
 	FLASH_write( (uint32_t *)next_entry, (uint32_t *)&temp_node, 1);
       }
     else // : bunch of 32bit data
       {
-	temp_node.data = CRC16_blockcheck( (uint16_t *)data,  data_size_words * sizeof( uint16_t));
-
+	uint16_t crc = CRC16_blockcheck( (uint16_t *)data,  data_size_words * sizeof( uint16_t));
+	uint16_t protected_id_and_size = temp_node.id + ((temp_node.size) << 8);
+	temp_node.data = CRC16( protected_id_and_size, crc);
 	FLASH_write( (uint32_t *)next_entry, (uint32_t *)&temp_node, 1);
 	FLASH_write( (uint32_t *)(next_entry + 1), (uint32_t *)data, data_size_words * sizeof( uint32_t));
       }
@@ -125,6 +126,8 @@ public:
 
     uint32_t *from = (uint32_t *)candidate + 1;
     uint16_t crc = CRC16_blockcheck( (uint16_t *)from,  data_size * sizeof( uint16_t));
+    uint16_t protected_id_and_size = candidate->id + ((candidate->size) << 8);
+    crc = CRC16( protected_id_and_size, crc);
 
     if( candidate->data != crc)
       return false;
@@ -146,6 +149,9 @@ public:
       return false;
 
     if( my_node->size != 1)
+      return false;
+
+    if( not short_node_is_consistent(*my_node))
       return false;
 
     target = my_node->data;
@@ -185,20 +191,48 @@ public:
       {
 	if( work->size == 1) // we have found a dircect-data-entry
 	  {
-	    if( ((work->data & 0xff) ^ (work->data >> 8)) != 0xff)
+
+	    if( not short_node_is_consistent( *work))
 	      return false; // invalid data pattern
 	  }
 	else
 	  {
-	    uint16_t crc = CRC16_blockcheck( (uint16_t *)work + 2, (work->size - 1) * 2);
-	    if( work->data != crc)
-	      return false; // found bad entry
+	    if( not long_node_is_consistent( work))
+	      return false; // invalid data pattern
 	  }
       }
     return true;
   }
 
 private:
+
+  uint16_t check_and_pack_id_len_and_data( node the_node, uint8_t datum)
+  {
+	uint16_t info = datum;		 // need 16bit data
+	uint16_t crc = CRC16( info, 0); // data crc
+	info = the_node.id + (the_node.size << 8);
+	crc = CRC16( info, crc); 	 // plus node crc
+	crc = (crc ^ (crc >> 8)) & 0xff;	 // fold crc into 8 bits
+	return datum + (crc << 8);
+  }
+
+  bool short_node_is_consistent( node the_node)
+  {
+    uint16_t crc = CRC16( the_node.data & 0xff, 0); // data crc
+    uint16_t info = the_node.id + (the_node.size << 8);
+    crc = CRC16( info, crc); 	     // plus node crc
+    crc = (crc ^ (crc >> 8)) & 0xff; // fold crc into 8 bits
+    return (the_node.data >> 8) == crc;
+  }
+
+  bool long_node_is_consistent( node * work)
+  {
+    uint16_t crc = CRC16_blockcheck( (uint16_t *)work + 2, (work->size - 1) * 2);
+    uint16_t protected_id_and_size = work->id + ((work->size) << 8);
+    crc = CRC16( protected_id_and_size, crc);
+
+    return work->data == crc;
+  }
 
   node * find_last_datum( node * start, node::ID_t id=0xff)
   {
