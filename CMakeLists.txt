@@ -17,7 +17,6 @@ set(SOURCE_FILES
     Output_Formatter/ascii_support.cpp
     Output_Formatter/CAN_output.cpp
     Output_Formatter/NMEA_format.cpp
-
     ARM_math/arm_mat_inverse_f32.c
     ARM_math/arm_mat_inverse_f64.c
     ARM_math/arm_mat_mult_f32.c
@@ -82,19 +81,9 @@ set(HEADER_FILES
     ARM_math/utils.h
 )
 
-include_directories(
-    ../src
-    Generic_Algorithms
-    NAV_Algorithms
-    Output_Formatter
-    ARM_math
-)
-
 add_library(larus_lib
   ${SOURCE_FILES}
   ${HEADER_FILES}
-  ../src/EEPROM_emulation.cpp
-  ../src/main.cpp
 )
 
 target_include_directories(larus_lib
