@@ -31,7 +31,8 @@ template <class data_t, unsigned length> class delay_line
 public:
   delay_line( void)
     :storage{0},
-     ptr(storage)
+     ptr(storage),
+     used_length(length)
     {};
   data_t respond( const data_t &right)
   {
@@ -40,14 +41,25 @@ public:
 
     ++ptr;
 
-    if( ptr >= storage + length)
+    if( ptr >= storage + used_length)
       ptr=storage;
 
     return retv;
   }
+  void set_used_length( unsigned value)
+  {
+    if( value <= length)
+	used_length = value;
+  }
+  void initialize( data_t value)
+  {
+    for( unsigned i=0; i<used_length; ++i)
+      storage[i] = value;
+  }
 private:
   data_t storage[length];
   data_t * ptr;
+  unsigned used_length;
 };
 
 #endif /* DELAY_LINE_H_ */

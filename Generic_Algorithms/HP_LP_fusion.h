@@ -37,7 +37,7 @@ public:
 	  old_HP_input(0)
       {}
 
-  type respond( type HP_input, type LP_input)
+  void respond( type HP_input, type LP_input)
   {
     type new_output =
 	    LP_input * (ONE + a1)
@@ -46,13 +46,12 @@ public:
 	  - old_output * a1 ;
     old_HP_input = HP_input;
     old_output = new_output;
-    return new_output;
   }
 
-  operator type ( void) const
-    {
-      return old_output;
-    }
+  type get_value( void) const
+  {
+    return old_output;
+  }
 
 private:
   basetype a1; // a1, value usually negative

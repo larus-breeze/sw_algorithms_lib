@@ -70,16 +70,22 @@ void setup_tester(void)
 
   // test if the rotation matrix recovers the body frame data
   float3vector test_left_down_body = m_sensor_2_body * v_left_down_sensor;
+  (void)test_left_down_body;
   float3vector test_right_down_body = m_sensor_2_body * v_right_down_sensor;
+  (void)test_right_down_body;
   float3vector test_horiz_body = m_sensor_2_body * v_horiz_sensor;
+  (void)test_horiz_body;
 
   // test if the matrix provides pure rotation
   float3vector vtest1 = m_sensor_2_body * float3vector( test1);
   float test1_abs=vtest1.abs();
+  (void)test1_abs;
   float3vector vtest2 = m_sensor_2_body * float3vector( test2);
   float test2_abs=vtest2.abs();
+  (void)test2_abs;
   float3vector vtest3 = m_sensor_2_body * float3vector( test3);
   float test3_abs=vtest3.abs();
+  (void)test3_abs;
 
   //check if we get the rotation angles using the matrix we have calculated
   quaternion<float> q;

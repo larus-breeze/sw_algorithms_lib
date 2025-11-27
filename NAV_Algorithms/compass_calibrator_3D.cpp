@@ -22,8 +22,7 @@
 
  **************************************************************************/
 
-#define PRINT_PARAMETERS 1
-#if PRINT_PARAMETERS
+#if PRINT_3D_MAG_PARAMETERS
 #include "stdio.h"
 #endif
 
@@ -39,7 +38,7 @@ bool compass_calibrator_3D_t::learn (const float3vector &observed_induction,cons
   if( present_heading <0.0f)
     present_heading += M_PI_F * TWO;
 
-  unsigned sector_index = (turning_right ? OBSERVATIONS / TWO : 0) + (unsigned)(present_heading * RECIP_SECTOR_SIZE);
+  int sector_index = (turning_right ? OBSERVATIONS / TWO : 0) + (unsigned)(present_heading * RECIP_SECTOR_SIZE);
 
   // if we have just left the last sector to be collected: report ready for computation
   if( ( last_sector_collected != -1) && ( sector_index != last_sector_collected) && (++measurement_counter > 10000))
@@ -167,7 +166,7 @@ bool compass_calibrator_3D_t::calculate( void)
 
   buffer_used_for_calibration = next_buffer; // switch now in a thread-save manner
   
-#if PRINT_PARAMETERS
+#if PRINT_3D_MAG_PARAMETERS
 
   for( unsigned k=0; k < AXES; ++k)
     {

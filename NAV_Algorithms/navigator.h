@@ -114,6 +114,9 @@ public:
   void set_from_add_mag ( const float3vector &acc, const float3vector &mag)
   {
     ahrs.attitude_setup(acc, mag);
+#if DEVELOPMENT_ADDITIONS
+    ahrs_magnetic.attitude_setup(acc, mag);
+#endif
   }
   void set_from_euler ( float r, float n, float y)
   {

@@ -29,7 +29,7 @@
 #include "float3vector.h"
 #include "embedded_memory.h"
 
-extern int64_t FAT_time; //!< DOS FAT time for file usage
+extern uint64_t FAT_time; //!< DOS FAT time for file usage
 
 extern bool GNSS_new_data_ready;
 extern bool D_GNSS_new_data_ready;
@@ -154,7 +154,7 @@ public:
   {
     return num_SV;
   }
-  int64_t get_FAT_time( void) const
+  uint64_t get_FAT_time( void) const
   {
     return FAT_time;
   }

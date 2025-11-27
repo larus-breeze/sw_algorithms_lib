@@ -36,7 +36,8 @@
 #include "pt2.h"
 #include "slope_limiter.h"
 #include "RMS_rectifier.h"
-
+#include "delay_line.h"
+#include "gyro_gain_adjust.h"
 extern float3vector nav_induction;
 
 enum { ROLL, PITCH, YAW};
@@ -192,10 +193,12 @@ public:
 
   float getGyro_correction_Power () const
   {
-    return gyro_correction_power;
+//    return gyro_correction_power; todo patch
+    return uncompensated_magnetic_disturbance_averager.get_output();
   }
   enum magnetic_calibration_type { NONE, AUTO_1D, AUTO_SOFT_IRON_COMPENSATE};
 private:
+  enum heading_type{ MAGNETIC, D_GNSS};
   void handle_magnetic_calibration( void);
 
   void update_magnetic_loop_gain( void)
@@ -224,6 +227,8 @@ private:
   float3vector gyro_integrator;
   unsigned circling_counter;
   circle_state_t circling_state;
+  heading_type heading_source;
+  bool heading_source_changed;
   float3vector nav_correction;
   float3vector gyro_correction;
   float3vector acceleration_nav_frame;
@@ -244,6 +249,7 @@ private:
   float heading_difference_AHRS_DGNSS;
   float cross_acc_correction;
   RMS_rectifier <float> magnetic_disturbance_averager; //!< abs( observed_induction - expected_induction)
+  RMS_rectifier <float> uncompensated_magnetic_disturbance_averager; //!< abs( observed_induction - expected_induction)
   float magnetic_control_gain; //!< declination-dependent magnetic control loop gain
   magnetic_calibration_type automatic_magnetic_calibration;
   bool magnetic_calibration_updated;
@@ -251,6 +257,14 @@ private:
   float3vector body_induction_error;
   float gyro_correction_power;
   slope_limiter <float> mag_filter[3];
+  delay_line <float3vector, MAX_GNSS_DELAY> GNSS_delay_compensation;
+  delay_line <float, MAX_GNSS_DELAY> GNSS_heading_delay_compensation;
+#if USE_GYRO_CALIBRATOR
+  gyro_gain_adjust gyro_gain_adjuster_right;
+  double gyro_gain_right;
+  double gyro_gain_down;
+  gyro_gain_adjust gyro_gain_adjuster_down;
+#endif
 };
 
 #endif /* AHRS_H_ */

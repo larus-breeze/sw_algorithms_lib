@@ -31,6 +31,10 @@
 #include "persistent_data.h"
 #include "NAV_tuning_parameters.h"
 
+#if UNIX != 1
+#include "my_assert.h"
+#endif
+
 //! maintain offset and slope data for one sensor axis
 class single_axis_calibration_t
 {
@@ -45,6 +49,7 @@ public:
   void refresh ( linear_least_square_result<float> &result)
     {
       offset = result.y_offset;
+      assert( result.slope != 0.0f);
       scale = 1.0f / result.slope;
       variance = (result.variance_offset + result.variance_slope) * 0.5f; // use variance average
     }
@@ -53,6 +58,7 @@ public:
   void refresh ( float _offset, float _slope, float _variance_offset, float _variance_slope)
     {
       offset = _offset;
+      assert( _slope != 0.0f);
       scale = 1.0f / _slope;
       variance = ( _variance_offset + _variance_slope) * 0.5f; // use variance average
     }
