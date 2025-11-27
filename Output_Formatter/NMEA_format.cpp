@@ -57,6 +57,36 @@ char * NMEA_append_tail( char *p)
  	return p + 5;
  }
 
+//! format an float into ASCII with 1 to 4 digits after the decimal point
+char * to_ascii_x_decimals( float number, int32_t decimals, char *s)
+{
+  if (decimals < 1 || decimals > 9)
+    return s;
+
+  int32_t whole = (int32_t) number;
+
+  if ((number < 0.0f) && (whole == 0))
+  	  *s++ = '-'; //Add a - if < 0 && >= -1;
+  s = format_integer(s, whole);
+  *s++ = '.';
+  float remaining = number - (int32_t)number;
+  if (remaining < 0.0)
+    remaining = remaining * -1;
+  float dec = 10;
+  for(int32_t i = 0; i < decimals - 1; i++)
+    {
+      if( remaining < 1 / dec )
+        *s++ = '0';
+      dec = dec * 10;
+    }
+
+  float parts = number * dec - (float)whole * dec;
+  if (parts < 0.0)
+    parts = parts * -1;
+  s = format_integer(s, (int32_t)parts);
+  return s;
+}
+
 //! format an integer into ASCII with exactly two digits after the decimal point
 //! @param number value * 10^decimals
 void to_ascii_n_decimals( int32_t number, unsigned decimals, char * &s)
@@ -388,6 +418,15 @@ void format_PLARS ( float value, PLARS_TYPES option, char * &p)
       to_ascii_n_decimals(float32_t(value * 100.0), 2, p);
       break;
     case BUGS:  //BUGS Bugs in % (0 - 50)
+      if (value < 1.0)
+        {
+	  value = 1.0;
+        }
+      if (value > 1.5)
+	{
+	  value = 1.5;
+	}
+      value = (value - 1.0f) * 100.0f + 0.5f; // Scale CAN value 1.0 ... 1.5 to 0 ... 50
       p = append_string( p, PLARS_BUGS);
       to_ascii_n_decimals(float32_t( value * 100.0), 2, p);
         break;
