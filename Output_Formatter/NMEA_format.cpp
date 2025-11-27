@@ -88,47 +88,32 @@ char * to_ascii_x_decimals( float number, int32_t decimals, char *s)
 }
 
 //! format an integer into ASCII with exactly two digits after the decimal point
-//! @param number value * 100
-char * to_ascii_2_decimals( int32_t number, char *s)
+//! @param number value * 10^decimals
+void to_ascii_n_decimals( int32_t number, unsigned decimals, char * &s)
 {
   if( number < 0)
     {
       *s++='-';
       number = -number;
     }
-  if( number >= 1000)
-    {
-      s = format_integer( s, number / 1000);
-      number %= 1000;
-    }
-  *s++=HEX[number / 100]; // format 1 digit plus exactly 2 decimals
-  *s++='.';
-  number %= 100;
-  *s++=HEX[number / 10];
-  *s++=HEX[number % 10];
-  *s=0;
-  return s;
-}
 
-//! format an integer into ASCII with one decimal
-//! @param number value * 10
-char * to_ascii_1_decimal( int32_t number, char *s)
-{
-  if( number < 0)
-    {
-      *s++='-';
-      number = -number;
-    }
-  if( number >= 100)
-    {
-      s = format_integer( s, number / 100);
-      number %= 100;
-    }
-  *s++=HEX[number / 10]; // format exactly 1 decimal
+  unsigned divisor=1;
+  for( unsigned i=decimals; i>0; --i)
+    divisor *= 10;
+
+  s = format_integer( s, number / divisor);
+  number %= divisor;
+
   *s++='.';
-  *s++=HEX[number % 10];
-  *s=0;
-  return s;
+
+  s[decimals] = 0;
+  unsigned i=decimals;
+  while( i--)
+    {
+      s[ i]=HEX[number % 10];
+      number /= 10;
+    }
+  s += decimals;
 }
 
 //! append an angle in ASCII into a NMEA string
@@ -285,13 +270,13 @@ void format_GGA( const coordinates_t &coordinates, char * &p)
   *p++ = ',';
 
   int32_t altitude_msl_dm = (int32_t)(coordinates.position[DOWN] * -10.0f);
-  p = to_ascii_1_decimal( altitude_msl_dm, p);
+  to_ascii_n_decimals( altitude_msl_dm, 1, p);
   *p++ = ',';
   *p++ = 'M';
   *p++ = ',';
 
   int32_t geo_sep_10 = coordinates.geo_sep_dm;
-  p = to_ascii_1_decimal( geo_sep_10, p);
+  to_ascii_n_decimals( geo_sep_10, 1, p);
   *p++ = ',';
   *p++ = 'M';
   *p++ = ','; // no DGPS
@@ -309,7 +294,7 @@ void format_PLARD ( float density, char type, char * &p)
 {
   char * line_start = p;
   p = append_string( p, PLARD);
-  p = to_ascii_2_decimals( round( density * 1e5f), p); // units = g / m^3, * 100 to get 2 decimals
+  to_ascii_n_decimals( round( density * 1e5f), 2, p); // units = g / m^3, * 100 to get 2 decimals
   *p++ = ',';
   *p++ = type;
   *p=0;
@@ -323,7 +308,7 @@ void format_PLARB ( float voltage, char * &p)
 {
   char * line_start = p;
   p = append_string( p, PLARB);
-  p = to_ascii_2_decimals( round( voltage * 100.0f), p);
+  to_ascii_n_decimals( round( voltage * 100.0f), 2, p);
   p = NMEA_append_tail ( line_start);
 }
 
@@ -334,15 +319,15 @@ void format_PLARA ( float roll, float pitch, float yaw, char * &p)
   char * line_start = p;
   p = append_string( p, PLARA);
 
-  p = to_ascii_1_decimal( round(roll * RAD_TO_DEGREE_10), p);
+  to_ascii_n_decimals( round(roll * RAD_TO_DEGREE_10), 1, p);
 
   p = append_string( p, ",");
-  p = to_ascii_1_decimal( round(pitch * RAD_TO_DEGREE_10), p);
+  to_ascii_n_decimals( round(pitch * RAD_TO_DEGREE_10), 1, p);
 
   if( yaw < 0.0f)
     yaw += 6.2832f;
   p = append_string( p, ",");
-  p = to_ascii_1_decimal( round(yaw * RAD_TO_DEGREE_10), p);
+  to_ascii_n_decimals( round(yaw * RAD_TO_DEGREE_10), 1, p);
 
   p = NMEA_append_tail ( line_start);
 }
@@ -396,10 +381,10 @@ void format_PLARV ( float variometer, float avg_variometer, float pressure_altit
   avg_variometer = CLIP<float>(avg_variometer, -50.0, 50.0);
   TAS = CLIP<float>(TAS, 0, 100);
 
-  p=to_ascii_2_decimals( round( variometer * 100.0f), p);
+  to_ascii_n_decimals( round( variometer * 100.0f), 2, p);
   *p++ = ',';
 
-  p=to_ascii_2_decimals( round( avg_variometer * 100.0f), p);
+  to_ascii_n_decimals( round( avg_variometer * 100.0f), 2, p);
   *p++ = ',';
 
   p=format_integer( p, (int) round( pressure_altitude));
@@ -426,19 +411,11 @@ void format_PLARS ( float value, PLARS_TYPES option, char * &p)
   switch (type) {
     case MC:   //MC MacCready m/s (0.0 - 9.9)
       p = append_string( p, PLARS_MC);
-      p=to_ascii_1_decimal(float32_t(value * 10.0), p);
+      to_ascii_n_decimals(float32_t(value * 10.0), 1, p);
       break;
     case BAL:  //BAL Ballast (fraction of water ballast 0.000 - 1.000)
-      if (value < 0.0)
-	{
-	  value = 0.0;
-	}
-      if (value > 1.0)
-	{
-	  value = 1.0;
-	}
-      p = append_string(p, PLARS_BAL);
-      p = to_ascii_x_decimals(value, 3, p);
+      p = append_string( p, PLARS_BAL);
+      to_ascii_n_decimals(float32_t(value * 100.0), 2, p);
       break;
     case BUGS:  //BUGS Bugs in % (0 - 50)
       if (value < 1.0)
@@ -451,12 +428,11 @@ void format_PLARS ( float value, PLARS_TYPES option, char * &p)
 	}
       value = (value - 1.0f) * 100.0f + 0.5f; // Scale CAN value 1.0 ... 1.5 to 0 ... 50
       p = append_string( p, PLARS_BUGS);
-      p = format_integer(p, (int32_t)value);
-
+      to_ascii_n_decimals(float32_t( value * 100.0), 2, p);
         break;
     case QNH:  //QNH QNH in hPa
       p = append_string( p, PLARS_QNH);
-      p=to_ascii_2_decimals(float32_t(value * 100.0), p);
+      to_ascii_n_decimals(float32_t( value * 100.0), 2, p);
         break;
     case CIR: //1 == Circling or 0 == Cruising
       p = append_string( p, PLARS_CIR);
