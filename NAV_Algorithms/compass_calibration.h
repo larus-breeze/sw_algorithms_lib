@@ -171,8 +171,10 @@ public:
       }
 
     for (unsigned i = 0; i < 3; ++i)
-      calibration[i] = calibration_candidate[i];
-
+      {
+	calibration[i].offset = 0.25f * calibration_candidate[i].offset + 0.75f * calibration[i].offset;
+	calibration[i].scale = 0.25f * calibration_candidate[i].scale + 0.75f * calibration[i].scale;
+      }
     return true;
   }
 
