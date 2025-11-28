@@ -206,7 +206,7 @@ void format_PLARD ( float density, char type, char * &p)
 {
   char * line_start = p;
   append_string( p, PLARD);
-  to_ascii_n_decimals( round( density * 1e3f), 2, p); // units = g / m^3
+  to_ascii_n_decimals( density * 1e3f, 2, p); // units = g / m^3
   *p++ = ',';
   *p++ = type;
   *p=0;
@@ -220,7 +220,7 @@ void format_PLARB ( float voltage, char * &p)
 {
   char * line_start = p;
   append_string( p, PLARB);
-  to_ascii_n_decimals( round( voltage * 100.0f), 2, p);
+  to_ascii_n_decimals( voltage, 2, p);
   p = NMEA_append_tail ( line_start);
 }
 
