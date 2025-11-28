@@ -28,7 +28,6 @@
 
 #define ANGLE_SCALE 1e-7f
 #define MPS_TO_NMPH 1.944f // 90 * 60 NM / 10000km * 3600 s/h
-#define RAD_TO_DEGREE_10 572.958f
 #define RAD_TO_DEGREE 57.2958f
 #define METER_TO_FEET 3.2808f
 #define MPS_TO_KMPH 3.6f
@@ -232,15 +231,15 @@ void format_PLARA ( float roll, float pitch, float yaw, char * &p)
   char * line_start = p;
   append_string( p, PLARA);
 
-  to_ascii_n_decimals( round(roll * RAD_TO_DEGREE_10), 1, p);
+  to_ascii_n_decimals( roll * RAD_TO_DEGREE, 1, p);
 
   append_string( p, ",");
-  to_ascii_n_decimals( round(pitch * RAD_TO_DEGREE_10), 1, p);
+  to_ascii_n_decimals( pitch * RAD_TO_DEGREE, 1, p);
 
   if( yaw < 0.0f)
     yaw += 6.2832f;
   append_string( p, ",");
-  to_ascii_n_decimals( round(yaw * RAD_TO_DEGREE_10), 1, p);
+  to_ascii_n_decimals( yaw * RAD_TO_DEGREE, 1, p);
 
   p = NMEA_append_tail ( line_start);
 }
