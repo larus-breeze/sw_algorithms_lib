@@ -34,7 +34,7 @@ void serial_output::puti( int value, int base)
 void serial_output::putx( int32_t value, uint8_t digits)
 {
 	char buffer[20];
-	char *next;
+	char *next=buffer;
 	utox( next, value, digits);
 	puts( buffer);
 }
