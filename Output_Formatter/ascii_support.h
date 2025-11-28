@@ -35,6 +35,8 @@ char * my_ftoa( char * target, float value);
 void utox( char* &result, uint32_t value, uint8_t nibbles = 8);
 void lutox( char* &result, uint64_t value);
 
+void to_ascii_n_decimals( float value, unsigned decimals, char * &s);
+
 extern "C"
  {
 #endif /* __cplusplus */
@@ -57,6 +59,14 @@ inline void newline( char * &next)
   *next++ = '\r';
   *next++ = '\n';
   *next = 0;
+}
+
+inline void format_2_digits( char * &target, uint32_t data)
+{
+  data %= 100;
+  *target++ = (char)(data / 10 + '0');
+  *target++ = (char)(data % 10 + '0');
+  *target = 0; // just be sure string is terminated
 }
 
 void format_integer( char * &target, int32_t value);
