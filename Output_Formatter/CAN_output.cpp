@@ -59,6 +59,7 @@ enum CAN_ID_SENSOR
   CAN_Id_GPS_Sats	= 0x145,    //!< uin8_t No of Sats, (uint8_t)bool SAT FIX type
 
   CAN_Id_Heartbeat_Sens	= 0x520,
+  CAN_Id_Identify_Sensor = 0x521,
   CAN_Id_Heartbeat_GNSS	= 0x540,
   CAN_Id_Heartbeat_IMU	= 0x560
 
@@ -198,6 +199,11 @@ void CAN_heartbeat( void)
   p.data_h[0] = 2;
   p.data_h[1] = 0;
   p.data_w[1] = UNIQUE_ID[0];
+  CAN_send(p, 1);
+
+  p.id = CAN_Id_Identify_Sensor;
+  p.data_w[0] = 1; // todo: replace me by version of H/W
+  p.data_w[1] = __REV( GIT_TAG_DEC);
   CAN_send(p, 1);
 
   p.id=CAN_Id_Heartbeat_GNSS;
