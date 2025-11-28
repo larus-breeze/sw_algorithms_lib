@@ -159,7 +159,7 @@ ROM char GPRMC[]="$GPRMC,";
 void format_RMC (const coordinates_t &coordinates, char * &p)
 {
   char * line_start = p;
-  p = append_string( p, GPRMC);
+  append_string( p, GPRMC);
   format_GNSS_timestamp( coordinates, p);
 
   *p++ = coordinates.sat_fix_type != 0 ? 'A' : 'V';
@@ -208,7 +208,7 @@ void format_RMC (const coordinates_t &coordinates, char * &p)
   *p++ = ((coordinates.year)%100) / 10 + '0';
   *p++ = ((coordinates.year)%100) % 10 + '0';
 
-  p=append_string( p, ",,,A");
+  append_string( p, ",,,A");
   p = NMEA_append_tail ( line_start);
 }
 
@@ -218,7 +218,7 @@ ROM char GPGGA[]="$GPGGA,";
 void format_GGA( const coordinates_t &coordinates, char * &p)
 {
   char * line_start = p;
-  p = append_string( p, GPGGA);
+  append_string( p, GPGGA);
   format_GNSS_timestamp( coordinates, p);
 
   angle_format (coordinates.latitude, 'N', 'S', p, false);
@@ -263,7 +263,7 @@ ROM char PLARD[]="$PLARD,";
 void format_PLARD ( float density, char type, char * &p)
 {
   char * line_start = p;
-  p = append_string( p, PLARD);
+  append_string( p, PLARD);
   to_ascii_n_decimals( round( density * 1e5f), 2, p); // units = g / m^3, * 100 to get 2 decimals
   *p++ = ',';
   *p++ = type;
@@ -277,7 +277,7 @@ ROM char PLARB[]="$PLARB,";
 void format_PLARB ( float voltage, char * &p)
 {
   char * line_start = p;
-  p = append_string( p, PLARB);
+  append_string( p, PLARB);
   to_ascii_n_decimals( round( voltage * 100.0f), 2, p);
   p = NMEA_append_tail ( line_start);
 }
@@ -287,16 +287,16 @@ ROM char PLARA[]="$PLARA,";
 void format_PLARA ( float roll, float pitch, float yaw, char * &p)
 {
   char * line_start = p;
-  p = append_string( p, PLARA);
+  append_string( p, PLARA);
 
   to_ascii_n_decimals( round(roll * RAD_TO_DEGREE_10), 1, p);
 
-  p = append_string( p, ",");
+  append_string( p, ",");
   to_ascii_n_decimals( round(pitch * RAD_TO_DEGREE_10), 1, p);
 
   if( yaw < 0.0f)
     yaw += 6.2832f;
-  p = append_string( p, ",");
+  append_string( p, ",");
   to_ascii_n_decimals( round(yaw * RAD_TO_DEGREE_10), 1, p);
 
   p = NMEA_append_tail ( line_start);
@@ -308,7 +308,7 @@ ROM char PLARW[]="$PLARW,";
 void format_PLARW ( float wind_north, float wind_east, char windtype, char * &p)
 {
   char * line_start = p;
-  p = append_string( p, PLARW);
+  append_string( p, PLARW);
 
   //Clipping to realistic values for a glider. Some ASCII functions crash if given to high values. TODO: fix
   wind_north = CLIP<float>(wind_north, -50.0, 50.0);
@@ -334,7 +334,7 @@ void format_PLARW ( float wind_north, float wind_east, char windtype, char * &p)
 
   *p++ = windtype;
 
-  p = append_string( p, ",A"); // always report "valid" for the moment
+  append_string( p, ",A"); // always report "valid" for the moment
   p = NMEA_append_tail ( line_start);
 }
 
@@ -344,7 +344,7 @@ ROM char PLARV[]="$PLARV,";
 void format_PLARV ( float variometer, float avg_variometer, float pressure_altitude, float TAS, char * &p)
 {
   char * line_start = p;
-  p = append_string( p, PLARV);
+  append_string( p, PLARV);
 
   //Clipping to realistic values for a glider. Some ASCII functions crash if given to high values. TODO: fix
   variometer = CLIP<float>(variometer, -50.0, 50.0);
@@ -375,35 +375,35 @@ ROM char PLARS_CIR[]="CIR,";
 void format_PLARS ( float value, PLARS_TYPES option, char * &p)
 {
   char * line_start = p;
-  p = append_string( p, PLARS);
+  append_string( p, PLARS);
   enum PLARS_TYPES type = option;
 
   switch (type) {
     case MC:   //MC MacCready m/s (0.0 - 9.9)
-      p = append_string( p, PLARS_MC);
+      append_string( p, PLARS_MC);
       to_ascii_n_decimals(float32_t(value * 10.0), 1, p);
       break;
     case BAL:  //BAL Ballast (fraction of water ballast 0.000 - 1.000)
-      p = append_string( p, PLARS_BAL);
+      append_string( p, PLARS_BAL);
       to_ascii_n_decimals(float32_t(value * 100.0), 2, p);
       break;
     case BUGS:  //BUGS Bugs in % (0 - 50)
-      p = append_string( p, PLARS_BUGS);
+      append_string( p, PLARS_BUGS);
       to_ascii_n_decimals(float32_t( value * 100.0), 2, p);
         break;
     case QNH:  //QNH QNH in hPa
-      p = append_string( p, PLARS_QNH);
+      append_string( p, PLARS_QNH);
       to_ascii_n_decimals(float32_t( value * 100.0), 2, p);
         break;
     case CIR: //1 == Circling or 0 == Cruising
-      p = append_string( p, PLARS_CIR);
+      append_string( p, PLARS_CIR);
       if (value < 0.5)  // CAN definition 0 == Vario
 	{
-	  p = append_string( p, "1"); // NMEA Circling CIR,1
+	  append_string( p, "1"); // NMEA Circling CIR,1
 	}
       else  // 1 == SpeedToFly
 	{
-	  p = append_string( p, "0"); // NMEA Cruise Mode CIR,0
+	  append_string( p, "0"); // NMEA Cruise Mode CIR,0
 	}
       break;
     default:

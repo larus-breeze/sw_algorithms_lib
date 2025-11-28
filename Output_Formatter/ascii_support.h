@@ -32,8 +32,8 @@ char * my_ftoa( char * target, float value);
 
 #ifdef __cplusplus
 
-char * utox( char* result, uint32_t value, uint8_t nibbles = 8);
-char * lutox( char* result, uint64_t value);
+void utox( char* &result, uint32_t value, uint8_t nibbles = 8);
+void lutox( char* &result, uint64_t value);
 
 extern "C"
  {
@@ -53,12 +53,11 @@ inline char * format_2_digits( char * target, uint32_t data)
 }
 
 //! basically: kind of strcat returning the pointer to the string-end
-inline char *append_string( char *target, const char *source)
+inline void append_string( char * &target, const char *source)
 {
   while( *source)
       *target++ = *source++;
   *target = 0; // just to be sure :-)
-  return target;
 }
 
 //!< append carriage return and newline and advance pointer
