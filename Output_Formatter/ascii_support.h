@@ -32,6 +32,8 @@ char * my_ftoa( char * target, float value);
 
 #ifdef __cplusplus
 
+void to_ascii_n_decimals( float number, unsigned decimals, char * &s);
+
 char * utox( char* result, uint32_t value, uint8_t nibbles = 8);
 char * lutox( char* result, uint64_t value);
 
