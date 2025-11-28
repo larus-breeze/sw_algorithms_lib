@@ -43,15 +43,6 @@ char* ftoa( char* Buffer, float Value);
 
 float my_atof(const char *s);
 
-inline char * format_2_digits( char * target, uint32_t data)
-{
-  data %= 100;
-  *target++ = (char)(data / 10 + '0');
-  *target++ = (char)(data % 10 + '0');
-  *target = 0; // just be sure string is terminated
-  return target;
-}
-
 //! basically: kind of strcat returning the pointer to the string-end
 inline void append_string( char * &target, const char *source)
 {
@@ -68,7 +59,7 @@ inline void newline( char * &next)
   *next = 0;
 }
 
-char * format_integer( char *target, int32_t value);
+void format_integer( char * &target, int32_t value);
 
 #ifdef __cplusplus
  }

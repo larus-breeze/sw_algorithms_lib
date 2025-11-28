@@ -267,11 +267,11 @@ void format_PLARW ( float wind_north, float wind_east, char windtype, char * &p)
   int angle = (int) round( direction * RAD_TO_DEGREE);
   if( angle < 0)
       angle += 360;
-  p=format_integer( p, angle);
+  format_integer( p, angle);
   *p++ = ',';
 
   int speed = (int) round( MPS_TO_KMPH * SQRT( SQR( wind_north) + SQR( wind_east)));
-  p=format_integer( p, speed);
+  format_integer( p, speed);
   *p++ = ',';
 
   *p++ = windtype;
@@ -299,10 +299,10 @@ void format_PLARV ( float variometer, float avg_variometer, float pressure_altit
   to_ascii_n_decimals( avg_variometer, 2, p);
   *p++ = ',';
 
-  p=format_integer( p, (int) round( pressure_altitude));
+  format_integer( p, (int) round( pressure_altitude));
   *p++ = ',';
 
-  p=format_integer( p, (int) round( TAS * MPS_TO_KMPH));
+  format_integer( p, (int) round( TAS * MPS_TO_KMPH));
 
   p = NMEA_append_tail ( line_start);
 }

@@ -46,7 +46,7 @@ void to_ascii_n_decimals( float value, unsigned decimals, char * &s)
   for( unsigned i=decimals; i>0; --i)
     divisor *= 10;
 
-  s = format_integer( s, number / divisor);
+  format_integer( s, number / divisor);
   number %= divisor;
 
   *s++='.';
@@ -174,22 +174,22 @@ char * my_ftoa( char * target, float value)
  }
 
 //! signed integer to ASCII returning the string end
-char * format_integer( char *s, int32_t value)
+void format_integer( char * &s, int32_t value)
 {
   if( value < 0)
     {
       *s++='-';
-      return format_integer( s, -value);
+      format_integer( s, -value);
+      return;
     }
   if( value < 10)
       *s++ = value + '0';
     else
     {
-      s = format_integer( s, value / 10);
+      format_integer( s, value / 10);
       *s++ = value % 10 + '0';
     }
   *s=0;
-  return s;
 }
 
 #define isdigit(c) (c >= '0' && c <= '9')
