@@ -136,34 +136,14 @@ void format_RMC (const coordinates_t &coordinates, char * &p)
   angle_format (coordinates.longitude, 'E', 'W', p, true);
   *p++ = ',';
 
-  float value = coordinates.speed_motion * MPS_TO_NMPH;
-
-  //Clipping to realistic values for a glider. Some ASCII functions crash if given to high values. TODO: fix
-  value = CLIP<float>(value, 0, (100.0f * MPS_TO_NMPH));
-
-  unsigned knots = (unsigned)(value * 10.0f + 0.5f);
-  *p++ = (char)(knots / 1000 + '0');
-  knots %= 1000;
-  *p++ = (char)(knots / 100 + '0');
-  knots %= 100;
-  *p++ = (char)(knots / 10 + '0');
-  *p++ = '.';
-  *p++ = (char)(knots % 10 + '0');
+  to_ascii_n_decimals( coordinates.speed_motion * MPS_TO_NMPH, 1, p);
   *p++ = ',';
 
   float true_track = coordinates.heading_motion;
   if( true_track < 0.0f)
     true_track += 360.0f;
-  int angle_10 = (int) round(true_track * 10.0f);
 
-  *p++ = (char)(angle_10 / 1000 + '0');
-  angle_10 %= 1000;
-  *p++ = (char)(angle_10 / 100 + '0');
-  angle_10 %= 100;
-  *p++ = (char)(angle_10 / 10 + '0');
-  *p++ = '.';
-  *p++ = (char)(angle_10 % 10 + '0');
-
+  to_ascii_n_decimals( true_track, 1, p);
   *p++ = ',';
 
   *p++ = (coordinates.day) / 10 + '0';
@@ -204,14 +184,12 @@ void format_GGA( const coordinates_t &coordinates, char * &p)
   *p++ = '0';
   *p++ = ',';
 
-  int32_t altitude_msl_dm = (int32_t)(coordinates.position[DOWN] * -10.0f);
-  to_ascii_n_decimals( altitude_msl_dm, 1, p);
+  to_ascii_n_decimals( coordinates.position[DOWN] * -1.0f, 1, p);
   *p++ = ',';
   *p++ = 'M';
   *p++ = ',';
 
-  int32_t geo_sep_10 = coordinates.geo_sep_dm;
-  to_ascii_n_decimals( geo_sep_10, 1, p);
+  to_ascii_n_decimals( coordinates.geo_sep_dm * 0.1f, 1, p);
   *p++ = ',';
   *p++ = 'M';
   *p++ = ','; // no DGPS
@@ -229,7 +207,7 @@ void format_PLARD ( float density, char type, char * &p)
 {
   char * line_start = p;
   append_string( p, PLARD);
-  to_ascii_n_decimals( round( density * 1e5f), 2, p); // units = g / m^3, * 100 to get 2 decimals
+  to_ascii_n_decimals( round( density * 1e3f), 2, p); // units = g / m^3
   *p++ = ',';
   *p++ = type;
   *p=0;
@@ -316,10 +294,10 @@ void format_PLARV ( float variometer, float avg_variometer, float pressure_altit
   avg_variometer = CLIP<float>(avg_variometer, -50.0, 50.0);
   TAS = CLIP<float>(TAS, 0, 100);
 
-  to_ascii_n_decimals( round( variometer * 100.0f), 2, p);
+  to_ascii_n_decimals( variometer, 2, p);
   *p++ = ',';
 
-  to_ascii_n_decimals( round( avg_variometer * 100.0f), 2, p);
+  to_ascii_n_decimals( avg_variometer, 2, p);
   *p++ = ',';
 
   p=format_integer( p, (int) round( pressure_altitude));
@@ -346,19 +324,19 @@ void format_PLARS ( float value, PLARS_TYPES option, char * &p)
   switch (type) {
     case MC:   //MC MacCready m/s (0.0 - 9.9)
       append_string( p, PLARS_MC);
-      to_ascii_n_decimals(float32_t(value * 10.0), 1, p);
+      to_ascii_n_decimals( value, 1, p);
       break;
     case BAL:  //BAL Ballast (fraction of water ballast 0.000 - 1.000)
       append_string( p, PLARS_BAL);
-      to_ascii_n_decimals(float32_t(value * 100.0), 2, p);
+      to_ascii_n_decimals( value, 2, p);
       break;
     case BUGS:  //BUGS Bugs in % (0 - 50)
       append_string( p, PLARS_BUGS);
-      to_ascii_n_decimals(float32_t( value * 100.0), 2, p);
+      to_ascii_n_decimals( value, 2, p);
         break;
     case QNH:  //QNH QNH in hPa
       append_string( p, PLARS_QNH);
-      to_ascii_n_decimals(float32_t( value * 100.0), 2, p);
+      to_ascii_n_decimals( value, 2, p);
         break;
     case CIR: //1 == Circling or 0 == Cruising
       append_string( p, PLARS_CIR);
