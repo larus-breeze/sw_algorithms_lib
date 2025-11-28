@@ -35,12 +35,6 @@
 
 ROM char HEX[]="0123456789ABCDEF";
 
-// ********* Generic stuff ************************************************
-inline char hex4( uint8_t data)
-{
-  return HEX[data];
-}
-
 //! add end delimiter, evaluate and add checksum and add CR+LF
 char * NMEA_append_tail( char *p)
  {
@@ -49,42 +43,13 @@ char * NMEA_append_tail( char *p)
  	for( p=p+1; *p && *p !='*'; ++p)
  		checksum ^= *p;
  	p[0] = '*';
- 	p[1] = hex4(checksum >> 4);
- 	p[2] = hex4(checksum & 0x0f);
+ 	p[1] = HEX[checksum >> 4];
+ 	p[2] = HEX[checksum & 0x0f];
  	p[3] = '\r';
  	p[4] = '\n';
  	p[5] = 0;
  	return p + 5;
  }
-
-//! format an integer into ASCII with exactly two digits after the decimal point
-//! @param number value * 10^decimals
-void to_ascii_n_decimals( int32_t number, unsigned decimals, char * &s)
-{
-  if( number < 0)
-    {
-      *s++='-';
-      number = -number;
-    }
-
-  unsigned divisor=1;
-  for( unsigned i=decimals; i>0; --i)
-    divisor *= 10;
-
-  s = format_integer( s, number / divisor);
-  number %= divisor;
-
-  *s++='.';
-
-  s[decimals] = 0;
-  unsigned i=decimals;
-  while( i--)
-    {
-      s[ i]=HEX[number % 10];
-      number /= 10;
-    }
-  s += decimals;
-}
 
 //! append an angle in ASCII into a NMEA string
 void angle_format ( double angle, char posc, char negc, char * &p, bool force_5_digits=false)
@@ -422,7 +387,7 @@ bool NMEA_checksum( const char *line)
  	const char * p;
  	for( p=line+1; *p && *p !='*'; ++p)
  		checksum ^= *p;
- 	return ( (p[0] == '*') && hex4( checksum >> 4) == p[1]) && ( hex4( checksum & 0x0f) == p[2]) && (p[3] == 0);
+ 	return ( (p[0] == '*') && HEX[ checksum >> 4] == p[1]) && ( HEX[ checksum & 0x0f] == p[2]) && (p[3] == 0);
  }
 
 //! this procedure formats all our NMEA sequences

@@ -28,6 +28,39 @@
 #include <stdlib.h>
 
 static ROM char ASCIItable[]="zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz";
+ROM char HEX[]="0123456789ABCDEF";
+
+void to_ascii_n_decimals( float value, unsigned decimals, char * &s)
+{
+  for( unsigned i=decimals; i; --i)
+    value *= 10.0f;
+
+  int number = round( value);
+  if( number < 0)
+    {
+      *s++='-';
+      number = -number;
+    }
+
+  unsigned divisor=1;
+  for( unsigned i=decimals; i>0; --i)
+    divisor *= 10;
+
+  s = format_integer( s, number / divisor);
+  number %= divisor;
+
+  *s++='.';
+
+  s[decimals] = 0;
+  unsigned i=decimals;
+  while( i--)
+    {
+      s[ i]=HEX[number % 10];
+      number /= 10;
+    }
+  s += decimals;
+}
+
 
 char* itoa( int value, char* result, int base)
 {
