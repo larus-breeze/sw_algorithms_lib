@@ -57,65 +57,6 @@ char * NMEA_append_tail( char *p)
  	return p + 5;
  }
 
-//! format an float into ASCII with 1 to 4 digits after the decimal point
-char * to_ascii_x_decimals( float number, int32_t decimals, char *s)
-{
-  if (decimals < 1 || decimals > 9)
-    return s;
-
-  int32_t whole = (int32_t) number;
-
-  if ((number < 0.0f) && (whole == 0))
-  	  *s++ = '-'; //Add a - if < 0 && >= -1;
-  s = format_integer(s, whole);
-  *s++ = '.';
-  float remaining = number - (int32_t)number;
-  if (remaining < 0.0)
-    remaining = remaining * -1;
-  float dec = 10;
-  for(int32_t i = 0; i < decimals - 1; i++)
-    {
-      if( remaining < 1 / dec )
-        *s++ = '0';
-      dec = dec * 10;
-    }
-
-  float parts = number * dec - (float)whole * dec;
-  if (parts < 0.0)
-    parts = parts * -1;
-  s = format_integer(s, (int32_t)parts);
-  return s;
-}
-
-//! format an integer into ASCII with exactly two digits after the decimal point
-//! @param number value * 10^decimals
-void to_ascii_n_decimals( int32_t number, unsigned decimals, char * &s)
-{
-  if( number < 0)
-    {
-      *s++='-';
-      number = -number;
-    }
-
-  unsigned divisor=1;
-  for( unsigned i=decimals; i>0; --i)
-    divisor *= 10;
-
-  s = format_integer( s, number / divisor);
-  number %= divisor;
-
-  *s++='.';
-
-  s[decimals] = 0;
-  unsigned i=decimals;
-  while( i--)
-    {
-      s[ i]=HEX[number % 10];
-      number /= 10;
-    }
-  s += decimals;
-}
-
 //! append an angle in ASCII into a NMEA string
 void angle_format ( double angle, char posc, char negc, char * &p, bool force_5_digits=false)
 {
@@ -294,7 +235,7 @@ void format_PLARD ( float density, char type, char * &p)
 {
   char * line_start = p;
   p = append_string( p, PLARD);
-  to_ascii_n_decimals( round( density * 1e5f), 2, p); // units = g / m^3, * 100 to get 2 decimals
+  to_ascii_n_decimals( density * 1e3f, 2, p); // units = g / m^3, * 100 to get 2 decimals
   *p++ = ',';
   *p++ = type;
   *p=0;
@@ -308,7 +249,7 @@ void format_PLARB ( float voltage, char * &p)
 {
   char * line_start = p;
   p = append_string( p, PLARB);
-  to_ascii_n_decimals( round( voltage * 100.0f), 2, p);
+  to_ascii_n_decimals( voltage, 2, p);
   p = NMEA_append_tail ( line_start);
 }
 
@@ -319,15 +260,15 @@ void format_PLARA ( float roll, float pitch, float yaw, char * &p)
   char * line_start = p;
   p = append_string( p, PLARA);
 
-  to_ascii_n_decimals( round(roll * RAD_TO_DEGREE_10), 1, p);
+  to_ascii_n_decimals( roll * RAD_TO_DEGREE, 1, p);
 
   p = append_string( p, ",");
-  to_ascii_n_decimals( round(pitch * RAD_TO_DEGREE_10), 1, p);
+  to_ascii_n_decimals( pitch * RAD_TO_DEGREE, 1, p);
 
   if( yaw < 0.0f)
     yaw += 6.2832f;
   p = append_string( p, ",");
-  to_ascii_n_decimals( round(yaw * RAD_TO_DEGREE_10), 1, p);
+  to_ascii_n_decimals( yaw * RAD_TO_DEGREE, 1, p);
 
   p = NMEA_append_tail ( line_start);
 }
@@ -381,10 +322,10 @@ void format_PLARV ( float variometer, float avg_variometer, float pressure_altit
   avg_variometer = CLIP<float>(avg_variometer, -50.0, 50.0);
   TAS = CLIP<float>(TAS, 0, 100);
 
-  to_ascii_n_decimals( round( variometer * 100.0f), 2, p);
+  to_ascii_n_decimals( variometer, 2, p);
   *p++ = ',';
 
-  to_ascii_n_decimals( round( avg_variometer * 100.0f), 2, p);
+  to_ascii_n_decimals( avg_variometer, 2, p);
   *p++ = ',';
 
   p=format_integer( p, (int) round( pressure_altitude));
@@ -411,11 +352,11 @@ void format_PLARS ( float value, PLARS_TYPES option, char * &p)
   switch (type) {
     case MC:   //MC MacCready m/s (0.0 - 9.9)
       p = append_string( p, PLARS_MC);
-      to_ascii_n_decimals(float32_t(value * 10.0), 1, p);
+      to_ascii_n_decimals( value, 1, p);
       break;
     case BAL:  //BAL Ballast (fraction of water ballast 0.000 - 1.000)
       p = append_string( p, PLARS_BAL);
-      to_ascii_n_decimals(float32_t(value * 100.0), 2, p);
+      to_ascii_n_decimals( value, 2, p);
       break;
     case BUGS:  //BUGS Bugs in % (0 - 50)
       if (value < 1.0)
@@ -428,11 +369,11 @@ void format_PLARS ( float value, PLARS_TYPES option, char * &p)
 	}
       value = (value - 1.0f) * 100.0f + 0.5f; // Scale CAN value 1.0 ... 1.5 to 0 ... 50
       p = append_string( p, PLARS_BUGS);
-      to_ascii_n_decimals(float32_t( value * 100.0), 2, p);
+      to_ascii_n_decimals( value, 2, p);
         break;
     case QNH:  //QNH QNH in hPa
       p = append_string( p, PLARS_QNH);
-      to_ascii_n_decimals(float32_t( value * 100.0), 2, p);
+      to_ascii_n_decimals( value, 2, p);
         break;
     case CIR: //1 == Circling or 0 == Cruising
       p = append_string( p, PLARS_CIR);
