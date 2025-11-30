@@ -262,12 +262,6 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 			     const float3vector &GNSS_acceleration,
 			     float GNSS_heading)
 {
-  float3vector gyro_adjusted = gyro;
-#if USE_GYRO_CALIBRATOR
-  gyro_adjusted[RIGHT] *= gyro_gain_right;
-  gyro_adjusted[DOWN] *= gyro_gain_down;
-#endif
-
   float3vector measured_induction = mag_sensor; // make it writable
   filter_magnetic_induction( gyro, measured_induction);
 
@@ -344,7 +338,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
   gyro_correction_power = SQR( gyro_correction[0]) + SQR( gyro_correction[1]) +SQR( gyro_correction[2]);
 
-  update_attitude (acc, gyro_adjusted + gyro_correction, corrected_body_induction);
+  update_attitude (acc, gyro + gyro_correction, corrected_body_induction);
 
   // only here we get fresh magnetic entropy
   // and: wait for low control loop error
@@ -376,12 +370,6 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 			   const float3vector &mag_sensor,
 			   const float3vector &GNSS_acceleration)
 {
-  float3vector gyro_adjusted = gyro;
-#if USE_GYRO_CALIBRATOR
-  gyro_adjusted[RIGHT] *= gyro_gain_right;
-  gyro_adjusted[DOWN]  *= gyro_gain_down;
-#endif
-
   float3vector measured_induction = mag_sensor; // make it writable
   filter_magnetic_induction( gyro, measured_induction);
 
@@ -466,7 +454,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   gyro_correction_power = SQR( gyro_correction[0]) + SQR( gyro_correction[1]) +SQR( gyro_correction[2]);
 
   // feed quaternion update with corrected sensor readings
-  update_attitude (acc, gyro_adjusted + gyro_correction, corrected_body_induction);
+  update_attitude (acc, gyro + gyro_correction, corrected_body_induction);
 
   // only here we get fresh magnetic entropy
   // and: wait for low control loop error

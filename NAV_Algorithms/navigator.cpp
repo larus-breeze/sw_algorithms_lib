@@ -126,6 +126,14 @@ bool navigator_t::update_at_10Hz ()
 //! copy all navigator data into output_data structure
 void navigator_t::report_data( output_data_t &d)
 {
+    union
+    {
+      float f;
+      int32_t i;
+    }nano_container;
+
+    nano_container.f = d.c.nano * 1e-9f;
+    d.c.nano = nano_container.i;
     d.TAS 			= TAS_averager.get_output();
     d.IAS 			= IAS_averager.get_output();
 
