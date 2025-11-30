@@ -30,38 +30,6 @@
 static ROM char ASCIItable[]="zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz";
 ROM char HEX[]="0123456789ABCDEF";
 
-void to_ascii_n_decimals( float value, unsigned decimals, char * &s)
-{
-  for( unsigned i=decimals; i; --i)
-    value *= 10.0f;
-
-  int number = round( value);
-  if( number < 0)
-    {
-      *s++='-';
-      number = -number;
-    }
-
-  unsigned divisor=1;
-  for( unsigned i=decimals; i>0; --i)
-    divisor *= 10;
-
-  format_integer( s, number / divisor);
-  number %= divisor;
-
-  *s++='.';
-
-  s[decimals] = 0;
-  unsigned i=decimals;
-  while( i--)
-    {
-      s[ i]=HEX[number % 10];
-      number /= 10;
-    }
-  s += decimals;
-}
-
-
 //! format an float into ASCII with 1 to 4 digits after the decimal point
 void to_ascii_n_decimals( float number, unsigned decimals, char * &s)
 {
@@ -72,13 +40,13 @@ void to_ascii_n_decimals( float number, unsigned decimals, char * &s)
 
   if ((number < 0.0f) && (whole == 0))
   	  *s++ = '-'; //Add a - if < 0 && >= -1;
-  s = format_integer(s, whole);
+  format_integer(s, whole);
   *s++ = '.';
   float remaining = number - (int32_t)number;
   if (remaining < 0.0)
     remaining = remaining * -1;
   float dec = 10;
-  for(int32_t i = 0; i < decimals - 1; i++)
+  for( unsigned i = 0; i < decimals - 1; i++)
     {
       if( remaining < 1 / dec )
         *s++ = '0';
@@ -87,8 +55,8 @@ void to_ascii_n_decimals( float number, unsigned decimals, char * &s)
 
   float parts = number * dec - (float)whole * dec;
   if (parts < 0.0)
-    parts = parts * -1;
-  s = format_integer(s, (int32_t)parts);
+    parts = -parts;
+  format_integer(s, (int32_t)parts);
   return;
 }
 
