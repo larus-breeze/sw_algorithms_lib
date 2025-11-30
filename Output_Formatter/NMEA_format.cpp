@@ -28,18 +28,11 @@
 
 #define ANGLE_SCALE 1e-7f
 #define MPS_TO_NMPH 1.944f // 90 * 60 NM / 10000km * 3600 s/h
-#define RAD_TO_DEGREE_10 572.958f
 #define RAD_TO_DEGREE 57.2958f
 #define METER_TO_FEET 3.2808f
 #define MPS_TO_KMPH 3.6f
 
 ROM char HEX[]="0123456789ABCDEF";
-
-// ********* Generic stuff ************************************************
-inline char hex4( uint8_t data)
-{
-  return HEX[data];
-}
 
 //! add end delimiter, evaluate and add checksum and add CR+LF
 char * NMEA_append_tail( char *p)
@@ -49,8 +42,8 @@ char * NMEA_append_tail( char *p)
  	for( p=p+1; *p && *p !='*'; ++p)
  		checksum ^= *p;
  	p[0] = '*';
- 	p[1] = hex4(checksum >> 4);
- 	p[2] = hex4(checksum & 0x0f);
+ 	p[1] = HEX[checksum >> 4];
+ 	p[2] = HEX[checksum & 0x0f];
  	p[3] = '\r';
  	p[4] = '\n';
  	p[5] = 0;
@@ -130,7 +123,7 @@ ROM char GPRMC[]="$GPRMC,";
 void format_RMC (const coordinates_t &coordinates, char * &p)
 {
   char * line_start = p;
-  p = append_string( p, GPRMC);
+  append_string( p, GPRMC);
   format_GNSS_timestamp( coordinates, p);
 
   *p++ = coordinates.sat_fix_type != 0 ? 'A' : 'V';
@@ -142,34 +135,14 @@ void format_RMC (const coordinates_t &coordinates, char * &p)
   angle_format (coordinates.longitude, 'E', 'W', p, true);
   *p++ = ',';
 
-  float value = coordinates.speed_motion * MPS_TO_NMPH;
-
-  //Clipping to realistic values for a glider. Some ASCII functions crash if given to high values. TODO: fix
-  value = CLIP<float>(value, 0, (100.0f * MPS_TO_NMPH));
-
-  unsigned knots = (unsigned)(value * 10.0f + 0.5f);
-  *p++ = (char)(knots / 1000 + '0');
-  knots %= 1000;
-  *p++ = (char)(knots / 100 + '0');
-  knots %= 100;
-  *p++ = (char)(knots / 10 + '0');
-  *p++ = '.';
-  *p++ = (char)(knots % 10 + '0');
+  to_ascii_n_decimals( coordinates.speed_motion * MPS_TO_NMPH, 1, p);
   *p++ = ',';
 
   float true_track = coordinates.heading_motion;
   if( true_track < 0.0f)
     true_track += 360.0f;
-  int angle_10 = (int) round(true_track * 10.0f);
 
-  *p++ = (char)(angle_10 / 1000 + '0');
-  angle_10 %= 1000;
-  *p++ = (char)(angle_10 / 100 + '0');
-  angle_10 %= 100;
-  *p++ = (char)(angle_10 / 10 + '0');
-  *p++ = '.';
-  *p++ = (char)(angle_10 % 10 + '0');
-
+  to_ascii_n_decimals( true_track, 1, p);
   *p++ = ',';
 
   *p++ = (coordinates.day) / 10 + '0';
@@ -179,7 +152,7 @@ void format_RMC (const coordinates_t &coordinates, char * &p)
   *p++ = ((coordinates.year)%100) / 10 + '0';
   *p++ = ((coordinates.year)%100) % 10 + '0';
 
-  p=append_string( p, ",,,A");
+  append_string( p, ",,,A");
   p = NMEA_append_tail ( line_start);
 }
 
@@ -189,7 +162,7 @@ ROM char GPGGA[]="$GPGGA,";
 void format_GGA( const coordinates_t &coordinates, char * &p)
 {
   char * line_start = p;
-  p = append_string( p, GPGGA);
+  append_string( p, GPGGA);
   format_GNSS_timestamp( coordinates, p);
 
   angle_format (coordinates.latitude, 'N', 'S', p, false);
@@ -210,14 +183,12 @@ void format_GGA( const coordinates_t &coordinates, char * &p)
   *p++ = '0';
   *p++ = ',';
 
-  int32_t altitude_msl_dm = (int32_t)(coordinates.position[DOWN] * -10.0f);
-  to_ascii_n_decimals( altitude_msl_dm, 1, p);
+  to_ascii_n_decimals( coordinates.position[DOWN] * -1.0f, 1, p);
   *p++ = ',';
   *p++ = 'M';
   *p++ = ',';
 
-  int32_t geo_sep_10 = coordinates.geo_sep_dm;
-  to_ascii_n_decimals( geo_sep_10, 1, p);
+  to_ascii_n_decimals( coordinates.geo_sep_dm * 0.1f, 1, p);
   *p++ = ',';
   *p++ = 'M';
   *p++ = ','; // no DGPS
@@ -234,8 +205,8 @@ ROM char PLARD[]="$PLARD,";
 void format_PLARD ( float density, char type, char * &p)
 {
   char * line_start = p;
-  p = append_string( p, PLARD);
-  to_ascii_n_decimals( density * 1e3f, 2, p); // units = g / m^3, * 100 to get 2 decimals
+  append_string( p, PLARD);
+  to_ascii_n_decimals( density * 1e3f, 2, p); // units = g / m^3
   *p++ = ',';
   *p++ = type;
   *p=0;
@@ -248,7 +219,7 @@ ROM char PLARB[]="$PLARB,";
 void format_PLARB ( float voltage, char * &p)
 {
   char * line_start = p;
-  p = append_string( p, PLARB);
+  append_string( p, PLARB);
   to_ascii_n_decimals( voltage, 2, p);
   p = NMEA_append_tail ( line_start);
 }
@@ -258,16 +229,16 @@ ROM char PLARA[]="$PLARA,";
 void format_PLARA ( float roll, float pitch, float yaw, char * &p)
 {
   char * line_start = p;
-  p = append_string( p, PLARA);
+  append_string( p, PLARA);
 
   to_ascii_n_decimals( roll * RAD_TO_DEGREE, 1, p);
 
-  p = append_string( p, ",");
+  append_string( p, ",");
   to_ascii_n_decimals( pitch * RAD_TO_DEGREE, 1, p);
 
   if( yaw < 0.0f)
     yaw += 6.2832f;
-  p = append_string( p, ",");
+  append_string( p, ",");
   to_ascii_n_decimals( yaw * RAD_TO_DEGREE, 1, p);
 
   p = NMEA_append_tail ( line_start);
@@ -279,7 +250,7 @@ ROM char PLARW[]="$PLARW,";
 void format_PLARW ( float wind_north, float wind_east, char windtype, char * &p)
 {
   char * line_start = p;
-  p = append_string( p, PLARW);
+  append_string( p, PLARW);
 
   //Clipping to realistic values for a glider. Some ASCII functions crash if given to high values. TODO: fix
   wind_north = CLIP<float>(wind_north, -50.0, 50.0);
@@ -296,16 +267,16 @@ void format_PLARW ( float wind_north, float wind_east, char windtype, char * &p)
   int angle = (int) round( direction * RAD_TO_DEGREE);
   if( angle < 0)
       angle += 360;
-  p=format_integer( p, angle);
+  format_integer( p, angle);
   *p++ = ',';
 
   int speed = (int) round( MPS_TO_KMPH * SQRT( SQR( wind_north) + SQR( wind_east)));
-  p=format_integer( p, speed);
+  format_integer( p, speed);
   *p++ = ',';
 
   *p++ = windtype;
 
-  p = append_string( p, ",A"); // always report "valid" for the moment
+  append_string( p, ",A"); // always report "valid" for the moment
   p = NMEA_append_tail ( line_start);
 }
 
@@ -315,7 +286,7 @@ ROM char PLARV[]="$PLARV,";
 void format_PLARV ( float variometer, float avg_variometer, float pressure_altitude, float TAS, char * &p)
 {
   char * line_start = p;
-  p = append_string( p, PLARV);
+  append_string( p, PLARV);
 
   //Clipping to realistic values for a glider. Some ASCII functions crash if given to high values. TODO: fix
   variometer = CLIP<float>(variometer, -50.0, 50.0);
@@ -328,10 +299,10 @@ void format_PLARV ( float variometer, float avg_variometer, float pressure_altit
   to_ascii_n_decimals( avg_variometer, 2, p);
   *p++ = ',';
 
-  p=format_integer( p, (int) round( pressure_altitude));
+  format_integer( p, (int) round( pressure_altitude));
   *p++ = ',';
 
-  p=format_integer( p, (int) round( TAS * MPS_TO_KMPH));
+  format_integer( p, (int) round( TAS * MPS_TO_KMPH));
 
   p = NMEA_append_tail ( line_start);
 }
@@ -346,44 +317,35 @@ ROM char PLARS_CIR[]="CIR,";
 void format_PLARS ( float value, PLARS_TYPES option, char * &p)
 {
   char * line_start = p;
-  p = append_string( p, PLARS);
+  append_string( p, PLARS);
   enum PLARS_TYPES type = option;
 
   switch (type) {
     case MC:   //MC MacCready m/s (0.0 - 9.9)
-      p = append_string( p, PLARS_MC);
+      append_string( p, PLARS_MC);
       to_ascii_n_decimals( value, 1, p);
       break;
     case BAL:  //BAL Ballast (fraction of water ballast 0.000 - 1.000)
-      p = append_string( p, PLARS_BAL);
+      append_string( p, PLARS_BAL);
       to_ascii_n_decimals( value, 2, p);
       break;
     case BUGS:  //BUGS Bugs in % (0 - 50)
-      if (value < 1.0)
-        {
-	  value = 1.0;
-        }
-      if (value > 1.5)
-	{
-	  value = 1.5;
-	}
-      value = (value - 1.0f) * 100.0f + 0.5f; // Scale CAN value 1.0 ... 1.5 to 0 ... 50
-      p = append_string( p, PLARS_BUGS);
+      append_string( p, PLARS_BUGS);
       to_ascii_n_decimals( value, 2, p);
         break;
     case QNH:  //QNH QNH in hPa
-      p = append_string( p, PLARS_QNH);
+      append_string( p, PLARS_QNH);
       to_ascii_n_decimals( value, 2, p);
         break;
     case CIR: //1 == Circling or 0 == Cruising
-      p = append_string( p, PLARS_CIR);
+      append_string( p, PLARS_CIR);
       if (value < 0.5)  // CAN definition 0 == Vario
 	{
-	  p = append_string( p, "1"); // NMEA Circling CIR,1
+	  append_string( p, "1"); // NMEA Circling CIR,1
 	}
       else  // 1 == SpeedToFly
 	{
-	  p = append_string( p, "0"); // NMEA Cruise Mode CIR,0
+	  append_string( p, "0"); // NMEA Cruise Mode CIR,0
 	}
       break;
     default:
@@ -402,7 +364,7 @@ bool NMEA_checksum( const char *line)
  	const char * p;
  	for( p=line+1; *p && *p !='*'; ++p)
  		checksum ^= *p;
- 	return ( (p[0] == '*') && hex4( checksum >> 4) == p[1]) && ( hex4( checksum & 0x0f) == p[2]) && (p[3] == 0);
+ 	return ( (p[0] == '*') && HEX[ checksum >> 4] == p[1]) && ( HEX[ checksum & 0x0f] == p[2]) && (p[3] == 0);
  }
 
 //! this procedure formats all our NMEA sequences

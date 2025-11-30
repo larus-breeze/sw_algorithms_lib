@@ -28,6 +28,39 @@
 #include <stdlib.h>
 
 static ROM char ASCIItable[]="zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz";
+ROM char HEX[]="0123456789ABCDEF";
+
+void to_ascii_n_decimals( float value, unsigned decimals, char * &s)
+{
+  for( unsigned i=decimals; i; --i)
+    value *= 10.0f;
+
+  int number = round( value);
+  if( number < 0)
+    {
+      *s++='-';
+      number = -number;
+    }
+
+  unsigned divisor=1;
+  for( unsigned i=decimals; i>0; --i)
+    divisor *= 10;
+
+  format_integer( s, number / divisor);
+  number %= divisor;
+
+  *s++='.';
+
+  s[decimals] = 0;
+  unsigned i=decimals;
+  while( i--)
+    {
+      s[ i]=HEX[number % 10];
+      number /= 10;
+    }
+  s += decimals;
+}
+
 
 //! format an float into ASCII with 1 to 4 digits after the decimal point
 void to_ascii_n_decimals( float number, unsigned decimals, char * &s)
@@ -86,7 +119,7 @@ char* itoa( int value, char* result, int base)
 
 static ROM char hexdigits[] = "0123456789abcdef";
 
-char * utox( char* result, uint32_t value, uint8_t nibbles)
+void utox( char* &result, uint32_t value, uint8_t nibbles)
 {
 	for( int i=0; i < nibbles; ++i)
 	{
@@ -95,15 +128,12 @@ char * utox( char* result, uint32_t value, uint8_t nibbles)
 		++result;
 	}
 	*result=0;
-	return result;
 }
 
-char * lutox( char* result, uint64_t value)
+void lutox( char* &result, uint64_t value)
 {
   utox(  result, (uint32_t)(value >> 32), 8);
-  utox( result+8, value & 0xffffffff, 8);
-  result[16]=0;
-  return result+16;
+  utox( result, value & 0xffffffff, 8);
 }
 
 char * my_itoa( char * target, int value)
@@ -174,22 +204,22 @@ char * my_ftoa( char * target, float value)
  }
 
 //! signed integer to ASCII returning the string end
-char * format_integer( char *s, int32_t value)
+void format_integer( char * &s, int32_t value)
 {
   if( value < 0)
     {
       *s++='-';
-      return format_integer( s, -value);
+      format_integer( s, -value);
+      return;
     }
   if( value < 10)
       *s++ = value + '0';
     else
     {
-      s = format_integer( s, value / 10);
+      format_integer( s, value / 10);
       *s++ = value % 10 + '0';
     }
   *s=0;
-  return s;
 }
 
 #define isdigit(c) (c >= '0' && c <= '9')

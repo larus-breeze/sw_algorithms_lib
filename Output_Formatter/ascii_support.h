@@ -32,10 +32,10 @@ char * my_ftoa( char * target, float value);
 
 #ifdef __cplusplus
 
-void to_ascii_n_decimals( float number, unsigned decimals, char * &s);
+void utox( char* &result, uint32_t value, uint8_t nibbles = 8);
+void lutox( char* &result, uint64_t value);
 
-char * utox( char* result, uint32_t value, uint8_t nibbles = 8);
-char * lutox( char* result, uint64_t value);
+void to_ascii_n_decimals( float value, unsigned decimals, char * &s);
 
 extern "C"
  {
@@ -45,22 +45,12 @@ char* ftoa( char* Buffer, float Value);
 
 float my_atof(const char *s);
 
-inline char * format_2_digits( char * target, uint32_t data)
-{
-  data %= 100;
-  *target++ = (char)(data / 10 + '0');
-  *target++ = (char)(data % 10 + '0');
-  *target = 0; // just be sure string is terminated
-  return target;
-}
-
 //! basically: kind of strcat returning the pointer to the string-end
-inline char *append_string( char *target, const char *source)
+inline void append_string( char * &target, const char *source)
 {
   while( *source)
       *target++ = *source++;
   *target = 0; // just to be sure :-)
-  return target;
 }
 
 //!< append carriage return and newline and advance pointer
@@ -71,7 +61,15 @@ inline void newline( char * &next)
   *next = 0;
 }
 
-char * format_integer( char *target, int32_t value);
+inline void format_2_digits( char * &target, uint32_t data)
+{
+  data %= 100;
+  *target++ = (char)(data / 10 + '0');
+  *target++ = (char)(data % 10 + '0');
+  *target = 0; // just be sure string is terminated
+}
+
+void format_integer( char * &target, int32_t value);
 
 #ifdef __cplusplus
  }
