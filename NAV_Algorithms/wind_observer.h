@@ -176,8 +176,8 @@ private:
   soaring_flight_averager< float3vector, true, true> relative_wind_observer;
   pt2<float3vector,float> corrected_wind_averager;
   accumulating_averager < float3vector> circling_wind_averager;
-  circle_state_t circling_state;
-  circle_state_t old_circling_state;
+  flight_state_t circling_state;
+  flight_state_t old_circling_state;
   float3vector wind_correction_nav;
 };
 

@@ -40,11 +40,11 @@
 #include "gyro_gain_adjust.h"
 extern float3vector nav_induction;
 
-enum { ROLL, PITCH, YAW};
-enum { FRONT, RIGHT, BOTTOM};
-enum { NORTH, EAST, DOWN};
+enum { ROLL, PITCH, HEADING};	//!< euler angles
+enum { FRONT, RIGHT, BOTTOM};	//!< BODY frame
+enum { NORTH, EAST, DOWN};	//!< NAV frame
 
-typedef enum  { STRAIGHT_FLIGHT, TRANSITION, CIRCLING} circle_state_t;
+typedef enum  { STRAIGHT_FLIGHT, TRANSITION, CIRCLING, ON_GROUND} flight_state_t;
 
 typedef integrator<float, float3vector> vector3integrator;
 
@@ -52,11 +52,15 @@ typedef integrator<float, float3vector> vector3integrator;
 class AHRS_type
 {
 public:
+	enum magnetic_calibration_type { NONE, AUTO_1D, AUTO_SOFT_IRON_COMPENSATE};
+
 	AHRS_type(float sampling_time);
+
 	void attitude_setup( const float3vector & acceleration, const float3vector & induction);
 
 	void tune( void);
 
+	//! compute and remember any changes in the earth's magnetic induction
 	void update_magnetic_induction_data( float declination, float inclination)
 	{
 	  declination *= (M_PI_F / 180.0f); // degrees to radiant
@@ -68,18 +72,21 @@ public:
 	  update_magnetic_loop_gain(); // adapt to magnetic inclination
 	}
 
+	//! update the AHRS taking the current measurement data
 	void update( const float3vector &gyro, const float3vector &acc, const float3vector &mag,
 		const float3vector &GNSS_acceleration,
 		float GNSS_heading,
 		bool GNSS_heading_valid
 		);
 
-	inline void set_from_euler( float roll, float pitch, float yaw)
+	//! set the AHRS attitude using known euler angles
+	inline void set_from_euler( float roll, float pitch, float heading)
 	{
-		attitude.from_euler( roll, pitch, yaw);
+		attitude.from_euler( roll, pitch, heading);
 		attitude.get_rotation_matrix( body2nav);
 		euler = attitude;
 	}
+
 	inline eulerangle<ftype> get_euler(void) const
 	{
 		return euler;
@@ -136,19 +143,18 @@ public:
 	{
 	  return gyro_correction;
 	}
-	circle_state_t get_circling_state(void) const
+	flight_state_t get_circling_state(void) const
 	{
 	  return circling_state;
 	}
 	void write_calibration_into_EEPROM( void);
-  float
-  getSlipAngle () const
+
+  float getSlipAngle () const
   {
     return slip_angle_averager.get_output();
   }
 
-  float
-  getPitchAngle () const
+  float getPitchAngle () const
   {
     return pitch_angle_averager.get_output();
   }
@@ -157,21 +163,29 @@ public:
   {
     return turn_rate_averager.get_output();
   }
+
   float get_G_load( void ) const
   {
     return G_load_averager.get_output();
   }
 
+  //! update the AHRS taking magnetic compass data as a reference
   void update_compass(
 		  const float3vector &gyro, const float3vector &acc, const float3vector &mag,
 		  const float3vector &GNSS_acceleration); //!< rotate quaternion taking angular rate readings
+
+  //! update the AHRS taking D-GNSS compass data as a reference
+  void update_diff_GNSS( const float3vector &gyro, const float3vector &acc, const float3vector &mag,
+	  const float3vector &GNSS_acceleration,
+	  float GNSS_heading);
+
 #if 1 // SOFT_IRON_TEST
   void update_ACC_only(
 		  const float3vector &gyro, const float3vector &acc, const float3vector &mag,
 		  const float3vector &GNSS_acceleration); //!< rotate quaternion taking angular rate readings
 #endif
-  float
-  getHeadingDifferenceAhrsDgnss () const
+
+  float getHeadingDifferenceAhrsDgnss () const
   {
     return heading_difference_AHRS_DGNSS;
   }
@@ -196,10 +210,13 @@ public:
 //    return gyro_correction_power; todo patch
     return uncompensated_magnetic_disturbance_averager.get_output();
   }
-  enum magnetic_calibration_type { NONE, AUTO_1D, AUTO_SOFT_IRON_COMPENSATE};
+
 private:
   enum heading_type{ MAGNETIC, D_GNSS};
   void handle_magnetic_calibration( void);
+
+  //! generic helper function to update the AHRS attitude
+  void update_attitude( const float3vector &acc, const float3vector &gyro, const float3vector &mag);
 
   void update_magnetic_loop_gain( void)
   {
@@ -211,13 +228,7 @@ private:
   }
 
   void feed_magnetic_induction_observer( const float3vector &mag_sensor, const float3vector &mag_delta);
-  circle_state_t update_circling_state( void);
-
-  void update_diff_GNSS( const float3vector &gyro, const float3vector &acc, const float3vector &mag,
-	  const float3vector &GNSS_acceleration,
-	  float GNSS_heading);
-
-  void update_attitude( const float3vector &acc, const float3vector &gyro, const float3vector &mag);
+  flight_state_t update_circling_state( void);
 
   void filter_magnetic_induction( const float3vector &gyro, float3vector &mag);
 
@@ -226,7 +237,7 @@ private:
   quaternion<ftype>attitude;
   float3vector gyro_integrator;
   unsigned circling_counter;
-  circle_state_t circling_state;
+  flight_state_t circling_state;
   heading_type heading_source;
   bool heading_source_changed;
   float3vector nav_correction;

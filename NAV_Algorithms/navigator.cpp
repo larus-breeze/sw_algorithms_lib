@@ -147,7 +147,7 @@ void navigator_t::report_data( output_data_t &d)
     if( airborne_detector.is_airborne())
       d.flight_mode 		= ahrs.get_circling_state();
     else
-      d.flight_mode		= 3; // = ON_GROUND
+      d.flight_mode		= ON_GROUND;
 
     d.turn_rate			= ahrs.get_turn_rate();
     d.slip_angle		= ahrs.getSlipAngle();

@@ -63,7 +63,7 @@ template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false, bool SOFT_TAKEOF
 
     void
     update (const value_t &current_value, float heading,
-	    circle_state_t new_state)
+	    flight_state_t new_state)
     {
       if (heading < ZERO)
 	heading += PI_TIMES_2;
@@ -196,7 +196,7 @@ template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false, bool SOFT_TAKEOF
 
     enum { N_SECTORS = 16};
 
-    circle_state_t active_state;
+    flight_state_t active_state;
     pt2<value_t, float> averager; // IIR-averager for straight flight
     value_t present_output; // maintained to save computing time
     value_t sector_averages[N_SECTORS]; // boxcar averager for circling flight

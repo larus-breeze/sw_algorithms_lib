@@ -50,6 +50,8 @@ public:
 
   }
 
+//! compute sensor orientation relative to airframe front/right/down system
+//  and make changes permanent
   void update_sensor_orientation_data( const vector_average_collection_t & values)
   {
     // resolve sensor orientation using measurements
@@ -87,6 +89,8 @@ public:
     write_EEPROM_value( SENS_TILT_YAW,   euler.yaw);
   }
 
+//! fine tuning of the sensor orientation angles relative to the airframes body
+// taking the attitude of a straight-and-level flight period
   void fine_tune_sensor_orientation( const vector_average_collection_t & values)
   {
     float3vector gravity_measurement_body = sensor_mapping * values.acc_observed_level;
@@ -149,6 +153,7 @@ public:
     write_EEPROM_value( SENS_TILT_YAW,   new_euler.yaw);
   }
 
+//! initialization of the AHRS taking configuration data
   void initialize_before_measurement( void)
   {
     pitot_offset= configuration (PITOT_OFFSET);
@@ -164,6 +169,7 @@ public:
     navigator.tune();
   }
 
+  //! initialize the earth magnetic field data taking the observed location
   void update_magnetic_induction_data( double latitude, double longitude)
   {
     induction_values induction_data;
@@ -172,6 +178,7 @@ public:
       navigator.update_magnetic_induction_data( induction_data.declination, induction_data.inclination);
   }
 
+  //! attitude setup after getting the first set of acceleration an magnetic data
   void initialize_after_first_measurement( output_data_t & output_data)
   {
     navigator.update_pressure( output_data.m.static_pressure - QNH_offset);
@@ -190,12 +197,14 @@ public:
       navigator.set_from_add_mag( acc, mag); // initialize attitude from acceleration + compass
   }
 
-  void on_new_pressure_data( output_data_t & output_data)
+  //! update the navigator taking the current pressure measurements
+  void on_new_pressure_data( float static_pressure, float pitot_pressure)
   {
-    navigator.update_pressure(output_data.m.static_pressure - QNH_offset);
-    navigator.update_pitot ( (output_data.m.pitot_pressure - pitot_offset) * pitot_span);
+    navigator.update_pressure( static_pressure - QNH_offset);
+    navigator.update_pitot ( ( pitot_pressure - pitot_offset) * pitot_span);
   }
 
+  //! the "SLOW" update of the observed properties
   bool update_every_100ms( output_data_t & output_data)
   {
     bool landing_detected = navigator.update_at_10Hz ();
@@ -209,16 +218,19 @@ public:
     return landing_detected;
   }
 
+  // initialization of the AHRS attitude if the roll pitch heading angles are known
   void set_attitude ( float roll, float pitch, float present_heading)
   {
     navigator.set_attitude ( roll, pitch, present_heading);
   }
 
+  //! all that needs to be done when a new data set comes from the GNSS receiver
   void update_GNSS_data( const coordinates_t &coordinates)
   {
     navigator.update_GNSS_data(coordinates);
   }
 
+  //! the "FAST" update of the observed properties
   void update_every_10ms( output_data_t & output_data)
   {
     // rotate sensor coordinates into airframe coordinates
@@ -234,6 +246,7 @@ public:
     navigator.update_at_100Hz (acc, mag, gyro);
   }
 
+//! write the output data for the SIL environment
   void report_data ( output_data_t &data)
   {
     navigator.report_data ( data);
@@ -250,15 +263,15 @@ public:
   }
 
 private:
-  navigator_t navigator;
-  float3vector acc; //!< acceleration in airframe system
-  float3vector mag; //!< normalized magnetic induction in airframe system
-  float3vector gyro; //!< rotation-rates in airframe system
-  float3matrix sensor_mapping; //!< sensor -> airframe rotation matrix
-  float pitot_offset; //!< pitot pressure sensor offset
-  float pitot_span;   //!< pitot pressure sensor span factor
-  float QNH_offset;   //!< static pressure sensor offset
-  unsigned magnetic_induction_update_counter;
+  navigator_t navigator; 	//!< the container for all the algorithms
+  float3vector acc; 		//!< acceleration in airframe system
+  float3vector mag; 		//!< normalized magnetic induction in airframe system
+  float3vector gyro; 		//!< rotation-rates in airframe system
+  float3matrix sensor_mapping; 	//!< sensor -> airframe rotation matrix
+  float pitot_offset; 		//!< pitot pressure sensor offset
+  float pitot_span;   		//!< pitot pressure sensor span factor
+  float QNH_offset;   		//!< static pressure sensor offset
+  unsigned magnetic_induction_update_counter; //!< timer for declination+inclination update
 };
 
 #endif /* ORGANIZER_H_ */

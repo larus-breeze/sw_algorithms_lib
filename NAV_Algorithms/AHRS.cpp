@@ -84,7 +84,7 @@ AHRS_type::attitude_setup (const float3vector &acceleration,
 /**
  * @brief  decide about circling state
  */
-circle_state_t
+flight_state_t
 AHRS_type::update_circling_state ()
 {
 #if DISABLE_CIRCLING_STATE
@@ -230,9 +230,9 @@ AHRS_type::update_attitude ( const float3vector &acc,
 			     const float3vector &gyro,
 			     const float3vector &mag)
 {
-  attitude.rotate (gyro[ROLL] * Ts_div_2,
-		   gyro[PITCH] * Ts_div_2,
-		   gyro[YAW]  * Ts_div_2);
+  attitude.rotate (gyro[ROLL]    * Ts_div_2,
+		   gyro[PITCH]   * Ts_div_2,
+		   gyro[HEADING] * Ts_div_2);
 
   attitude.normalize ();
 
@@ -307,7 +307,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 	   + nav_acceleration[NORTH] * GNSS_acceleration[EAST]
 	   - nav_acceleration[EAST]  * GNSS_acceleration[NORTH];
 
-  circle_state_t old_circle_state = circling_state;
+  flight_state_t old_circle_state = circling_state;
   update_circling_state ();
 
   if( circling_state == CIRCLING) // heading correction using acceleration cross product GNSS * INS
@@ -414,7 +414,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 	   + nav_acceleration[NORTH] * GNSS_acceleration[EAST]
 	   - nav_acceleration[EAST]  * GNSS_acceleration[NORTH];
 
-  circle_state_t old_circle_state = circling_state;
+  flight_state_t old_circle_state = circling_state;
   update_circling_state ();
 
   switch (circling_state)
