@@ -186,8 +186,8 @@ public:
     navigator.reset_altitude ();
 
     // setup initial attitude
-    acc = sensor_mapping * output_data.m.acc;
-    mag = sensor_mapping * output_data.m.mag;
+    float3vector acc = sensor_mapping * output_data.m.acc;
+    float3vector mag = sensor_mapping * output_data.m.mag;
 
     if (output_data.c.sat_fix_type & SAT_HEADING)
       {
@@ -234,9 +234,9 @@ public:
   void update_every_10ms( output_data_t & output_data)
   {
     // rotate sensor coordinates into airframe coordinates
-    acc  = sensor_mapping * output_data.m.acc;
-    mag  = sensor_mapping * output_data.m.mag;
-    gyro = sensor_mapping * output_data.m.gyro;
+    float3vector acc  = sensor_mapping * output_data.m.acc;
+    float3vector mag  = sensor_mapping * output_data.m.mag;
+    float3vector gyro = sensor_mapping * output_data.m.gyro;
 
 #if DEVELOPMENT_ADDITIONS
     output_data.body_acc  = acc;
@@ -254,9 +254,6 @@ public:
 
 private:
   navigator_t navigator; 	//!< the container for all the algorithms
-  float3vector acc; 		//!< acceleration in airframe system
-  float3vector mag; 		//!< normalized magnetic induction in airframe system
-  float3vector gyro; 		//!< rotation-rates in airframe system
   float3matrix sensor_mapping; 	//!< sensor -> airframe rotation matrix
   float pitot_offset; 		//!< pitot pressure sensor offset
   float pitot_span;   		//!< pitot pressure sensor span factor
