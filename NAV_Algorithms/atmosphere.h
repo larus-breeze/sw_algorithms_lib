@@ -48,10 +48,7 @@ class atmosphere_t
 public:
   atmosphere_t( float p_abs)
   :
-    have_ambient_air_data(false),
     pressure ( p_abs),
-    temperature(20.0f),
-    humidity( 0.0f),
     density_correction(1.0f),
     extrapolated_sea_level_pressure(101325),
     GNSS_altitude_based_density_available(false),
@@ -114,16 +111,6 @@ public:
   {
     return SQRT( dynamic_pressure * RECIP_STD_DENSITY_TIMES_2);
   }
-  void set_ambient_air_data( float temperature, float humidity)
-  {
-    this->temperature = temperature;
-    this->humidity = humidity;
-    have_ambient_air_data = true;
-  }
-  void disregard_ambient_air_data( void)
-  {
-    have_ambient_air_data = false;
-  }
 
   float get_extrapolated_sea_level_pressure () const
   {
@@ -179,10 +166,7 @@ private:
   float calculateAirDensity(
       float humidity, float pressure, float temperature);
   float calculateSaturationVaporPressure(float temp);
-  bool have_ambient_air_data;
   float pressure;
-  float temperature;
-  float humidity;
   float density_correction;
   float extrapolated_sea_level_pressure;
   air_density_observer_t air_density_observer;

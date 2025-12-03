@@ -87,13 +87,7 @@ public:
     ahrs_magnetic.update_magnetic_induction_data( declination, inclination);
 #endif
   }
-  void set_density_data( float temperature, float humidity)
-  {
-    if( ! isnan( temperature) && ! isnan( humidity) )
-      atmosphere.set_ambient_air_data( CLIP( temperature, -40.0f, 50.0f), CLIP( humidity, 0.0f, 1.0f));
-    else
-      atmosphere.disregard_ambient_air_data();
-  }
+
   void initialize_QFF_density_metering( float MSL_altitude)
   {
     atmosphere.initialize( MSL_altitude);
@@ -102,11 +96,6 @@ public:
   void feed_QFF_density_metering( float pressure, float MSL_altitude)
   {
     atmosphere.air_density_metering( pressure, MSL_altitude);
-  }
-
-  void disregard_density_data( void)
-  {
-    atmosphere.disregard_ambient_air_data();
   }
 
   void report_data( output_data_t &d);

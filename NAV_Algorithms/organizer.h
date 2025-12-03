@@ -252,16 +252,6 @@ public:
     navigator.report_data ( data);
   }
 
-  void set_density_data( float temp, float humidity)
-  {
-    navigator.set_density_data( temp, humidity);
-  }
-
-  void disregard_density_data()
-  {
-    navigator.disregard_density_data();
-  }
-
 private:
   navigator_t navigator; 	//!< the container for all the algorithms
   float3vector acc; 		//!< acceleration in airframe system
