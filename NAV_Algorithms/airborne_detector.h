@@ -34,18 +34,16 @@ public:
   : just_landed( false),
     airborne_counter( 0)
   {}
-  void report_to_be_airborne( bool yes)
+  void report_to_be_airborne( unsigned criteria_fulfilled)
   {
-    if( yes)
+    if( criteria_fulfilled >= 3)
       {
-	if( airborne_counter == 0)
-	  airborne_counter = 100; // create hysteresis
-	else if( airborne_counter < LEVEL)
+	if( airborne_counter < LEVEL)
 	  ++ airborne_counter;
       }
-    else
+    else if( criteria_fulfilled == 0)
       {
-	      if( airborne_counter > 0)
+	if( airborne_counter > 0)
 	{
 	  --airborne_counter;
 	  if( airborne_counter == 0)

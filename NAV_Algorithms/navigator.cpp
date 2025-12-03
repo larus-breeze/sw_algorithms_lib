@@ -106,8 +106,7 @@ bool navigator_t::update_at_10Hz ()
       if( IAS > AIRBORNE_TRIGGER_SPEED)
 	++ airborne_criteria_fulfilled;
 
-      // if at least 2 of 3 criteria apply, we believe to be airborne
-      airborne_detector.report_to_be_airborne( airborne_criteria_fulfilled > 1);
+      airborne_detector.report_to_be_airborne( airborne_criteria_fulfilled);
       if( airborne_detector.detect_just_landed())
 	{
 	  ahrs.write_calibration_into_EEPROM();
