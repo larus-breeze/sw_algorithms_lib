@@ -29,6 +29,7 @@
 #include "float3vector.h"
 #include "Linear_Least_Square_Fit.h"
 #include "persistent_data.h"
+#include "persistent_data_file.h"
 #include "NAV_tuning_parameters.h"
 
 #if UNIX != 1
@@ -203,28 +204,55 @@ public:
     write_EEPROM_value(MAG_STD_DEVIATION, SQRT( variance / 6.0f));
   }
 
-  bool read_from_EEPROM (void)
-  {
-    float variance;
-    calibration_done = false;
-    if( true == read_EEPROM_value( MAG_STD_DEVIATION, variance))
-      return true; // error
-    variance = SQR( variance); // has been stored as STD DEV
+    bool read_from_EEPROM (void)
+    {
+      if ( using_permanent_data_file)
+	{
+	  float persistent_parameters[7]={ 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.001f};
+	  bool result = permanent_data_file.retrieve_data( MAG_SENSOR_CALIBRATION, sizeof(persistent_parameters)/sizeof( float32_t), persistent_parameters);
+	  float mag_variance  = SQR( persistent_parameters[6]);
 
-    for( unsigned i=0; i<3; ++i)
-      {
-        if( true == read_EEPROM_value( (EEPROM_PARAMETER_ID)(MAG_X_OFF   + 2*i), calibration[i].offset))
-  	    return true; // error
+	  calibration[0].offset=persistent_parameters[0];
+	  calibration[0].scale=persistent_parameters[1];
+	  calibration[0].variance=mag_variance;
+	  calibration[1].offset=persistent_parameters[2];
+	  calibration[1].scale=persistent_parameters[3];
+	  calibration[1].variance=mag_variance;
+	  calibration[2].offset=persistent_parameters[4];
+	  calibration[2].scale=persistent_parameters[5];
+	  calibration[2].variance=mag_variance;
+	  calibration_done = true;
+	  return not result;
+	}
+      else
+	{
+	  float variance;
+	  calibration_done = false;
+	  if (true == read_EEPROM_value (MAG_STD_DEVIATION, variance))
+	    return true; // error
+	  variance = SQR(variance); // has been stored as STD DEV
 
-        if( true == read_EEPROM_value( (EEPROM_PARAMETER_ID)(MAG_X_SCALE + 2*i), calibration[i].scale))
-  	    return true; // error
+	  for (unsigned i = 0; i < 3; ++i)
+	    {
+	      if (true
+		  == read_EEPROM_value (
+		      (EEPROM_PARAMETER_ID) (MAG_X_OFF + 2 * i),
+		      calibration[i].offset))
+		return true; // error
 
-        calibration[i].variance = variance;
-      }
+	      if (true
+		  == read_EEPROM_value (
+		      (EEPROM_PARAMETER_ID) (MAG_X_SCALE + 2 * i),
+		      calibration[i].scale))
+		return true; // error
 
-    calibration_done = true;
-    return false; // no error;
-  }
+	      calibration[i].variance = variance;
+	    }
+
+	  calibration_done = true;
+	  return false; // no error;
+	}
+    }
 
   single_axis_calibration_t calibration[3];
   bool calibration_done;
