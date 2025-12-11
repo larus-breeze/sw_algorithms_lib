@@ -88,6 +88,13 @@ public:
 #endif
   }
 
+  void set_earth_rotation( float latitude)
+  {
+    ahrs.set_earth_rotation( latitude);
+#if DEVELOPMENT_ADDITIONS
+    ahrs_magnetic.set_earth_rotation( latitude);
+#endif
+  }
   void initialize_QFF_density_metering( float MSL_altitude)
   {
     atmosphere.initialize( MSL_altitude);

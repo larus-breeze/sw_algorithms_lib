@@ -72,6 +72,13 @@ public:
 	  update_magnetic_loop_gain(); // adapt to magnetic inclination
 	}
 
+	void set_earth_rotation( float latitude)
+	{
+	  earth_rotation[NORTH] = COS( latitude) * OMEGA_EARTH;
+	  earth_rotation[EAST] = 0.0f;
+	  earth_rotation[DOWN] = SIN( latitude) * OMEGA_EARTH;
+	}
+
 	//! update the AHRS taking the current measurement data
 	void update( const float3vector &gyro, const float3vector &acc, const float3vector &mag,
 		const float3vector &GNSS_acceleration,
@@ -242,6 +249,7 @@ private:
   bool heading_source_changed;
   float3vector nav_correction;
   float3vector gyro_correction;
+  float3vector earth_rotation;
   float3vector acceleration_nav_frame;
   float3vector induction_nav_frame; 	//!< observed NAV induction
   float3vector expected_nav_induction;	//!< expected NAV induction

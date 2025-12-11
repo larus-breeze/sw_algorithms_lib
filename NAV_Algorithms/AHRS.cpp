@@ -151,6 +151,7 @@ AHRS_type::AHRS_type (float sampling_time)
   expected_nav_induction(),
   body2nav(),
   euler(),
+  earth_rotation(),
   slip_angle_averager( ANGLE_F_BY_FS),
   pitch_angle_averager( ANGLE_F_BY_FS),
   turn_rate_averager( ANGLE_F_BY_FS),
@@ -226,9 +227,11 @@ AHRS_type::update_attitude ( const float3vector &acc,
 			     const float3vector &gyro,
 			     const float3vector &mag)
 {
-  attitude.rotate (gyro[ROLL]    * Ts_div_2,
-		   gyro[PITCH]   * Ts_div_2,
-		   gyro[HEADING] * Ts_div_2);
+  float3vector gyro_wo_earth_rotation = gyro - body2nav.reverse_map(earth_rotation);
+
+  attitude.rotate (gyro_wo_earth_rotation[ROLL]    * Ts_div_2,
+		   gyro_wo_earth_rotation[PITCH]   * Ts_div_2,
+		   gyro_wo_earth_rotation[HEADING] * Ts_div_2);
 
   attitude.normalize ();
 
@@ -239,7 +242,7 @@ AHRS_type::update_attitude ( const float3vector &acc,
   euler = attitude;
 
   float3vector nav_rotation;
-  nav_rotation = body2nav * gyro;
+  nav_rotation = body2nav * gyro_wo_earth_rotation;
   turn_rate_averager.respond( nav_rotation[DOWN]);
 
   slip_angle_averager.respond( ATAN2( -acc[RIGHT], -acc[DOWN]));

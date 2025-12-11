@@ -176,6 +176,8 @@ public:
     induction_data = earth_induction_model.get_induction_data_at( latitude, longitude);
     if( induction_data.valid)
       navigator.update_magnetic_induction_data( induction_data.declination, induction_data.inclination);
+
+    navigator.set_earth_rotation(latitude);
   }
 
   //! attitude setup after getting the first set of acceleration an magnetic data
