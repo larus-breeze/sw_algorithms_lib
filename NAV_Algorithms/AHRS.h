@@ -270,12 +270,6 @@ private:
   slope_limiter <float> mag_filter[3];
   delay_line <float3vector, MAX_GNSS_DELAY> GNSS_delay_compensation;
   delay_line <float, MAX_GNSS_DELAY> GNSS_heading_delay_compensation;
-#if USE_GYRO_CALIBRATOR
-  gyro_gain_adjust gyro_gain_adjuster_right;
-  double gyro_gain_right;
-  double gyro_gain_down;
-  gyro_gain_adjust gyro_gain_adjuster_down;
-#endif
 };
 
 #endif /* AHRS_H_ */
