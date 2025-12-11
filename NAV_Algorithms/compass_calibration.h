@@ -189,20 +189,42 @@ public:
     return calibration_done ? calibration : 0;
   }
 
-  void write_into_EEPROM (void) const
-  {
-    if( calibration_done == false)
-      return;
+    void
+    write_into_EEPROM (void) const
+    {
+      if (calibration_done == false)
+	return;
 
-    float variance = 0.0f;
-    for( unsigned i=0; i<3; ++i)
-      {
-        write_EEPROM_value( (EEPROM_PARAMETER_ID)(MAG_X_OFF   + 2*i), calibration[i].offset);
-        write_EEPROM_value( (EEPROM_PARAMETER_ID)(MAG_X_SCALE + 2*i), calibration[i].scale);
-        variance += calibration[i].variance;
-      }
-    write_EEPROM_value(MAG_STD_DEVIATION, SQRT( variance / 6.0f));
-  }
+      if (using_permanent_data_file)
+	{
+	  float variance = 0.0f;
+	  float persistent_parameters[7]={ 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.001f};
+
+	  for (unsigned i = 0; i < 3; ++i)
+	      variance += calibration[i].variance;
+
+	  persistent_parameters[0]=calibration[0].offset;
+	  persistent_parameters[1]=calibration[0].scale;
+	  persistent_parameters[2]=calibration[1].offset;
+	  persistent_parameters[3]=calibration[1].scale;
+	  persistent_parameters[4]=calibration[2].offset;
+	  persistent_parameters[5]=calibration[2].scale;
+	  persistent_parameters[6] = variance * 0.3333333f; // mean variance
+
+	  permanent_data_file.store_data( MAG_SENSOR_CALIBRATION, sizeof(persistent_parameters)/sizeof( float32_t), persistent_parameters);
+	}
+      else
+	{
+	  float variance = 0.0f;
+	  for (unsigned i = 0; i < 3; ++i)
+	    {
+	      write_EEPROM_value ((EEPROM_PARAMETER_ID) (MAG_X_OFF + 2 * i), calibration[i].offset);
+	      write_EEPROM_value ((EEPROM_PARAMETER_ID) (MAG_X_SCALE + 2 * i), calibration[i].scale);
+	      variance += calibration[i].variance;
+	    }
+	  write_EEPROM_value (MAG_STD_DEVIATION, SQRT(variance * 0.3333333f));
+	}
+    }
 
     bool read_from_EEPROM (void)
     {
@@ -210,7 +232,7 @@ public:
 	{
 	  float persistent_parameters[7]={ 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.001f};
 	  bool result = permanent_data_file.retrieve_data( MAG_SENSOR_CALIBRATION, sizeof(persistent_parameters)/sizeof( float32_t), persistent_parameters);
-	  float mag_variance  = SQR( persistent_parameters[6]);
+	  float mag_variance  = persistent_parameters[6];
 
 	  calibration[0].offset=persistent_parameters[0];
 	  calibration[0].scale=persistent_parameters[1];
