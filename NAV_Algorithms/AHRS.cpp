@@ -165,10 +165,6 @@ AHRS_type::AHRS_type (float sampling_time)
   magnetic_control_gain(1.0f),
   automatic_magnetic_calibration( (magnetic_calibration_type)(round)(configuration(MAG_AUTO_CALIB))),
   magnetic_calibration_updated( false)
-#if USE_GYRO_CALIBRATOR
-  gyro_gain_right( 1.0f),
-  gyro_gain_down( 1.0f)
-#endif
 {
   update_magnetic_loop_gain(); // adapt to magnetic inclination
 
@@ -321,10 +317,6 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
     	- nav_induction[EAST]  * expected_nav_induction[NORTH];
       nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN + mag_correction * magnetic_control_gain ; // use X-ACC and MAG: better !
 #endif
-#if USE_GYRO_CALIBRATOR
-      gyro_gain_adjuster_right.learn( gyro_adjusted[RIGHT], gyro_correction[RIGHT]);
-      gyro_gain_adjuster_down.learn ( gyro_adjusted[DOWN], gyro_correction[DOWN]);
-#endif
     }
   else
       nav_correction[DOWN]  =   heading_gnss_work * H_GAIN;
@@ -352,13 +344,6 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 	    handle_magnetic_calibration();
 //	  gyro_gain_adjuster_right.calculate();
 //	  gyro_gain_adjuster_right.update_gain( gyro_gain_right);
-#if USE_GYRO_CALIBRATOR
-	  if( gyro_gain_adjuster_down.calculate())
-	    {
-	      gyro_gain_adjuster_down.update_gain( gyro_gain_down);
-	      printf( "Gain = %8.6f\n",  gyro_gain_down);
-	    }
-#endif
     }
 }
 
@@ -441,11 +426,6 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 #endif
 	gyro_correction = body2nav.reverse_map (nav_correction);
 	gyro_correction *= P_GAIN;
-
-#if USE_GYRO_CALIBRATOR
-	gyro_gain_adjuster_right.learn( gyro_adjusted[RIGHT], gyro_correction[RIGHT]);
-	gyro_gain_adjuster_down.learn ( gyro_adjusted[DOWN], gyro_correction[DOWN]);
-#endif
       }
       break;
     }
@@ -468,13 +448,6 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 	    handle_magnetic_calibration();
 //	  gyro_gain_adjuster_right.calculate();
 //	  gyro_gain_adjuster_right.update_gain( gyro_gain_right);
-#if USE_GYRO_CALIBRATOR
-	  if( gyro_gain_adjuster_down.calculate())
-	    {
-	      gyro_gain_adjuster_down.update_gain( gyro_gain_down);
-	      printf( "Gain = %8.6f\n",  gyro_gain_down);
-	    }
-#endif
     }
 }
 
