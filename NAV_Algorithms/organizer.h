@@ -237,6 +237,26 @@ public:
   void report_data ( output_data_t &data)
   {
     navigator.report_data ( data);
+
+    if (navigator.get_speed_accuracy() > 0.35f)
+      {
+	//Note: DGNSS (0.15) and Single GNSS (0.35) need different values.
+	// How to distinguish between the variants?
+	update_system_state_set(GNSS_VELOCITY_ACCURACY_BAD);
+      }
+    else
+      {
+	update_system_state_clear(GNSS_VELOCITY_ACCURACY_BAD);
+      }
+
+    if (navigator.get_magnetic_disturbance() > MAGNETIC_DISTURBANCE_LIMIT )
+      {
+	update_system_state_set(MAGNETIC_DISTURBANCE_BAD);
+      }
+    else
+      {
+	update_system_state_clear(MAGNETIC_DISTURBANCE_BAD);
+      }
   }
 
   void set_density_data( float temp, float humidity)

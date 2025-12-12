@@ -56,6 +56,7 @@ public:
 	 IAS( 0.0f),
 	 GNSS_velocity(),
 	 GNSS_speed(),
+	 GNSS_speed_accuracy(),
 	 GNSS_acceleration(),
 	 GNSS_heading(),
 	 GNSS_negative_altitude( ZERO),
@@ -94,6 +95,17 @@ public:
     else
       atmosphere.disregard_ambient_air_data();
   }
+
+  float get_speed_accuracy(void)
+  {
+    return GNSS_speed_accuracy;
+  }
+
+  float get_magnetic_disturbance()
+  {
+    return ahrs.getMagneticDisturbance();
+  }
+
   void initialize_QFF_density_metering( float MSL_altitude)
   {
     atmosphere.initialize( MSL_altitude);
@@ -223,6 +235,7 @@ private:
   float 	GNSS_heading;
   float 	GNSS_negative_altitude;
   unsigned	GNSS_fix_type;
+  float		GNSS_speed_accuracy; //!< observing gnss quality for reporting
 
   soaring_flight_averager< float, false, false> vario_integrator;
   pt2<float,float> TAS_averager;
