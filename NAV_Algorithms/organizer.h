@@ -29,6 +29,7 @@
 #include "data_structures.h"
 #include "navigator.h"
 #include "earth_induction_model.h"
+#include "system_state.h"
 
 typedef struct
 {

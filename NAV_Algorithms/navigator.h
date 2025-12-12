@@ -231,11 +231,11 @@ private:
 
   float3vector 	GNSS_velocity; //!< 3-dim velocity
   float		GNSS_speed;	//!< ground speed as reported from GNSS
+  float		GNSS_speed_accuracy; //!< observing gnss quality for reporting
   float3vector 	GNSS_acceleration;
   float 	GNSS_heading;
   float 	GNSS_negative_altitude;
   unsigned	GNSS_fix_type;
-  float		GNSS_speed_accuracy; //!< observing gnss quality for reporting
 
   soaring_flight_averager< float, false, false> vario_integrator;
   pt2<float,float> TAS_averager;
