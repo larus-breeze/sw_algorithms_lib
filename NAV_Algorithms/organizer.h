@@ -29,6 +29,7 @@
 #include "data_structures.h"
 #include "navigator.h"
 #include "earth_induction_model.h"
+#include "system_state.h"
 
 typedef struct
 {
@@ -47,7 +48,6 @@ public:
       QNH_offset(0.0f),
       magnetic_induction_update_counter(0)
   {
-
   }
 
   void update_sensor_orientation_data( const vector_average_collection_t & values)
@@ -214,6 +214,11 @@ public:
     navigator.set_attitude ( roll, pitch, present_heading);
   }
 
+  void set_GNSS_type(GNSS_configration_t configuration)
+  {
+    navigator.set_gnss_type(configuration);
+  }
+
   void update_GNSS_data( const coordinates_t &coordinates)
   {
     navigator.update_GNSS_data(coordinates);
@@ -237,6 +242,16 @@ public:
   void report_data ( output_data_t &data)
   {
     navigator.report_data ( data);
+
+    if ( navigator.get_speed_accuracy_bad_status() == true )
+      update_system_state_set(GNSS_VELOCITY_ACCURACY_BAD);
+    else
+      update_system_state_clear(GNSS_VELOCITY_ACCURACY_BAD);
+
+    if ( navigator.get_magnetic_disturbance_bad_status() == true )
+	update_system_state_set(MAGNETIC_DISTURBANCE_BAD);
+    else
+	update_system_state_clear(MAGNETIC_DISTURBANCE_BAD);
   }
 
   void set_density_data( float temp, float humidity)

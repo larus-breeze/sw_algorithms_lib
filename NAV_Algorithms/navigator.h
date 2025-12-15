@@ -56,10 +56,12 @@ public:
 	 IAS( 0.0f),
 	 GNSS_velocity(),
 	 GNSS_speed(),
+	 GNSS_speed_accuracy(),
 	 GNSS_acceleration(),
 	 GNSS_heading(),
 	 GNSS_negative_altitude( ZERO),
 	 GNSS_fix_type( 0),
+	 GNSS_type(GNSS_TYPE_NOT_DEFINED),
 	 vario_integrator( configuration( VARIO_INT_TC) < 0.25f
 	   ? configuration( VARIO_INT_TC) // normalized stop frequency given, old version
 	   : (FAST_SAMPLING_TIME / configuration( VARIO_INT_TC) ) ), // time-constant given, new version
@@ -94,6 +96,40 @@ public:
     else
       atmosphere.disregard_ambient_air_data();
   }
+
+  void set_gnss_type(GNSS_configration_t type)
+  {
+    GNSS_type = type;
+  }
+
+  bool get_speed_accuracy_bad_status(void)
+  {
+    if (GNSS_type == GNSS_M9N)
+    {
+	if (GNSS_speed_accuracy > 0.35) // A M9N-GNSS shall be < 0.35m/s with a good reception
+	  return true;
+	return false;
+    }
+    else if ((GNSS_type == GNSS_F9P_F9H) || (GNSS_type == GNSS_F9P_F9P))
+    {
+	if (GNSS_speed_accuracy > 0.15)  // A F9P-GNSS shall be < 0.15m/s with a good reception
+	  return true;
+	return false;
+    }
+    else
+    {
+	ASSERT(0);
+	return true;
+    }
+  }
+
+  bool get_magnetic_disturbance_bad_status(void)
+  {
+    if (ahrs.getMagneticDisturbance() > MAGNETIC_DISTURBANCE_LIMIT)
+	return true;
+    return false;
+  }
+
   void initialize_QFF_density_metering( float MSL_altitude)
   {
     atmosphere.initialize( MSL_altitude);
@@ -219,10 +255,12 @@ private:
 
   float3vector 	GNSS_velocity; //!< 3-dim velocity
   float		GNSS_speed;	//!< ground speed as reported from GNSS
+  float		GNSS_speed_accuracy; //!< observing gnss quality for reporting
   float3vector 	GNSS_acceleration;
   float 	GNSS_heading;
   float 	GNSS_negative_altitude;
   unsigned	GNSS_fix_type;
+  GNSS_configration_t GNSS_type;
 
   soaring_flight_averager< float, false, false> vario_integrator;
   pt2<float,float> TAS_averager;
