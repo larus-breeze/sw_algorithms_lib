@@ -106,13 +106,13 @@ public:
   {
     if (GNSS_type == GNSS_M9N)
     {
-	if (GNSS_speed_accuracy > 0.35)
+	if (GNSS_speed_accuracy > 0.35) // A M9N-GNSS shall be < 0.35m/s with a good reception
 	  return true;
 	return false;
     }
     else if ((GNSS_type == GNSS_F9P_F9H) || (GNSS_type == GNSS_F9P_F9P))
     {
-	if (GNSS_speed_accuracy > 0.15)
+	if (GNSS_speed_accuracy > 0.15)  // A F9P-GNSS shall be < 0.15m/s with a good reception
 	  return true;
 	return false;
     }
