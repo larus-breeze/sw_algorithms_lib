@@ -61,6 +61,7 @@ public:
 	 GNSS_heading(),
 	 GNSS_negative_altitude( ZERO),
 	 GNSS_fix_type( 0),
+	 GNSS_type(GNSS_TYPE_NOT_DEFINED),
 	 vario_integrator( configuration( VARIO_INT_TC) < 0.25f
 	   ? configuration( VARIO_INT_TC) // normalized stop frequency given, old version
 	   : (FAST_SAMPLING_TIME / configuration( VARIO_INT_TC) ) ), // time-constant given, new version
@@ -96,14 +97,37 @@ public:
       atmosphere.disregard_ambient_air_data();
   }
 
-  float get_speed_accuracy(void)
+  void set_gnss_type(GNSS_configration_t type)
   {
-    return GNSS_speed_accuracy;
+    GNSS_type = type;
   }
 
-  float get_magnetic_disturbance()
+  bool get_speed_accuracy_bad_status(void)
   {
-    return ahrs.getMagneticDisturbance();
+    if (GNSS_type == GNSS_M9N)
+    {
+	if (GNSS_speed_accuracy > 0.35)
+	  return true;
+	return false;
+    }
+    else if ((GNSS_type == GNSS_F9P_F9H) || (GNSS_type == GNSS_F9P_F9P))
+    {
+	if (GNSS_speed_accuracy > 0.15)
+	  return true;
+	return false;
+    }
+    else
+    {
+	ASSERT(0);
+	return true;
+    }
+  }
+
+  bool get_magnetic_disturbance_bad_status(void)
+  {
+    if (ahrs.getMagneticDisturbance() > MAGNETIC_DISTURBANCE_LIMIT)
+	return true;
+    return false;
   }
 
   void initialize_QFF_density_metering( float MSL_altitude)
@@ -236,6 +260,7 @@ private:
   float 	GNSS_heading;
   float 	GNSS_negative_altitude;
   unsigned	GNSS_fix_type;
+  GNSS_configration_t GNSS_type;
 
   soaring_flight_averager< float, false, false> vario_integrator;
   pt2<float,float> TAS_averager;

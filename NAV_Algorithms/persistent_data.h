@@ -38,8 +38,9 @@ typedef union
 enum GNSS_configration_t
 {
   GNSS_M9N=1, 	// single frequency module, usually on PCB
-  GNSS_F9P_F9P, // D-GNSS using 2 * uBlox F9P, both on USART 3
-  GNSS_F9P_F9H  // D-GNSS using F9P on USART 3 and F9H (heading) on USART4
+  GNSS_F9P_F9P=2, // D-GNSS using 2 * uBlox F9P, both on USART 3
+  GNSS_F9P_F9H=3,  // D-GNSS using F9P on USART 3 and F9H (heading) on USART4
+  GNSS_TYPE_NOT_DEFINED = 0xff
 };
 
 enum EEPROM_PARAMETER_ID

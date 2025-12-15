@@ -48,7 +48,6 @@ public:
       QNH_offset(0.0f),
       magnetic_induction_update_counter(0)
   {
-
   }
 
   void update_sensor_orientation_data( const vector_average_collection_t & values)
@@ -215,6 +214,11 @@ public:
     navigator.set_attitude ( roll, pitch, present_heading);
   }
 
+  void set_GNSS_type(GNSS_configration_t configuration)
+  {
+    navigator.set_gnss_type(configuration);
+  }
+
   void update_GNSS_data( const coordinates_t &coordinates)
   {
     navigator.update_GNSS_data(coordinates);
@@ -239,25 +243,15 @@ public:
   {
     navigator.report_data ( data);
 
-    if (navigator.get_speed_accuracy() > 0.35f)
-      {
-	//Note: DGNSS (0.15) and Single GNSS (0.35) need different values.
-	// How to distinguish between the variants?
-	update_system_state_set(GNSS_VELOCITY_ACCURACY_BAD);
-      }
+    if ( navigator.get_speed_accuracy_bad_status() == true )
+      update_system_state_set(GNSS_VELOCITY_ACCURACY_BAD);
     else
-      {
-	update_system_state_clear(GNSS_VELOCITY_ACCURACY_BAD);
-      }
+      update_system_state_clear(GNSS_VELOCITY_ACCURACY_BAD);
 
-    if (navigator.get_magnetic_disturbance() > MAGNETIC_DISTURBANCE_LIMIT )
-      {
+    if ( navigator.get_magnetic_disturbance_bad_status() == true )
 	update_system_state_set(MAGNETIC_DISTURBANCE_BAD);
-      }
     else
-      {
 	update_system_state_clear(MAGNETIC_DISTURBANCE_BAD);
-      }
   }
 
   void set_density_data( float temp, float humidity)
