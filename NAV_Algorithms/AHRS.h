@@ -204,7 +204,8 @@ public:
 
   float3vector getBodyInductionError () const
   {
-    return body_induction_error;
+//    return body_induction_error;
+    return attitude_error;
   }
 
   float3vector getBodyInduction () const
@@ -278,6 +279,8 @@ private:
   slope_limiter <float> mag_filter[3];
   delay_line <float3vector, MAX_GNSS_DELAY> GNSS_delay_compensation;
   delay_line <float, MAX_GNSS_DELAY> GNSS_heading_delay_compensation;
+  float3vector gyro_offset_register;
+  float3vector attitude_error;
 };
 
 #endif /* AHRS_H_ */

@@ -165,7 +165,8 @@ AHRS_type::AHRS_type (float sampling_time)
   uncompensated_magnetic_disturbance_averager( 0.001f),
   magnetic_control_gain(1.0f),
   automatic_magnetic_calibration( (magnetic_calibration_type)(round)(configuration(MAG_AUTO_CALIB))),
-  magnetic_calibration_updated( false)
+  magnetic_calibration_updated( false),
+  gyro_offset_register()
 {
   update_magnetic_loop_gain(); // adapt to magnetic inclination
 
@@ -302,9 +303,13 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   nav_correction[NORTH] = - nav_acceleration[EAST]  + GNSS_acceleration[EAST];
   nav_correction[EAST]  = + nav_acceleration[NORTH] - GNSS_acceleration[NORTH];
 
-  cross_acc_correction = // vector cross product GNSS-acc und INS-acc -> heading error
+  cross_acc_correction = // vector cross product GNSS-acc and INS-acc -> heading error
 	   + nav_acceleration[NORTH] * GNSS_acceleration[EAST]
 	   - nav_acceleration[EAST]  * GNSS_acceleration[NORTH];
+
+  float3vector attitude_error_nav;
+  attitude_error_nav[NORTH] = nav_correction[NORTH] / 9.81f;
+  attitude_error_nav[EAST]  = nav_correction[EAST] / 9.81f;
 
   flight_state_t old_circle_state = circling_state;
   update_circling_state ();
@@ -313,6 +318,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
     {
 #if USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING
       nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
+      attitude_error_nav[DOWN]  = cross_acc_correction / SQRT( SQR( nav_acceleration[NORTH]) + SQR( nav_acceleration[EAST])) ;
 #else
       float3vector nav_induction    = body2nav * corrected_body_induction;
       float mag_correction =
@@ -322,13 +328,25 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 #endif
     }
   else
-      nav_correction[DOWN]  =   heading_gnss_work * H_GAIN;
+    {
+      nav_correction[DOWN]  	= heading_gnss_work * H_GAIN;
+      attitude_error_nav[DOWN]  = heading_difference_AHRS_DGNSS;
+    }
+
+  attitude_error = body2nav.reverse_map(attitude_error_nav);
 
   gyro_correction = body2nav.reverse_map(nav_correction);
   gyro_correction *= P_GAIN;
 
+#if 0
+  if( old_circle_state == STRAIGHT_FLIGHT && circling_state == TRANSITION)
+    gyro_offset_register = gyro_integrator;
+  if( old_circle_state == TRANSITION && circling_state == STRAIGHT_FLIGHT)
+    gyro_integrator = gyro_offset_register;
+#endif
+
   if (circling_state == STRAIGHT_FLIGHT)
-      gyro_integrator += gyro_correction; // update integrator
+    gyro_integrator += gyro_correction; // update integrator
 
   gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
   gyro_correction_power = SQR( gyro_correction[0]) + SQR( gyro_correction[1]) +SQR( gyro_correction[2]);
@@ -394,11 +412,14 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
       heading_source_changed = false;
       GNSS_heading_delay_compensation.initialize(mag_correction);
     }
-  mag_correction = GNSS_heading_delay_compensation.respond(mag_correction);
 
   cross_acc_correction = // vector cross product GNSS-acc und INS-acc -> heading error
 	   + nav_acceleration[NORTH] * GNSS_acceleration[EAST]
 	   - nav_acceleration[EAST]  * GNSS_acceleration[NORTH];
+
+  float3vector attitude_error_nav;
+  attitude_error_nav[NORTH] = nav_correction[NORTH] / 9.81f;
+  attitude_error_nav[EAST]  = nav_correction[EAST] / 9.81f;
 
   flight_state_t old_circle_state = circling_state;
   update_circling_state ();
@@ -409,6 +430,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
     case TRANSITION:
     default:
       {
+      attitude_error_nav[DOWN]  = mag_correction;
 	nav_correction[DOWN] = magnetic_control_gain * mag_correction;
 	gyro_correction = body2nav.reverse_map (nav_correction);
 	gyro_correction *= P_GAIN;
@@ -420,6 +442,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
       {
 #if USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING
 	    nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN; // no MAG or D-GNSS use here ! (old version)
+	    attitude_error_nav[DOWN]  = cross_acc_correction / SQRT( SQR( nav_acceleration[NORTH]) + SQR( nav_acceleration[EAST])) ;
 #else
 	nav_correction[DOWN] = 
 		cross_acc_correction * CROSS_GAIN
@@ -430,6 +453,8 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
       }
       break;
     }
+
+  attitude_error = body2nav.reverse_map(attitude_error_nav);
 
   gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
   gyro_correction_power = SQR( gyro_correction[0]) + SQR( gyro_correction[1]) +SQR( gyro_correction[2]);
