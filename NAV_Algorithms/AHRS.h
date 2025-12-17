@@ -218,8 +218,8 @@ public:
 
   float3vector getBodyInductionError () const
   {
-//    return body_induction_error;
-    return attitude_error;
+    return body_induction_error;
+//    return attitude_error;
   }
 
   float3vector getBodyInduction () const
