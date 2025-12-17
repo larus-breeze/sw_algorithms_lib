@@ -189,8 +189,7 @@ public:
     return calibration_done ? calibration : 0;
   }
 
-    void
-    write_into_EEPROM (void) const
+  void write_into_EEPROM (void) const
     {
       if (calibration_done == false)
 	return;
@@ -198,20 +197,22 @@ public:
       if (using_permanent_data_file)
 	{
 	  float variance = 0.0f;
-	  float persistent_parameters[7]={ 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.001f};
-
 	  for (unsigned i = 0; i < 3; ++i)
 	      variance += calibration[i].variance;
+	  variance *= 0.3333333f; // -> mean variance
 
-	  persistent_parameters[0]=calibration[0].offset;
-	  persistent_parameters[1]=calibration[0].scale;
-	  persistent_parameters[2]=calibration[1].offset;
-	  persistent_parameters[3]=calibration[1].scale;
-	  persistent_parameters[4]=calibration[2].offset;
-	  persistent_parameters[5]=calibration[2].scale;
-	  persistent_parameters[6] = variance * 0.3333333f; // mean variance
+	  float persistent_parameters[7] =
+	      {
+		  calibration[0].offset,
+		  calibration[0].scale,
+		  calibration[1].offset,
+		  calibration[1].scale,
+		  calibration[2].offset,
+		  calibration[2].scale,
+		  variance
+	      };
 
-	  permanent_data_file.store_data( MAG_SENSOR_CALIBRATION, sizeof(persistent_parameters)/sizeof( float32_t), persistent_parameters);
+	  permanent_data_file.store_data( MAG_SENSOR_CALIBRATION, 7, persistent_parameters);
 	}
       else
 	{

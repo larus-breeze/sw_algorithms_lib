@@ -82,7 +82,7 @@ void navigator_t::update_GNSS_data( const coordinates_t &coordinates)
 }
 
 // to be called at 10 Hz
-bool navigator_t::update_at_10Hz ()
+bool navigator_t::update_every_100ms ()
 {
   atmosphere.update_density( -GNSS_negative_altitude, GNSS_fix_type > 0);
 

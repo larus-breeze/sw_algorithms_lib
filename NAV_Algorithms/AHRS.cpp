@@ -265,7 +265,19 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   float3vector measured_induction = mag_sensor; // make it writable
   filter_magnetic_induction( gyro, measured_induction);
 
-  float3vector calibrated_body_induction = compass_calibration.calibrate(measured_induction);
+#if INJECT_SOFT_IRON_ERROR
+  float3vector error;
+  error[0] = 0.017f * 3;
+  error[1] = 0.019f * 3;
+  error[2] = -0.023f * 3;
+
+  float error_magnitude = error * expected_body_induction;
+  error = error * error_magnitude;
+
+  measured_induction += error;
+#endif
+
+  float3vector calibrated_body_induction = compass_calibration.calibrate( measured_induction);
 
   expected_body_induction = body2nav.reverse_map( expected_nav_induction);
 
@@ -354,9 +366,8 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   update_attitude (acc, gyro + gyro_correction, corrected_body_induction);
 
   // only here we get fresh magnetic entropy
-  // and: wait for low control loop error
   if ( circling_state == CIRCLING)
-    feed_magnetic_induction_observer (mag_sensor, calibrated_body_induction - expected_body_induction);
+      feed_magnetic_induction_observer (mag_sensor, calibrated_body_induction - expected_body_induction);
 
   // when circling is finished eventually update the calibration
   if( (old_circle_state == CIRCLING) && (circling_state == TRANSITION))

@@ -172,7 +172,7 @@ public:
      * calculate wind data and vario average for "vario integrator"
      * @return true if a landing has just been detected
      */
-  bool update_at_10Hz();
+  bool update_every_100ms();
 
     /**
        * @brief update on new navigation data from GNSS
@@ -196,6 +196,11 @@ public:
 #if DEVELOPMENT_ADDITIONS
     ahrs_magnetic.set_from_euler(roll, pitch, yaw);
 #endif
+  }
+
+  void cleanup_after_landing( void)
+  {
+    ahrs.write_calibration_into_EEPROM();
   }
 
 private:

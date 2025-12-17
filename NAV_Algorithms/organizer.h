@@ -209,7 +209,8 @@ public:
   //! the "SLOW" update of the observed properties
   bool update_every_100ms( output_data_t & output_data)
   {
-    bool landing_detected = navigator.update_at_10Hz ();
+    bool landing_detected = navigator.update_every_100ms ();
+
     navigator.feed_QFF_density_metering( output_data.m.static_pressure - QNH_offset, -output_data.c.position[DOWN]);
 
     if( ++magnetic_induction_update_counter > 36000) // every hour
@@ -217,6 +218,7 @@ public:
 	update_magnetic_induction_data( output_data.c.latitude, output_data.c.longitude);
 	magnetic_induction_update_counter=0;
       }
+
     return landing_detected;
   }
 
@@ -246,6 +248,11 @@ public:
 #endif
 
     navigator.update_at_100Hz (acc, mag, gyro);
+  }
+
+  void cleanup_after_landing( void)
+  {
+    navigator.cleanup_after_landing();
   }
 
 //! write the output data for the SIL environment
