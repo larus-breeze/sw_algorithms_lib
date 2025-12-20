@@ -42,6 +42,13 @@ enum GNSS_configration_t
   GNSS_F9P_F9H  // D-GNSS using F9P on USART 3 and F9H (heading) on USART4
 };
 
+enum EEPROM_PARAMETER_FILE_ID
+{
+  MAG_SENSOR_CALIBRATION=50,	// xoff xscale yoff yscale zoff zscale variance : 7 floats
+  SOFT_IRON_PARAMETERS,		// 10 float values for x,y,z each : 30 floats
+  EXT_MAG_SENSOR_XFER_MATRIX	// 4 input 3 output channels : 12 floats
+} ;
+
 enum EEPROM_PARAMETER_ID
 {
   BOARD_ID = 0,
