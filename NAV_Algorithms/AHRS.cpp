@@ -165,8 +165,7 @@ AHRS_type::AHRS_type (float sampling_time)
   uncompensated_magnetic_disturbance_averager( 0.001f),
   magnetic_control_gain(1.0f),
   automatic_magnetic_calibration( (magnetic_calibration_type)(round)(configuration(MAG_AUTO_CALIB))),
-  magnetic_calibration_updated( false),
-  gyro_offset_register()
+  magnetic_calibration_updated( false)
 {
   update_magnetic_loop_gain(); // adapt to magnetic inclination
 
@@ -496,6 +495,13 @@ void AHRS_type::write_calibration_into_EEPROM( void)
     return;
 
   compass_calibration.write_into_EEPROM();
+
+  if( soft_iron_compensator.available())
+    {
+      unsigned size = soft_iron_compensator.get_parameters_size() / sizeof( float32_t);
+      permanent_data_file.store_data( SOFT_IRON_PARAMETERS, size, soft_iron_compensator.get_current_parameters());
+    }
+
   magnetic_calibration_updated = false; // done ...
 }
 
