@@ -38,7 +38,6 @@
 #include "RMS_rectifier.h"
 #include "delay_line.h"
 #include "gyro_gain_adjust.h"
-extern float3vector nav_induction;
 
 enum { ROLL, PITCH, HEADING};	//!< euler angles
 enum { FRONT, RIGHT, BOTTOM};	//!< BODY frame
@@ -301,7 +300,6 @@ private:
   slope_limiter<float> mag_filter[3];
   delay_line<float3vector, MAX_GNSS_DELAY> GNSS_delay_compensation;
   delay_line<float, MAX_GNSS_DELAY> GNSS_heading_delay_compensation;
-  float3vector gyro_offset_register;
   float3vector attitude_error;
 };
 
