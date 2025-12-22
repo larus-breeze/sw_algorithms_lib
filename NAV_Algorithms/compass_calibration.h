@@ -180,8 +180,8 @@ public:
 	  }
 	else
 	  {
-	    calibration[i].offset = 0.25f * calibration_candidate[i].offset + 0.75f * calibration[i].offset;
-	    calibration[i].scale = 0.25f * calibration_candidate[i].scale + 0.75f * calibration[i].scale;
+	    calibration[i].offset = (ONE - MAG_CALIBRATION_LETHARGY) * calibration_candidate[i].offset + MAG_CALIBRATION_LETHARGY * calibration[i].offset;
+	    calibration[i].scale =  (ONE - MAG_CALIBRATION_LETHARGY) * calibration_candidate[i].scale +  MAG_CALIBRATION_LETHARGY * calibration[i].scale;
 	  }
       }
     return true;
