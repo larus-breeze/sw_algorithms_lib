@@ -264,18 +264,6 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   float3vector measured_induction = mag_sensor; // make it writable
   filter_magnetic_induction( gyro, measured_induction);
 
-#if INJECT_SOFT_IRON_ERROR
-  float3vector error;
-  error[0] = 0.017f * 3;
-  error[1] = 0.019f * 3;
-  error[2] = -0.023f * 3;
-
-  float error_magnitude = error * expected_body_induction;
-  error = error * error_magnitude;
-
-  measured_induction += error;
-#endif
-
   float3vector calibrated_body_induction = compass_calibration.calibrate( measured_induction);
 
   expected_body_induction = body2nav.reverse_map( expected_nav_induction);
