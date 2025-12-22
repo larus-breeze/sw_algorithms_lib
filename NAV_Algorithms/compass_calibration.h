@@ -173,8 +173,16 @@ public:
 
     for (unsigned i = 0; i < 3; ++i)
       {
-	calibration[i].offset = 0.25f * calibration_candidate[i].offset + 0.75f * calibration[i].offset;
-	calibration[i].scale = 0.25f * calibration_candidate[i].scale + 0.75f * calibration[i].scale;
+	if( mag_calibration_poor)
+	  {
+	    calibration[i].offset = calibration_candidate[i].offset;
+	    calibration[i].scale =  calibration_candidate[i].scale;
+	  }
+	else
+	  {
+	    calibration[i].offset = 0.25f * calibration_candidate[i].offset + 0.75f * calibration[i].offset;
+	    calibration[i].scale = 0.25f * calibration_candidate[i].scale + 0.75f * calibration[i].scale;
+	  }
       }
     return true;
   }
