@@ -41,7 +41,7 @@
 #define MAG_CALIBRATION_LETHARGY	0.75f
 #define MAX_EXPECTED_INDUCTION_SLOPE	1.1f
 
-#define USE_GYRO_INTEGRATOR_WHILE_CIRCLING 0
+#define USE_GYRO_INTEGRATOR_WHILE_CIRCLING 0 // do not use, this mechanism needs to be optimized
 
 #define CIRCLE_LIMIT (10 * 100) //!< 10 * 1/100 s delay into / out of circling state
 
