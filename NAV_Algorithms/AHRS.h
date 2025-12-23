@@ -301,6 +301,7 @@ private:
   delay_line<float3vector, MAX_GNSS_DELAY> GNSS_delay_compensation;
   delay_line<float, MAX_GNSS_DELAY> GNSS_heading_delay_compensation;
   float3vector attitude_error;
+  float3vector gyro_offset_register; //!< remember old gyro offset while circling
 };
 
 #endif /* AHRS_H_ */

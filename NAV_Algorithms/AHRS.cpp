@@ -339,15 +339,18 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   gyro_correction = body2nav.reverse_map(nav_correction);
   gyro_correction *= P_GAIN;
 
-#if 0
+#if USE_GYRO_INTEGRATOR_WHILE_CIRCLING
   if( old_circle_state == STRAIGHT_FLIGHT && circling_state == TRANSITION)
     gyro_offset_register = gyro_integrator;
   if( old_circle_state == TRANSITION && circling_state == STRAIGHT_FLIGHT)
     gyro_integrator = gyro_offset_register;
-#endif
 
+  gyro_integrator += gyro_correction; // update integrator
+
+#else
   if (circling_state == STRAIGHT_FLIGHT)
     gyro_integrator += gyro_correction; // update integrator
+#endif
 
   gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
   gyro_correction_power = SQR( gyro_correction[0]) + SQR( gyro_correction[1]) +SQR( gyro_correction[2]);
@@ -436,7 +439,6 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 	nav_correction[DOWN] = magnetic_control_gain * mag_correction;
 	gyro_correction = body2nav.reverse_map (nav_correction);
 	gyro_correction *= P_GAIN;
-	gyro_integrator += gyro_correction; // update integrator
       }
       break;
       // *******************************************************************************************************
@@ -455,6 +457,20 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
       }
       break;
     }
+
+#if USE_GYRO_INTEGRATOR_WHILE_CIRCLING
+  if( old_circle_state == STRAIGHT_FLIGHT && circling_state == TRANSITION)
+    gyro_offset_register = gyro_integrator;
+  if( old_circle_state == TRANSITION && circling_state == STRAIGHT_FLIGHT)
+    gyro_integrator = gyro_offset_register;
+
+  gyro_integrator += gyro_correction; // update integrator
+
+#else
+  if (circling_state == STRAIGHT_FLIGHT)
+    gyro_integrator += gyro_correction; // update integrator
+#endif
+
 
   attitude_error = body2nav.reverse_map(attitude_error_nav);
 
