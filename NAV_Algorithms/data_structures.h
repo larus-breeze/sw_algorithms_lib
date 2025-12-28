@@ -43,26 +43,13 @@ typedef struct
   float supply_voltage;  //Measuring the supply voltage. Might be related to sensor noise.
 } measurement_data_t;
 
-//! this structure contains all the observations from all sensors and the GNSS-receiver
-typedef struct
-{
-  float3vector acc;
-  float3vector gyro;
-  float3vector mag;
-  float temperature;
-} extra_sensor_data_t;
-
 //! this structure contains all the observations from sensors and GNSS
 typedef struct
 {
   measurement_data_t m;
-#if WITH_DENSITY_DUMMY
-  float dummy1;
-  float dummy2;
-#endif
   coordinates_t c;
-#if WITH_EXTERNAL_IMU
-  extra_sensor_data_t extra;
+#if WITH_EXTERNAL_MAGNETOMETER
+  float3vector external_magnetometer_reading;
 #endif
 #if RUN_MICROPHONE
   float sound_intensity;
@@ -74,8 +61,8 @@ typedef struct
 {
   measurement_data_t m;
   coordinates_t c;
-#if WITH_EXTERNAL_IMU
-  extra_sensor_data_t extra;
+#if WITH_EXTERNAL_MAGNETOMETER
+  float3vector external_magnetometer_reading;
 #endif
 #if RUN_MICROPHONE
   float sound_intensity;
