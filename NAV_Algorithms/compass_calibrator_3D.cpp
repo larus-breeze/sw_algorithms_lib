@@ -182,7 +182,7 @@ bool compass_calibrator_3D_t::calculate( void)
   return true;
 }
 
-float3vector compass_calibrator_3D_t::calibrate( const float3vector &induction, const quaternion<float> &q)
+float3vector compass_calibrator_3D_t::calibrate( const float3vector &induction)
   {
     if( buffer_used_for_calibration == INVALID) // we do not have a valid calibration
       return induction;

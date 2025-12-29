@@ -56,14 +56,17 @@ typedef struct
 #endif
 } observations_type;
 
+typedef struct
+{
+  measurement_data_t m;
+  coordinates_t c;
+} old_observations_type; // todo patch
+
 //! combination of all input and output data in one structure
 typedef struct
 {
   measurement_data_t m;
   coordinates_t c;
-#if WITH_EXTERNAL_MAGNETOMETER
-  float3vector external_magnetometer_reading;
-#endif
 #if RUN_MICROPHONE
   float sound_intensity;
 #endif
@@ -118,6 +121,9 @@ typedef struct
   float3vector body_induction;
   float3vector body_induction_error;
   float gyro_correction_power;
+#if WITH_EXTERNAL_MAGNETOMETER
+  float3vector external_magnetometer_reading;
+#endif
 #endif
 
 } output_data_t;

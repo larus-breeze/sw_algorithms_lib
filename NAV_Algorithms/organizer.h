@@ -209,7 +209,7 @@ public:
   //! the "SLOW" update of the observed properties
   bool update_every_100ms( output_data_t & output_data)
   {
-    bool landing_detected = navigator.update_every_100ms ();
+    bool landing_detected = navigator.update_at_10Hz ();
 
     navigator.feed_QFF_density_metering( output_data.m.static_pressure - QNH_offset, -output_data.c.position[DOWN]);
 
@@ -239,15 +239,24 @@ public:
   {
     // rotate sensor coordinates into airframe coordinates
     float3vector acc  = sensor_mapping * output_data.m.acc;
-    float3vector mag  = sensor_mapping * output_data.m.mag;
     float3vector gyro = sensor_mapping * output_data.m.gyro;
+#if 1 // todo patch
+    float3vector mag  = sensor_mapping * output_data.m.mag;
+    navigator.update_at_100Hz (acc, mag, gyro, mag, false);
+#else
+    float3vector x_mag; // todo patch
+    x_mag[FRONT] = + mag[RIGHT];
+    x_mag[RIGHT] = - mag[FRONT];
+    x_mag[DOWN]  = + mag[DOWN];
+    mag = x_mag;
+    navigator.update_at_100Hz (acc, mag, gyro, mag, true);
+#endif
 
 #if DEVELOPMENT_ADDITIONS
     output_data.body_acc  = acc;
     output_data.body_gyro = gyro;
 #endif
 
-    navigator.update_at_100Hz (acc, mag, gyro);
   }
 
   void cleanup_after_landing( void)

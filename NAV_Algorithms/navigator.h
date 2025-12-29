@@ -163,7 +163,11 @@ public:
    * to be called @ 100 Hz, triggers all fast calculations,
    * especially AHRS attitude data and fast flight-observer stuff
    */
-  void update_at_100Hz( const float3vector &acc, const float3vector &mag, const float3vector &gyro);
+  void update_at_100Hz (
+      const float3vector &acc,
+      const float3vector &mag,
+      const float3vector &gyro,
+      const float3vector &x_mag, bool x_mag_valid);
 
   /**
      * @brief slow update flight observer data
@@ -172,7 +176,7 @@ public:
      * calculate wind data and vario average for "vario integrator"
      * @return true if a landing has just been detected
      */
-  bool update_every_100ms();
+  bool update_at_10Hz( void);
 
     /**
        * @brief update on new navigation data from GNSS

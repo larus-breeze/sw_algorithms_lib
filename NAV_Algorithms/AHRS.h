@@ -84,8 +84,9 @@ public:
 
   //! update the AHRS taking the current measurement data
   void update (const float3vector &gyro, const float3vector &acc,
-	  const float3vector &mag, const float3vector &GNSS_acceleration,
-	  float GNSS_heading, bool GNSS_heading_valid);
+	       const float3vector &mag, const float3vector &GNSS_acceleration,
+	  float GNSS_heading, bool GNSS_heading_valid,
+	  const float3vector &x_mag, bool x_mag_valid);
 
   //! set the AHRS attitude using known euler angles
   inline void set_from_euler (float roll, float pitch, float heading)
@@ -191,19 +192,23 @@ public:
   }
 
   //! update the AHRS taking magnetic compass data as a reference
-  void update_compass (const float3vector &gyro, const float3vector &acc,
-		  const float3vector &mag,
-		  const float3vector &GNSS_acceleration); //!< rotate quaternion taking angular rate readings
+  void update_compass (
+    const float3vector &gyro, const float3vector &acc,
+    const float3vector &mag,
+    const float3vector &GNSS_acceleration,
+    const float3vector &x_mag, bool x_mag_valid);
 
   //! update the AHRS taking D-GNSS compass data as a reference
-  void update_diff_GNSS (const float3vector &gyro, const float3vector &acc,
-		    const float3vector &mag,
-		    const float3vector &GNSS_acceleration, float GNSS_heading);
+  void update_diff_GNSS (
+    const float3vector &gyro, const float3vector &acc,
+    const float3vector &mag,
+    const float3vector &GNSS_acceleration, float GNSS_heading,
+    const float3vector &x_mag, bool x_mag_valid);
 
-  void
-  update_ACC_only (const float3vector &gyro, const float3vector &acc,
-		   const float3vector &mag,
-		   const float3vector &GNSS_acceleration); //!< rotate quaternion taking angular rate readings
+  //! update the AHRS taking only the acceleration as a reference
+  void update_ACC_only (const float3vector &gyro, const float3vector &acc,
+    const float3vector &mag,
+    const float3vector &GNSS_acceleration);
 
   float getHeadingDifferenceAhrsDgnss () const
   {
@@ -238,6 +243,7 @@ private:
     MAGNETIC, D_GNSS
   };
 
+  void handle_magnetic_induction( float3vector measured_induction, const float3vector &x_mag_, bool x_mag_valid, const float3vector &gyro);
   void handle_magnetic_calibration (void);
 
   //! generic helper function to update the AHRS attitude
@@ -295,6 +301,7 @@ private:
   magnetic_calibration_type automatic_magnetic_calibration;
   bool magnetic_calibration_updated;
   float3vector body_induction;
+  float3vector corrected_body_induction;
   float3vector body_induction_error;
   float gyro_correction_power;
   slope_limiter<float> mag_filter[3];

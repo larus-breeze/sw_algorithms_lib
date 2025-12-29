@@ -28,17 +28,20 @@
 void navigator_t::update_at_100Hz (
     const float3vector &acc,
     const float3vector &mag,
-    const float3vector &gyro)
+    const float3vector &gyro,
+    const float3vector &x_mag, bool x_mag_valid)
 {
   ahrs.update( gyro, acc, mag,
 	    GNSS_acceleration,
 	    GNSS_heading,
-	    GNSS_fix_type == (SAT_FIX | SAT_HEADING));
+	    GNSS_fix_type == (SAT_FIX | SAT_HEADING),
+	    x_mag, x_mag_valid);
 
 #if DEVELOPMENT_ADDITIONS
   ahrs_magnetic.update_compass(
 	  gyro, acc, mag,
-	  GNSS_acceleration);
+	  GNSS_acceleration,
+	  x_mag, x_mag_valid);
 #endif
   float3vector heading_vector;
   heading_vector[NORTH] = ahrs.get_north ();
@@ -82,7 +85,7 @@ void navigator_t::update_GNSS_data( const coordinates_t &coordinates)
 }
 
 // to be called at 10 Hz
-bool navigator_t::update_every_100ms ()
+bool navigator_t::update_at_10Hz ()
 {
   atmosphere.update_density( -GNSS_negative_altitude, GNSS_fix_type > 0);
 
