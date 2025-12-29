@@ -260,8 +260,11 @@ private:
       magnetic_control_gain = M_H_GAIN / expected_horizontal_induction;
   }
 
-  void feed_magnetic_induction_observer (const float3vector &mag_sensor,
-				    const float3vector &mag_delta);
+  void feed_magnetic_induction_observer (
+      const float3vector &mag_sensor,
+      const float3vector &mag_delta,
+      bool do_soft_iron_correction);
+
   flight_state_t
   update_circling_state (void);
 

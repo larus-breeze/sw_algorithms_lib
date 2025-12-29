@@ -111,16 +111,16 @@ AHRS_type::update_circling_state ()
 #endif
 }
 
-void AHRS_type::feed_magnetic_induction_observer( const float3vector &mag_sensor, const float3vector &mag_delta)
+void AHRS_type::feed_magnetic_induction_observer( const float3vector &mag_sensor, const float3vector &mag_delta, bool do_soft_iron_correction)
 {
   float error_margin = nav_correction.abs();
   if(  error_margin > NAV_CORRECTION_LIMIT)
     return;
 
   bool turning_right = turn_rate_averager.get_output() > 0.0f;
-
-  if(( automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE) 
-  	&& (uncompensated_magnetic_disturbance_averager.get_output() < UNCOMPENSATED_MAG_DISTURBANCE_LIMIT)) // only if the precision is already reasonably good ...
+  if( do_soft_iron_correction
+      && (automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE)
+      && (uncompensated_magnetic_disturbance_averager.get_output() < UNCOMPENSATED_MAG_DISTURBANCE_LIMIT)) // only if the precision is already reasonably good ...
     {
       bool calibration_data_complete = soft_iron_compensator.learn( mag_delta, attitude, turning_right, error_margin);
       if( calibration_data_complete)
@@ -261,9 +261,9 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 			     const float3vector &measured_induction,
 			     const float3vector &GNSS_acceleration,
 			     float GNSS_heading,
-			     const float3vector &measured_ext_induction, bool x_mag_valid)
+			     const float3vector &measured_ext_induction, bool ext_induction_valid)
 {
-  handle_magnetic_induction( measured_induction, measured_ext_induction, x_mag_valid, gyro);
+  handle_magnetic_induction( measured_induction, measured_ext_induction, ext_induction_valid, gyro);
 
   float3vector nav_acceleration = body2nav * acc;
   float heading_gnss_work = GNSS_heading	// correct for antenna alignment
@@ -456,9 +456,9 @@ void AHRS_type::handle_magnetic_induction (
   uncompensated_magnetic_disturbance_averager.feed (
       (calibrated_body_induction - expected_body_induction).abs ());
 
-  // only here we get fresh magnetic entropy
   if (external_mag_valid)
     {
+      // only here we get fresh magnetic entropy
       if (circling_state == CIRCLING)
 	{
 	  bool finished = compass_calibrator_3D.learn (
@@ -470,10 +470,13 @@ void AHRS_type::handle_magnetic_induction (
 	  // only if the precision is already reasonably good ...
 	  if ((automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE)
 	      && (uncompensated_magnetic_disturbance_averager.get_output () < UNCOMPENSATED_MAG_DISTURBANCE_LIMIT)
-	      && compass_calibrator_3D.available ())
+	      && compass_calibrator_3D.available ()
+	      && (nav_correction.abs() < NAV_CORRECTION_LIMIT)
+	  )
 	    {
 	      bool calibration_data_complete = soft_iron_compensator.learn (
-		  calibrated_body_induction - expected_body_induction, attitude,
+		  calibrated_body_induction - expected_body_induction,
+		  attitude,
 		  turn_rate_averager.get_output () > 0.0f,
 		  nav_correction.abs ());
 	      if (calibration_data_complete)
@@ -484,12 +487,14 @@ void AHRS_type::handle_magnetic_induction (
 
   // parallel to the handling of the external magnetometer we take care of the internal one
   // just in case we loose the external sensor somehow
-  if (automatic_magnetic_calibration)
+  if (automatic_magnetic_calibration != NONE)
     {
       if (circling_state == CIRCLING)
 	feed_magnetic_induction_observer (
 	    measured_induction,
-	    compass_calibration.calibrate (measured_induction) - expected_body_induction);
+	    compass_calibration.calibrate (measured_induction) - expected_body_induction,
+	    not external_mag_valid // no soft iron correction if this is used by the external magnetometer
+	);
 
       // when circling is finished eventually update the calibration
       if ((old_circle_state == CIRCLING) && (circling_state == TRANSITION))

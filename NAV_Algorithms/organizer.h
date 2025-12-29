@@ -240,16 +240,16 @@ public:
     // rotate sensor coordinates into airframe coordinates
     float3vector acc  = sensor_mapping * output_data.m.acc;
     float3vector gyro = sensor_mapping * output_data.m.gyro;
-#if 1 // todo patch
-    float3vector mag  = sensor_mapping * output_data.m.mag;
-    navigator.update_at_100Hz (acc, mag, gyro, mag, false);
-#else
-    float3vector x_mag; // todo patch
+#if SIMULATE_EXTERNAL_MAGNETOMETER
+    float3vector mag  = output_data.external_magnetometer_reading;
+    float3vector x_mag;
     x_mag[FRONT] = + mag[RIGHT];
     x_mag[RIGHT] = - mag[FRONT];
     x_mag[DOWN]  = + mag[DOWN];
-    mag = x_mag;
-    navigator.update_at_100Hz (acc, mag, gyro, mag, true);
+    navigator.update_at_100Hz (acc, mag, gyro, x_mag, true);
+#else
+    float3vector mag  = sensor_mapping * output_data.m.mag;
+    navigator.update_at_100Hz (acc, mag, gyro, mag, false);
 #endif
 
 #if DEVELOPMENT_ADDITIONS
