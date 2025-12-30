@@ -104,10 +104,20 @@ private:
   unsigned populated_sectors;
   int last_sector_collected;
   int measurement_counter;
+
+  // sensor transfer matrix
   computation_float_type c[2][AXES][PARAMETERS]; // double buffering for multi-thrading support
-  computation_float_type target_vector[AXES][OBSERVATIONS];
+
+  // observation data
   computation_float_type observation_matrix[AXES][OBSERVATIONS][PARAMETERS];
   computation_float_type heading_sector_error[OBSERVATIONS];
+
+  // temporary computation data
+  computation_float_type target_vector[AXES][OBSERVATIONS];
+  computation_float_type temporary_solution_matrix[PARAMETERS][PARAMETERS];
+  computation_float_type transposed_matrix[PARAMETERS][OBSERVATIONS];
+  computation_float_type matrix_to_be_inverted_data[PARAMETERS][PARAMETERS];
+  computation_float_type solution_mapping_data[PARAMETERS][OBSERVATIONS];
 };
 
 extern compass_calibrator_3D_t compass_calibrator_3D;
