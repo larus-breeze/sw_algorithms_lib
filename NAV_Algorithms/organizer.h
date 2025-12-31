@@ -240,7 +240,7 @@ public:
     // rotate sensor coordinates into airframe coordinates
     float3vector acc  = sensor_mapping * output_data.m.acc;
     float3vector gyro = sensor_mapping * output_data.m.gyro;
-#if 0 // SIMULATE_EXTERNAL_MAGNETOMETER
+#if 1 // SIMULATE_EXTERNAL_MAGNETOMETER
     float3vector mag  = output_data.external_magnetometer_reading;
     float3vector x_mag;
     x_mag[FRONT] = + mag[RIGHT];
