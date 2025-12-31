@@ -235,12 +235,12 @@ public:
   }
 
   //! the "FAST" update of the observed properties
-  void update_every_10ms( output_data_t & output_data)
+  void update_at_100_Hz( output_data_t & output_data)
   {
     // rotate sensor coordinates into airframe coordinates
     float3vector acc  = sensor_mapping * output_data.m.acc;
     float3vector gyro = sensor_mapping * output_data.m.gyro;
-#if SIMULATE_EXTERNAL_MAGNETOMETER
+#if 0 // SIMULATE_EXTERNAL_MAGNETOMETER
     float3vector mag  = output_data.external_magnetometer_reading;
     float3vector x_mag;
     x_mag[FRONT] = + mag[RIGHT];

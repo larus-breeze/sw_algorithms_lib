@@ -31,17 +31,22 @@ void navigator_t::update_at_100Hz (
     const float3vector &gyro,
     const float3vector &x_mag, bool x_mag_valid)
 {
-  ahrs.update( gyro, acc, mag,
-	    GNSS_acceleration,
-	    GNSS_heading,
-	    GNSS_fix_type == (SAT_FIX | SAT_HEADING),
-	    x_mag, x_mag_valid);
+  ahrs.update(
+      gyro, acc,
+      mag,
+      x_mag,
+      x_mag_valid,
+      GNSS_acceleration,
+    GNSS_heading,
+    GNSS_fix_type == (SAT_FIX | SAT_HEADING));
 
 #if DEVELOPMENT_ADDITIONS
   ahrs_magnetic.update_compass(
-	  gyro, acc, mag,
-	  GNSS_acceleration,
-	  x_mag, x_mag_valid);
+      gyro, acc,
+      mag,
+      x_mag,
+      x_mag_valid,
+      GNSS_acceleration);
 #endif
   float3vector heading_vector;
   heading_vector[NORTH] = ahrs.get_north ();

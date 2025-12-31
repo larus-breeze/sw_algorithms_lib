@@ -46,15 +46,18 @@ typedef float computation_float_type;
 #define ARM_MAT_INVERSE arm_mat_inverse_f32
 #endif
 
-//! 3 dimensional magnetic calibration and error compensation mechanism
+class magnetic_calculation_data_t;
+
+//! 3 dimensional magnetic sensor transfer matrix
 class compass_calibrator_3D_t
 {
 public:
   enum { AXES=3, PARAMETERS=4, OBSERVATIONS=22, INVALID=-1};
 
-  compass_calibrator_3D_t( void)
+  compass_calibrator_3D_t( magnetic_calculation_data_t &_d)
     : buffer_used_for_calibration(INVALID),
-      measurement_counter(0)
+      measurement_counter(0),
+      d( _d)
 {
     start_learning();
   }
@@ -110,17 +113,26 @@ private:
 
   // observation data
   computation_float_type observation_matrix[AXES][OBSERVATIONS][PARAMETERS];
+  computation_float_type target_vector[compass_calibrator_3D_t::AXES][compass_calibrator_3D_t::OBSERVATIONS];
   computation_float_type heading_sector_error[OBSERVATIONS];
 
-  // temporary computation data
-  computation_float_type target_vector[AXES][OBSERVATIONS];
-  computation_float_type temporary_solution_matrix[PARAMETERS][PARAMETERS];
-  computation_float_type transposed_matrix[PARAMETERS][OBSERVATIONS];
-  computation_float_type matrix_to_be_inverted_data[PARAMETERS][PARAMETERS];
-  computation_float_type solution_mapping_data[PARAMETERS][OBSERVATIONS];
+  magnetic_calculation_data_t & d;
 };
 
+class magnetic_calculation_data_t
+{
+  friend class compass_calibrator_3D_t;
+  // temporary computation data
+  computation_float_type temporary_solution_matrix[compass_calibrator_3D_t::PARAMETERS][compass_calibrator_3D_t::PARAMETERS];
+  computation_float_type transposed_matrix[compass_calibrator_3D_t::PARAMETERS][compass_calibrator_3D_t::OBSERVATIONS];
+  computation_float_type matrix_to_be_inverted_data[compass_calibrator_3D_t::PARAMETERS][compass_calibrator_3D_t::PARAMETERS];
+  computation_float_type solution_mapping_data[compass_calibrator_3D_t::PARAMETERS][compass_calibrator_3D_t::OBSERVATIONS];
+};
+
+
 extern compass_calibrator_3D_t compass_calibrator_3D;
-void trigger_compass_calibrator_3D_calculation(void);
+extern compass_calibrator_3D_t external_compass_calibrator_3D;
+void trigger_compass_calibrator_3D_calculation( bool use_external_magnetometer);
+extern magnetic_calculation_data_t temporary_mag_calculation_data;
 
 #endif /* NAV_ALGORITHMS_COMPASS_CALIBRATOR_3D_H_ */

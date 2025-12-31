@@ -35,7 +35,7 @@ ROM float RECIP_SECTOR_SIZE = compass_calibrator_3D_t::OBSERVATIONS / M_PI_F / T
 bool compass_calibrator_3D_t::learn (const float3vector &observed_induction,const float3vector &expected_induction, const quaternion<float> &q, bool turning_right, float error_margin)
 {
   float present_heading = q.get_heading();
-  if( present_heading <0.0f)
+  if( present_heading < ZERO)
     present_heading += M_PI_F * TWO;
 
   int sector_index = (turning_right ? OBSERVATIONS / TWO : 0) + (unsigned)(present_heading * RECIP_SECTOR_SIZE);
@@ -77,7 +77,7 @@ bool compass_calibrator_3D_t::calculate( void)
   ARM_MATRIX_INSTANCE solution;
   solution.numCols=PARAMETERS;
   solution.numRows=PARAMETERS;
-  solution.pData = (computation_float_type *)temporary_solution_matrix;
+  solution.pData = (computation_float_type *)d.temporary_solution_matrix;
 
   ARM_MATRIX_INSTANCE  observations;
   observations.numCols=PARAMETERS;
@@ -86,17 +86,17 @@ bool compass_calibrator_3D_t::calculate( void)
   ARM_MATRIX_INSTANCE observations_transposed;
   observations_transposed.numCols=OBSERVATIONS;
   observations_transposed.numRows=PARAMETERS;
-  observations_transposed.pData = (computation_float_type *)transposed_matrix;
+  observations_transposed.pData = (computation_float_type *)d.transposed_matrix;
 
   ARM_MATRIX_INSTANCE matrix_to_be_inverted;
   matrix_to_be_inverted.numCols=PARAMETERS;
   matrix_to_be_inverted.numRows=PARAMETERS;
-  matrix_to_be_inverted.pData = (computation_float_type *)matrix_to_be_inverted_data;
+  matrix_to_be_inverted.pData = (computation_float_type *)d.matrix_to_be_inverted_data;
 
   ARM_MATRIX_INSTANCE solution_mapping;
   solution_mapping.numCols=OBSERVATIONS;
   solution_mapping.numRows=PARAMETERS;
-  solution_mapping.pData = (computation_float_type *)solution_mapping_data;
+  solution_mapping.pData = (computation_float_type *)d.solution_mapping_data;
 
   int next_buffer;
   if( buffer_used_for_calibration == 0)
@@ -110,8 +110,8 @@ bool compass_calibrator_3D_t::calculate( void)
 
       // calculation, once per axis (FRONT, RIGHT, DOWN):
       // target vector:        T = ideal induction values for all observations
-      // single measurement:   < 1 induction q0q1 q0q2 q0q3 q1q1 q1q2 q1q3 q2q2 q2q3 q3q3 > (single row)
-      // measurement matrix:   M = single measurement * # OBSERVATIONS
+      // single measurement:   < 1 induction_x induction_y induction_z >
+      // measurement matrix:   M = single measurement * OBSERVATIONS
       // solution matrix:      S = inverse( M_transposed * M) * M_transposed
       // axis parameter set:   P = S * T
 

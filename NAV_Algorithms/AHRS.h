@@ -30,14 +30,13 @@
 #include "float3vector.h"
 #include "float3matrix.h"
 #include "integrator.h"
-#include "compass_calibration.h"
-#include "soft_iron_compensator.h"
+#include "compass_calibrator_3D.h"
 #include "HP_LP_fusion.h"
 #include "pt2.h"
 #include "slope_limiter.h"
 #include "RMS_rectifier.h"
 #include "delay_line.h"
-#include "gyro_gain_adjust.h"
+#include "NAV_tuning_parameters.h"
 
 enum { ROLL, PITCH, HEADING};	//!< euler angles
 enum { FRONT, RIGHT, BOTTOM};	//!< BODY frame
@@ -58,8 +57,9 @@ public:
 
   AHRS_type (float sampling_time);
 
-  void attitude_setup (const float3vector &acceleration,
-		  const float3vector &induction);
+  void attitude_setup (
+      const float3vector &acceleration,
+      const float3vector &induction);
 
   void tune (void);
 
@@ -83,10 +83,15 @@ public:
   }
 
   //! update the AHRS taking the current measurement data
-  void update (const float3vector &gyro, const float3vector &acc,
-	       const float3vector &mag, const float3vector &GNSS_acceleration,
-	  float GNSS_heading, bool GNSS_heading_valid,
-	  const float3vector &x_mag, bool x_mag_valid);
+  void update (
+    const float3vector &gyro,
+    const float3vector &acc,
+    const float3vector &mag,
+    const float3vector &external_mag,
+    bool external_mag_valid,
+    const float3vector &GNSS_acceleration,
+    float GNSS_heading,
+    bool GNSS_heading_valid);
 
   //! set the AHRS attitude using known euler angles
   inline void set_from_euler (float roll, float pitch, float heading)
@@ -193,17 +198,22 @@ public:
 
   //! update the AHRS taking magnetic compass data as a reference
   void update_compass (
-    const float3vector &gyro, const float3vector &acc,
-    const float3vector &mag,
-    const float3vector &GNSS_acceleration,
-    const float3vector &x_mag, bool x_mag_valid);
+    const float3vector &gyro,
+    const float3vector &acc,
+    const float3vector &induction,
+    const float3vector &external_induction,
+    bool external_mag_valid,
+    const float3vector &GNSS_acceleration);
 
   //! update the AHRS taking D-GNSS compass data as a reference
   void update_diff_GNSS (
-    const float3vector &gyro, const float3vector &acc,
-    const float3vector &mag,
-    const float3vector &GNSS_acceleration, float GNSS_heading,
-    const float3vector &x_mag, bool x_mag_valid);
+      const float3vector &gyro,
+      const float3vector &acc,
+      const float3vector &induction,
+      const float3vector &external_induction,
+      bool external_induction_valid,
+      const float3vector &GNSS_acceleration,
+      float GNSS_heading);
 
   //! update the AHRS taking only the acceleration as a reference
   void update_ACC_only (const float3vector &gyro, const float3vector &acc,
@@ -233,8 +243,7 @@ public:
 
   float getGyro_correction_Power () const
   {
-//    return gyro_correction_power; todo patch
-    return uncompensated_magnetic_disturbance_averager.get_output ();
+    return gyro_correction_power;
   }
 
 private:
@@ -244,6 +253,7 @@ private:
   };
 
   void handle_magnetic_induction( float3vector measured_induction, const float3vector &x_mag_, bool x_mag_valid, const float3vector &gyro);
+
   void handle_magnetic_calibration (void);
 
   //! generic helper function to update the AHRS attitude
@@ -260,10 +270,9 @@ private:
       magnetic_control_gain = M_H_GAIN / expected_horizontal_induction;
   }
 
-  void feed_magnetic_induction_observer (
+  void feed_magnetic_induction_observer(
       const float3vector &mag_sensor,
-      const float3vector &mag_delta,
-      bool do_soft_iron_correction);
+      const float3vector &external_mag_sensor);
 
   flight_state_t
   update_circling_state (void);
@@ -291,20 +300,20 @@ private:
   pt2<float, float> pitch_angle_averager;
   pt2<float, float> turn_rate_averager;
   pt2<float, float> G_load_averager;
-  linear_least_square_fit<int64_t, float> mag_calibration_data_collector_right_turn[3];
-  linear_least_square_fit<int64_t, float> mag_calibration_data_collector_left_turn[3];
-  compass_calibration_t<int64_t, float> compass_calibration;
+  RMS_rectifier<float> magnetic_disturbance_averager; //!< abs( observed_induction - expected_induction)
+
   float antenna_DOWN_correction;  //!< slave antenna lower / DGNSS base length
   float antenna_RIGHT_correction; //!< slave antenna more right / DGNSS base length
   float heading_difference_AHRS_DGNSS;
   float cross_acc_correction;
-  RMS_rectifier<float> magnetic_disturbance_averager; //!< abs( observed_induction - expected_induction)
-  RMS_rectifier<float> uncompensated_magnetic_disturbance_averager; //!< abs( observed_induction - expected_induction)
   float magnetic_control_gain; //!< declination-dependent magnetic control loop gain
-  magnetic_calibration_type automatic_magnetic_calibration;
+
   bool magnetic_calibration_updated;
+  bool external_magnetic_calibration_updated;
+  bool mag_calibration_complete;
+  bool external_mag_calibration_complete;
+
   float3vector body_induction;
-  float3vector corrected_body_induction;
   float3vector body_induction_error;
   float gyro_correction_power;
   slope_limiter<float> mag_filter[3];
