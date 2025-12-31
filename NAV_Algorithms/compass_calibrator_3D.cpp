@@ -29,6 +29,7 @@
 #include "embedded_math.h"
 #include <matrix_functions.h>
 #include "compass_calibrator_3D.h"
+#include "NAV_tuning_parameters.h"
 
 ROM float RECIP_SECTOR_SIZE = compass_calibrator_3D_t::OBSERVATIONS / M_PI_F / TWO / TWO;
 
@@ -98,6 +99,7 @@ bool compass_calibrator_3D_t::calculate( void)
   solution_mapping.numRows=PARAMETERS;
   solution_mapping.pData = (computation_float_type *)d.solution_mapping_data;
 
+  bool initial_calibration = buffer_used_for_calibration == INVALID;
   int next_buffer;
   if( buffer_used_for_calibration == 0)
     next_buffer = 1;
@@ -158,6 +160,14 @@ bool compass_calibrator_3D_t::calculate( void)
 	  start_learning(); // discard data
 	  return false;
 	}
+
+      if( not initial_calibration)
+	{
+	  unsigned other_buffer = next_buffer == 0 ? 1 : 0;
+	  for( unsigned k=0; k < PARAMETERS; ++k)
+	    c[next_buffer][axis][k] = (ONE - MAG_CALIBRATION_LETHARGY) * c[next_buffer][axis][k] + MAG_CALIBRATION_LETHARGY * c[other_buffer][axis][k];
+	}
+
     }
 
   buffer_used_for_calibration = next_buffer; // switch now in a thread-save manner

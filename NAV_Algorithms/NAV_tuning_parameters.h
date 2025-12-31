@@ -34,10 +34,6 @@
 #define SINGLE_GNSS_DELAY		30
 #define MAX_GNSS_DELAY			30
 
-#define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
-#define MAGNETIC_DISTURBANCE_LIMIT 	0.1f
-#define UNCOMPENSATED_MAG_DISTURBANCE_LIMIT	0.05f
-#define SOFT_IRON_LETHARGY		0.8f
 #define MAG_CALIBRATION_LETHARGY	0.75f
 #define MAX_EXPECTED_INDUCTION_SLOPE	1.1f
 
@@ -77,7 +73,6 @@
 #define AIRBORNE_TRIGGER_SPEED_COMP	0.5f //!< speed-compensator vario value m/s
 #define AIRBORNE_TRIGGER_SPEED		15.0f //!< ground speed / m/s
 
-#define MAG_SCALE			10000.0f //!< scale factor for high-precision integer statistics
 #define FAST_SAMPLING_REQUENCY 		100.0f
 #define FAST_SAMPLING_TIME 		0.01f
 #define SLOW_SAMPLING_REQUENCY 		10.0f
