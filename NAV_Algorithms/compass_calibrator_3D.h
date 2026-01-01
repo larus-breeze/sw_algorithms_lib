@@ -57,7 +57,8 @@ public:
   compass_calibrator_3D_t( magnetic_calculation_data_t &_d)
     : buffer_used_for_calibration(INVALID),
       measurement_counter(0),
-      d( _d)
+      d( _d),
+      using_orientation_defaults(false)
 {
     start_learning();
   }
@@ -87,8 +88,10 @@ public:
     return &(c[buffer_used_for_calibration][0][0]);
   }
 
-  void set_current_parameters( const float * source)
+  void set_current_parameters( const float * source, bool _using_orientation_defaults = false)
   {
+    using_orientation_defaults = _using_orientation_defaults;
+
     int next_buffer;
     if( buffer_used_for_calibration != 0)
       next_buffer = 0;
@@ -107,6 +110,7 @@ private:
   unsigned populated_sectors;
   int last_sector_collected;
   int measurement_counter;
+  bool using_orientation_defaults;
 
   // sensor transfer matrix
   computation_float_type c[2][AXES][PARAMETERS]; // double buffering for multi-thrading support

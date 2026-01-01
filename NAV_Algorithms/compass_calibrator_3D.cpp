@@ -161,13 +161,12 @@ bool compass_calibrator_3D_t::calculate( void)
 	  return false;
 	}
 
-      if( not initial_calibration)
+      if( not initial_calibration and not using_orientation_defaults)
 	{
 	  unsigned other_buffer = next_buffer == 0 ? 1 : 0;
 	  for( unsigned k=0; k < PARAMETERS; ++k)
 	    c[next_buffer][axis][k] = (ONE - MAG_CALIBRATION_LETHARGY) * c[next_buffer][axis][k] + MAG_CALIBRATION_LETHARGY * c[other_buffer][axis][k];
 	}
-
     }
 
   buffer_used_for_calibration = next_buffer; // switch now in a thread-save manner
