@@ -33,16 +33,23 @@
 
 ROM float RECIP_SECTOR_SIZE = compass_calibrator_3D_t::OBSERVATIONS / M_PI_F / TWO / TWO;
 
-bool compass_calibrator_3D_t::learn (const float3vector &observed_induction,const float3vector &expected_induction, const quaternion<float> &q, bool turning_right, float error_margin)
+bool compass_calibrator_3D_t::learn (
+    const float3vector &observed_induction,
+    const float3vector &expected_induction,
+    const quaternion<float> &q,
+    bool turning_right,
+    float error_margin)
 {
-//  if( error_margin > MAX_ACCEPTABLE_CALIBRATOR_ERROR_MARGIN) todo patch
-//    return false;
-
+  int sector_index;
   float present_heading = q.get_heading();
   if( present_heading < ZERO)
-    present_heading += M_PI_F * TWO;
+	present_heading += M_PI_F * TWO;
 
-  int sector_index = (turning_right ? OBSERVATIONS / TWO : 0) + (unsigned)(present_heading * RECIP_SECTOR_SIZE);
+  if( calibration_status == USING_ORIENTATION_DEFAULTS)
+    // we need to be fast and therefore use only one circling direction
+    sector_index = (unsigned)(present_heading * RECIP_SECTOR_SIZE * TWO);
+  else
+    sector_index = (turning_right ? OBSERVATIONS / TWO : 0) + (unsigned)(present_heading * RECIP_SECTOR_SIZE);
 
   // if we have just left the last sector to be collected: report ready for computation
   if( ( last_sector_collected != -1) && ( sector_index != last_sector_collected) && (++measurement_counter > 10000))
