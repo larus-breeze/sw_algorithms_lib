@@ -204,7 +204,7 @@ bool compass_calibrator_3D_t::calculate( void)
 	    }
 //	  printf("\n");
 	}
-      printf("Buffer: %d variance = %e\n", next_buffer, variance_sum / AXES / PARAMETERS);
+      printf(" Std dev. = %e\n", SQRT( variance_sum / AXES / PARAMETERS));
 #endif
 
   buffer_used_for_calibration = next_buffer; // switch now in a thread-save manner

@@ -169,7 +169,7 @@ void AHRS_type::update (
   bool GNSS_heading_valid)
 {
 #if DISABLE_SAT_COMPASS
-  update_compass(gyro, acc, mag, GNSS_acceleration);
+  update_compass(gyro, acc, mag,  external_mag, external_mag_valid, GNSS_acceleration);
 #else
   if( GNSS_heading_valid)
     {
