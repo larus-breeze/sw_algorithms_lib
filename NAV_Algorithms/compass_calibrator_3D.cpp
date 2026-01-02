@@ -22,19 +22,22 @@
 
  **************************************************************************/
 
-#if PRINT_3D_MAG_PARAMETERS
-#include "stdio.h"
-#endif
-
 #include "embedded_math.h"
 #include <matrix_functions.h>
 #include "compass_calibrator_3D.h"
 #include "NAV_tuning_parameters.h"
 
+#if PRINT_3D_MAG_PARAMETERS
+#include "stdio.h"
+#endif
+
 ROM float RECIP_SECTOR_SIZE = compass_calibrator_3D_t::OBSERVATIONS / M_PI_F / TWO / TWO;
 
 bool compass_calibrator_3D_t::learn (const float3vector &observed_induction,const float3vector &expected_induction, const quaternion<float> &q, bool turning_right, float error_margin)
 {
+//  if( error_margin > MAX_ACCEPTABLE_CALIBRATOR_ERROR_MARGIN) todo patch
+//    return false;
+
   float present_heading = q.get_heading();
   if( present_heading < ZERO)
     present_heading += M_PI_F * TWO;
@@ -99,7 +102,6 @@ bool compass_calibrator_3D_t::calculate( void)
   solution_mapping.numRows=PARAMETERS;
   solution_mapping.pData = (computation_float_type *)d.solution_mapping_data;
 
-  bool initial_calibration = buffer_used_for_calibration == INVALID;
   int next_buffer;
   if( buffer_used_for_calibration == 0)
     next_buffer = 1;
@@ -161,7 +163,7 @@ bool compass_calibrator_3D_t::calculate( void)
 	  return false;
 	}
 
-      if( not initial_calibration and not using_orientation_defaults)
+      if( ( calibration_status == INITIAL) || ( calibration_status == REGULAR))
 	{
 	  unsigned other_buffer = next_buffer == 0 ? 1 : 0;
 	  for( unsigned k=0; k < PARAMETERS; ++k)
@@ -169,19 +171,37 @@ bool compass_calibrator_3D_t::calculate( void)
 	}
     }
 
-  buffer_used_for_calibration = next_buffer; // switch now in a thread-save manner
-  
+  switch( calibration_status)
+  {
+	case CALIBRATION_INVALID:
+	case USING_ORIENTATION_DEFAULTS:
+	  calibration_status = INITIAL;
+	  break;
+	case INITIAL:
+	  calibration_status = REGULAR;
+	  break;
+	case REGULAR:
+	default:
+	  break;
+  };
+
 #if PRINT_3D_MAG_PARAMETERS
 
-  for( unsigned k=0; k < AXES; ++k)
-    {
-      for( unsigned i=0; i<PARAMETERS; ++i)
-	printf("%e\t", (double)(c[next_buffer][k][i]));
-      printf("\n");
-    }
-  printf("\n");
+      float variance_sum = 0.0f;
+      for( unsigned k=0; k < AXES; ++k)
+	{
+	  for( unsigned i=0; i<PARAMETERS; ++i)
+	    {
+	      printf("%e\t", (double)(c[next_buffer][k][i]));
+	      variance_sum += SQR(c[0][k][i]-c[1][k][i]);
+	    }
+//	  printf("\n");
+	}
+      printf("Buffer: %d variance = %e\n", next_buffer, variance_sum / AXES / PARAMETERS);
 #endif
-  
+
+  buffer_used_for_calibration = next_buffer; // switch now in a thread-save manner
+
   start_learning(); // ... again
 
   return true;
@@ -189,7 +209,7 @@ bool compass_calibrator_3D_t::calculate( void)
 
 float3vector compass_calibrator_3D_t::calibrate( const float3vector &induction)
   {
-    if( buffer_used_for_calibration == INVALID) // we do not have a valid calibration
+    if( calibration_status == CALIBRATION_INVALID) // we do not have a valid calibration
       return induction;
 
     unsigned b=buffer_used_for_calibration; // just to save expensive characters ...

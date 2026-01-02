@@ -448,8 +448,8 @@ void AHRS_type::handle_magnetic_induction (
   if (external_mag_calibration_complete && circling_just_terminated)
     {
       trigger_compass_calibrator_3D_calculation (true);
-      external_magnetic_calibration_updated = true;
       external_mag_calibration_complete = false;
+      external_magnetic_calibration_updated = true;
     }
 }
 
