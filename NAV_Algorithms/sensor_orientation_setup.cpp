@@ -1,6 +1,7 @@
 #include "data_structures.h"
 #include "navigator.h"
 #include "sensor_orientation_setup.h"
+#include "compass_calibrator_3D.h"
 
 //! compute sensor orientation relative to airframe front/right/down system
 //  and make changes permanent
@@ -105,6 +106,48 @@
     write_EEPROM_value( SENS_TILT_YAW,   new_euler.yaw);
   }
 
+  void setup_compass_calibrator_3d( void)
+  {
+    float compass_calibrator_3d_data [ 12];
+    bool using_orientation_defaults = false;
+
+    bool parameters_available = permanent_data_file.retrieve_data( MAG_SENSOR_XFER_MATRIX, 12, compass_calibrator_3d_data);
+
+    if( not parameters_available) // use sensor orientation data as a first approximation for the sensor transfer matrix
+	{
+	  float roll, pitch, yaw;
+	  permanent_data_file.retrieve_data( SENS_TILT_ROLL,  1, &roll);
+	  permanent_data_file.retrieve_data( SENS_TILT_PITCH, 1, &pitch);
+	  permanent_data_file.retrieve_data( SENS_TILT_YAW,   1, &yaw);
+
+	  float3matrix rotation_matrix;
+	  quaternion<float> q;
+	  q.from_euler ( roll, pitch, yaw);
+	  q.get_rotation_matrix ( rotation_matrix);
+
+	  compass_calibrator_3d_data[0] = ZERO;
+	  compass_calibrator_3d_data[1] = rotation_matrix.e[0][0];
+	  compass_calibrator_3d_data[2] = rotation_matrix.e[0][1];
+	  compass_calibrator_3d_data[3] = rotation_matrix.e[0][2];
+
+	  compass_calibrator_3d_data[4] = ZERO;
+	  compass_calibrator_3d_data[5] = rotation_matrix.e[1][0];
+	  compass_calibrator_3d_data[6] = rotation_matrix.e[1][1];
+	  compass_calibrator_3d_data[7] = rotation_matrix.e[1][2];
+
+	  compass_calibrator_3d_data[8] = ZERO;
+	  compass_calibrator_3d_data[9]  = rotation_matrix.e[2][0];
+	  compass_calibrator_3d_data[10] = rotation_matrix.e[2][1];
+	  compass_calibrator_3d_data[11] = rotation_matrix.e[2][2];
+	  using_orientation_defaults = true;
+	}
+    compass_calibrator_3D.set_current_parameters( compass_calibrator_3d_data, using_orientation_defaults);
+
+    parameters_available = permanent_data_file.retrieve_data( EXT_MAG_SENSOR_XFER_MATRIX, 12, compass_calibrator_3d_data);
+    if( parameters_available)
+	external_compass_calibrator_3D.set_current_parameters( compass_calibrator_3d_data);
+
+  }
 
 
 
