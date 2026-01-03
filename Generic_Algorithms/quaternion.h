@@ -199,10 +199,14 @@ public:
 		  return *this;
 		}
 
-	void from_rotation_matrix( matrix<datatype, 3> &rotm) //!< rotation matrix -> quaternion transformation
+	void from_rotation_matrix( matrix<datatype, 3> &rotm, bool robust=false) //!< rotation matrix -> quaternion transformation
 		{
 		float tmp;
 		tmp = ONE + rotm.e[0][0] + rotm.e[1][1] + rotm.e[2][2];
+
+		if( robust)
+		  tmp = abs(tmp); // untested if this is OK
+
 		//! formula from roenbaeck p35
 		tmp = SQRT( tmp);
 		tmp *= HALF;

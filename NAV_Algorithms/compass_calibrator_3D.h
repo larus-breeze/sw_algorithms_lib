@@ -52,7 +52,8 @@ class magnetic_calculation_data_t;
 class compass_calibrator_3D_t
 {
 public:
-  enum { AXES=3, PARAMETERS=4, OBSERVATIONS=22, INVALID=-1};
+//  enum { AXES=3, PARAMETERS=4, OBSERVATIONS=22, INVALID=-1};
+  enum { AXES=3, PARAMETERS=4, OBSERVATIONS=50, INVALID=-1}; // todo patch
 
   compass_calibrator_3D_t( magnetic_calculation_data_t &_d)
     : buffer_used_for_calibration(INVALID),

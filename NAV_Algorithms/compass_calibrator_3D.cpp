@@ -205,6 +205,27 @@ bool compass_calibrator_3D_t::calculate( void)
 //	  printf("\n");
 	}
       printf(" Std dev. = %e\n", SQRT( variance_sum / AXES / PARAMETERS));
+
+      float3matrix m;
+      m.e[0][0]=c[next_buffer][0][1];
+      m.e[0][1]=c[next_buffer][0][2];
+      m.e[0][2]=c[next_buffer][0][3];
+
+      m.e[1][0]=c[next_buffer][1][1];
+      m.e[1][1]=c[next_buffer][1][2];
+      m.e[1][2]=c[next_buffer][1][3];
+
+      m.e[2][0]=c[next_buffer][2][1];
+      m.e[2][1]=c[next_buffer][2][2];
+      m.e[2][2]=c[next_buffer][2][3];
+
+      quaternion<float> q;
+      q.from_rotation_matrix(m, true);
+      eulerangle<float > e;
+      e = q.operator eulerangle<float>();
+
+      printf("Rotation rpy = %f %f %f\n\n", e.roll * 180/M_PI, e.pitch * 180/M_PI, e.yaw * 180/M_PI);
+
 #endif
 
   buffer_used_for_calibration = next_buffer; // switch now in a thread-save manner
