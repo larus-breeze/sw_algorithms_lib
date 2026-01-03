@@ -82,8 +82,8 @@ bool compass_calibrator_3D_t::learn (
 
 bool compass_calibrator_3D_t::calculate( void)
 {
-//  if( buffer_used_for_calibration != INVALID)
-//    return false;
+//  unsigned size = sizeof( magnetic_calculation_data_t);
+//  unsigned obj_size = sizeof( *this);
 
   ARM_MATRIX_INSTANCE solution;
   solution.numCols=PARAMETERS;
@@ -220,9 +220,9 @@ bool compass_calibrator_3D_t::calculate( void)
       m.e[2][2]=c[next_buffer][2][3];
 
       quaternion<float> q;
-      q.from_rotation_matrix(m, true);
+      q.from_rotation_matrix(m);
       eulerangle<float > e;
-      e = q.operator eulerangle<float>();
+      e = q;
 
       printf("Rotation rpy = %f %f %f\n\n", e.roll * 180/M_PI, e.pitch * 180/M_PI, e.yaw * 180/M_PI);
 
