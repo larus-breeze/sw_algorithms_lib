@@ -198,6 +198,39 @@ public:
 		  *this = *this * right;
 		  return *this;
 		}
+#if 1 // experimental algorithm
+	void from_rotation_matrix( const matrix<datatype, 3> &m, bool nix=false)
+	{
+	    float trace = m.e[0][0] + m.e[1][1] + m.e[2][2];
+
+	    if (trace > 0.0f) {
+	        float S = std::sqrt(trace + 1.0f) * 2.0f; // S = 4 * qw
+	        this->e[0] = 0.25f * S;
+	        this->e[1] = (m.e[2][1] - m.e[1][2]) / S;
+	        this->e[2] = (m.e[0][2] - m.e[2][0]) / S;
+	        this->e[3] = (m.e[1][0] - m.e[0][1]) / S;
+	    } else if (m.e[0][0] > m.e[1][1] && m.e[0][0] > m.e[2][2]) {
+	        float S = std::sqrt(1.0f + m.e[0][0] - m.e[1][1] - m.e[2][2]) * TWO; // S = 4 * qx
+	        this->e[0] = (m.e[2][1] - m.e[1][2]) / S;
+	        this->e[1] = 0.25f * S;
+	        this->e[2] = (m.e[0][1] + m.e[1][0]) / S;
+	        this->e[3] = (m.e[0][2] + m.e[2][0]) / S;
+	    } else if (m.e[1][1] > m.e[2][2]) {
+	        float S = std::sqrt(1.0f - m.e[0][0] + m.e[1][1] - m.e[2][2]) * TWO; // S = 4 * qy
+	        this->e[0] = (m.e[0][2] - m.e[2][0]) / S;
+	        this->e[1] = (m.e[0][1] + m.e[1][0]) / S;
+	        this->e[2] = 0.25f * S;
+	        this->e[3] = (m.e[1][2] + m.e[2][1]) / S;
+	    } else {
+	        float S = std::sqrt(1.0f - m.e[0][0] - m.e[1][1] + m.e[2][2]) * TWO; // S = 4 * qz
+	        this->e[0] = (m.e[1][0] - m.e[0][1]) / S;
+	        this->e[1] = (m.e[0][2] + m.e[2][0]) / S;
+	        this->e[2] = (m.e[1][2] + m.e[2][1]) / S;
+	        this->e[3] = 0.25f * S;
+	    }
+	}
+
+#else // our old algorithm
 
 	void from_rotation_matrix( matrix<datatype, 3> &rotm, bool robust=false) //!< rotation matrix -> quaternion transformation
 		{
@@ -228,5 +261,7 @@ public:
 	  retv.normalize();
 	  return retv;
 	}
+#endif
+
 };
 #endif // QUATERNION_H
