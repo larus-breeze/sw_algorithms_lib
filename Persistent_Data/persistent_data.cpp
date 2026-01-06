@@ -230,12 +230,4 @@ bool read_EEPROM_value( EEPROM_PARAMETER_ID id, float &value)
   return ( EEPROM_convert( id, (EEPROM_data_t &)data, value , READ));
 }
 
-float configuration( EEPROM_PARAMETER_ID id)
-{
-  float value;
-  bool result = read_EEPROM_value( id, value);
-  ASSERT( result == false);
-  return value;
-}
-
 #endif
