@@ -57,8 +57,8 @@ public:
   compass_calibrator_3D_t( magnetic_calculation_data_t &_d)
     : buffer_used_for_calibration(INVALID),
       measurement_counter(0),
-      d( _d),
-      calibration_status( CALIBRATION_INVALID)
+      calibration_status( CALIBRATION_INVALID),
+      d( _d)
 {
     start_learning();
   }
