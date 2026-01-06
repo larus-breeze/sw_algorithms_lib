@@ -329,7 +329,7 @@ void format_PLARS ( float value, PLARS_TYPES option, char * &p)
       CLIP( value, 0.0f, 1.0f);
       append_string( p, PLARS_BAL);
       value = (value - 1.0f) * 100.0f + 0.5f; // Scale CAN
-      format_integer( p, round( value));
+      format_integer( p, (int32_t) round( value));
       break;
     case BUGS:  //BUGS Bugs in % (0 - 50)
       CLIP( value, 1.0f, 1.5f);
