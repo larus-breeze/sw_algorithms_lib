@@ -59,12 +59,20 @@ public:
 class EEPROM_file_system
 {
 public:
-  EEPROM_file_system( EEPROM_file_system_node * begin, EEPROM_file_system_node * behind_end)
+  EEPROM_file_system( EEPROM_file_system_node * begin=0, EEPROM_file_system_node * behind_end=0)
   : head( (EEPROM_file_system_node *)begin),
     free_space( begin),
     tail( behind_end)
   {
     free_space = find_end();
+  }
+
+  void set_memory_area( uint32_t begin, uint32_t behind_end)
+  {
+    head 	= (EEPROM_file_system_node * )begin;
+    free_space	= (EEPROM_file_system_node * )begin;
+    tail	= (EEPROM_file_system_node * )behind_end;
+    free_space  = (EEPROM_file_system_node * )begin;
   }
 
   EEPROM_file_system_node * find_datum( EEPROM_file_system_node::ID_t id)
@@ -237,6 +245,11 @@ public:
 	      }
 	  }
       }
+  }
+
+  void * get_head( void) const
+  {
+    return (void *)head;
   }
 
 private:
