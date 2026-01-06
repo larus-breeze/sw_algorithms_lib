@@ -27,6 +27,9 @@
 
 #include "stdint.h"
 
+#define READ true
+#define WRITE false
+
 #ifdef __cplusplus
 
 typedef union
@@ -103,6 +106,7 @@ float configuration( EEPROM_PARAMETER_ID id);
 bool write_EEPROM_value( EEPROM_PARAMETER_ID id, float value);
 bool read_EEPROM_value( EEPROM_PARAMETER_ID id, float &value);
 void ensure_EEPROM_parameter_integrity(void);
+bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float & value , bool read);
 
 extern const persistent_data_t PERSISTENT_DATA[];
 extern const unsigned PERSISTENT_DATA_ENTRIES;

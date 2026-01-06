@@ -110,9 +110,6 @@ const persistent_data_t * find_parameter_from_ID( EEPROM_PARAMETER_ID id)
 #include "eeprom.h"
 #include "my_assert.h"
 
-#define READ true
-#define WRITE false
-
 bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float & value , bool read )
 {
   switch(id)
@@ -211,23 +208,6 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
       break;
   }
   return false; // OK
-}
-
-bool write_EEPROM_value( EEPROM_PARAMETER_ID id, float value)
-{
-  EEPROM_data_t EEPROM_value;
-  if( EEPROM_convert( id, EEPROM_value, value , WRITE))
-      return true; // error
-
-  return EE_WriteVariableBuffered( id, EEPROM_value.u16);
-}
-
-bool read_EEPROM_value( EEPROM_PARAMETER_ID id, float &value)
-{
-  uint16_t data;
-  if( HAL_OK != EE_ReadVariableBuffered( id, (uint16_t*)&data))
-    return true;
-  return ( EEPROM_convert( id, (EEPROM_data_t &)data, value , READ));
 }
 
 #endif

@@ -153,27 +153,27 @@ public:
 
 #ifdef DEBUG
 
-  void dump_all_entries( void)
+  void dump_all_entries (void)
   {
-    EEPROM_file_system_node * the_node;
-    for( EEPROM_file_system_node::ID_t id=1; id < 255; ++id)
+    EEPROM_file_system_node *the_node;
+    for (EEPROM_file_system_node::ID_t id = 1; id < 255; ++id)
       {
-        the_node = find_last_datum( head, id);
-        if( the_node != 0)
-  	{
-  	  printf( "ID: %d ", the_node->id);
+	the_node = find_last_datum (head, id);
+	if (the_node != 0)
+	  {
+	    printf ("ID: %d ", the_node->id);
 
-  	  if( the_node->size == 1)
-  	    printf( "val = %02x\n", the_node->data & 0xff);
-  	  else
-  	    {
-  	      printf( "val =");
-  	      for( unsigned i = 0; i < the_node->size - 1; ++i)
-//  		      printf( " %08x", * ((unsigned *) the_node + 1 + i));
-  		      printf( " %10e", * ((float32_t *) the_node + 1 + i));
-  	      printf( "\n");
-  	    }
-  	}
+	    if (the_node->size == 1)
+	      printf ("val = %02x\n", the_node->data & 0xff);
+	    else
+	      {
+		printf ("val =");
+		for (unsigned i = 0; i < the_node->size - 1; ++i)
+//		  printf( " %08x", * ((unsigned *) the_node + 1 + i));
+		  printf (" %10e", *((float32_t*) the_node + 1 + i));
+		printf ("\n");
+	      }
+	  }
       }
   }
 
