@@ -26,6 +26,7 @@
 #include "navigator.h"
 #include "sensor_orientation_setup.h"
 #include "compass_calibrator_3D.h"
+#include "persistent_data_file.h"
 
 //! compute sensor orientation relative to airframe front/right/down system
 //  and make changes permanent
