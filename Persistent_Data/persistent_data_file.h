@@ -72,12 +72,17 @@ public:
     return head != 0 && tail != 0;
   }
 
-  void set_memory_area( uint32_t *begin, uint32_t *behind_end)
+  bool set_memory_area( uint32_t *begin, uint32_t *behind_end)
   {
     head 	= (EEPROM_file_system_node * )begin;
-    free_space	= (EEPROM_file_system_node * )begin;
     tail	= (EEPROM_file_system_node * )behind_end;
-    free_space  = (EEPROM_file_system_node * )begin;
+
+    EEPROM_file_system_node * work;
+    for( work = head; (work->id != 0x00) && (work->id != 0xff); work=work->next())
+	if( work >= tail)
+	  return false;
+    free_space = work;
+    return is_consistent();
   }
 
   EEPROM_file_system_node * find_datum( EEPROM_file_system_node::ID_t id)
@@ -85,8 +90,50 @@ public:
     return find_last_datum( head, id);
   }
 
+  uint32_t * find_data( EEPROM_file_system_node::ID_t id, unsigned data_size)
+  {
+      unsigned size_including_node = data_size + 1; // size including node itself
+      EEPROM_file_system_node * candidate = find_last_datum( head, id);
+      if( candidate == 0 || size_including_node != candidate->size)
+        return 0;
+
+      uint32_t *from = (uint32_t *)candidate + 1;
+      uint16_t crc = CRC16_blockcheck( (uint16_t *)from,  data_size * sizeof( uint16_t));
+      uint16_t protected_id_and_size = candidate->id + ((candidate->size) << 8);
+      crc = CRC16( protected_id_and_size, crc);
+
+      if( candidate->data != crc)
+        return 0;
+      return from;
+  }
+
+  static bool wordcomp( uint32_t *one,  uint32_t *two, unsigned size)
+  {
+    while( size--)
+      if( *one++ != *two++)
+	return false;
+
+    return true;
+  }
+
   bool store_data( EEPROM_file_system_node::ID_t id, unsigned data_size_words, const void * data)
   {
+    // at first: check if this information is already stored identically
+    if( data_size_words == EEPROM_file_system_node::DIRECT_8_BIT)
+      {
+	uint8_t data_read;
+	bool ok = retrieve_data( id, data_read);
+	if( ok && data_read == *(uint8_t *)data)
+	  return true;
+      }
+    else
+      {
+	uint32_t * place_in_file = find_data( id, data_size_words);
+	if( place_in_file != 0)
+	  if( wordcomp( (uint32_t *)data, place_in_file, data_size_words) == 0)
+	    return true; // same information found
+      }
+
     EEPROM_file_system_node * next_entry = (EEPROM_file_system_node *)free_space;
 
     if( next_entry + data_size_words + 1 >= tail)
@@ -94,7 +141,7 @@ public:
 
     EEPROM_file_system_node temp_node;
     temp_node.id = id;
-    temp_node.size = data_size_words + 1; // size including node itself
+    temp_node.size = (int8_t)(data_size_words + 1); // size including node itself
 
     if( data_size_words == EEPROM_file_system_node::DIRECT_8_BIT)
       {
@@ -208,18 +255,6 @@ public:
 	      return false; // invalid data pattern
 	  }
       }
-    return true;
-  }
-
-  bool setup( EEPROM_file_system_node * begin, unsigned size_words)
-  {
-    head = begin;
-    tail = head + size_words;
-    EEPROM_file_system_node * work;
-    for( work = head; (work->id != 0x00) && (work->id != 0xff); work=work->next())
-	if( work >= tail)
-	  return false;
-    free_space = work;
     return true;
   }
 

@@ -75,7 +75,7 @@ bool all_EEPROM_parameters_available( void)
   return true;
 }
 
-void ensure_EEPROM_parameter_integrity( void)
+bool ensure_EEPROM_parameter_integrity( void)
 {
   float dummy;
   const persistent_data_t * parameter = PERSISTENT_DATA;
@@ -83,10 +83,13 @@ void ensure_EEPROM_parameter_integrity( void)
     {
       if( true == read_EEPROM_value( parameter->id, dummy)) // parameter missing
 	{
-	  (void) write_EEPROM_value( parameter->id, parameter->default_value);
+	  bool error = write_EEPROM_value( parameter->id, parameter->default_value);
+	  if( error)
+	    return false;
 	}
       ++parameter;
     }
+  return true;
 }
 
 const persistent_data_t * find_parameter_from_name( char * name)

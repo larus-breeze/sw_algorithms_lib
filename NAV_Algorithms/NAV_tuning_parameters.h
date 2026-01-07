@@ -81,6 +81,4 @@
 #define GRAVITY				9.81f
 #define VECTOR_AVERAGE_COUNT		100 //!< average count for sensor orientation setup
 
-#define PRINT_3D_MAG_PARAMETERS 	1
-
 #endif /* NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_ */
