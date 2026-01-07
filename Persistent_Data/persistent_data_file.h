@@ -67,7 +67,12 @@ public:
     free_space = find_end();
   }
 
-  void set_memory_area( uint32_t begin, uint32_t behind_end)
+  bool in_use( void)
+  {
+    return head != 0 && tail != 0;
+  }
+
+  void set_memory_area( uint32_t *begin, uint32_t *behind_end)
   {
     head 	= (EEPROM_file_system_node * )begin;
     free_space	= (EEPROM_file_system_node * )begin;
