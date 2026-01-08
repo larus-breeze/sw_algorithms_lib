@@ -370,6 +370,5 @@ private:
 };
 
 extern EEPROM_file_system permanent_data_file;
-extern bool using_permanent_data_file;
 
 #endif /* NAV_ALGORITHMS_PERSISTENT_DATA_FILE_H_ */
