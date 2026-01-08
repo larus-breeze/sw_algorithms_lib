@@ -29,6 +29,7 @@
 
 #include "embedded_math.h"
 #include <CRC16.h>
+#include "mutex_implementation.h"
 
 #ifdef DEBUG
 #include "stdio.h"
@@ -128,6 +129,8 @@ public:
       }
     else
       {
+	LOCK_SECTION();
+
 	uint32_t * place_in_file = find_data( id, data_size_words);
 	if( place_in_file != 0)
 	  if( wordcomp( (uint32_t *)data, place_in_file, data_size_words) == 0)
@@ -171,6 +174,8 @@ public:
 
   bool retrieve_data( EEPROM_file_system_node::ID_t id, unsigned data_size, void * target)
   {
+    LOCK_SECTION();
+
     uint32_t *dest = (uint32_t *)target;
     unsigned size_including_node = data_size + 1; // size including node itself
     EEPROM_file_system_node * candidate = find_last_datum( head, id);
@@ -197,6 +202,8 @@ public:
 
   bool retrieve_data( EEPROM_file_system_node::ID_t id, uint8_t & target)
   {
+    LOCK_SECTION();
+
     EEPROM_file_system_node * my_node = find_last_datum( head, id);
     if( my_node == 0)
       return false;
