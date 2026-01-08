@@ -229,5 +229,16 @@ public:
 	        this->e[3] = 0.25f * S;
 	    }
 	}
+
+	quaternion <datatype> inverse( void)
+	{
+	  quaternion <datatype> retv;
+	  retv[0] = this->e[0];
+	  retv[1] = -this->e[1];
+	  retv[2] = -this->e[2];
+	  retv[3] = -this->e[3];
+	  retv.normalize();
+	  return retv;
+	}
 };
 #endif // QUATERNION_H
