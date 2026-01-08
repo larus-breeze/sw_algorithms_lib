@@ -22,6 +22,7 @@
 
  **************************************************************************/
 
+#include "system_configuration.h"
 #include "embedded_math.h"
 #include <matrix_functions.h>
 #include "compass_calibrator_3D.h"
