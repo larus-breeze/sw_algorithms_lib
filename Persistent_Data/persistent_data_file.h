@@ -241,8 +241,9 @@ public:
 
   bool is_consistent(void)
   {
+    EEPROM_file_system_node * work;
     //check all nodes for consistency
-    for( EEPROM_file_system_node * work = head; *(uint32_t *)work != 0xffffffff && work < free_space; work = work->next())
+    for( work = head; (work < free_space) && (*(uint32_t *)work != 0xffffffff); work = work->next())
       {
 	if( work->size == 1) // we have found a direct-data-entry
 	  {
@@ -255,6 +256,11 @@ public:
 	      return false; // invalid data pattern
 	  }
       }
+
+    for( uint32_t * p = (uint32_t *)work; p < (uint32_t *)tail; ++p)
+      if( *p != 0xffffffff)
+	return false;
+
     return true;
   }
 
