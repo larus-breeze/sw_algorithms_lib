@@ -36,6 +36,8 @@
 
 #define MAG_CALIBRATION_LETHARGY	0.75f
 #define MAX_EXPECTED_INDUCTION_SLOPE	1.1f
+#define MAX_VELOCITY_ERROR_GNSS_M9N 	0.35f	// A M9N-GNSS shall be < 0.35m/s with a good reception
+#define MAX_VELOCITY_ERROR_GNSS_F9X	0.15f  	// A F9P-GNSS shall be < 0.15m/s with a good reception
 
 #define CIRCLE_LIMIT (10 * 100) //!< 10 * 1/100 s delay into / out of circling state
 

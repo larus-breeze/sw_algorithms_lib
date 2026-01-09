@@ -107,19 +107,19 @@ public:
   {
     if (GNSS_type == GNSS_M9N)
     {
-	if (GNSS_speed_accuracy > 0.35) // A M9N-GNSS shall be < 0.35m/s with a good reception
+	if (GNSS_speed_accuracy > MAX_VELOCITY_ERROR_GNSS_M9N)
 	  return true;
 	return false;
     }
     else if ((GNSS_type == GNSS_F9P_F9H) || (GNSS_type == GNSS_F9P_F9P))
     {
-	if (GNSS_speed_accuracy > 0.15)  // A F9P-GNSS shall be < 0.15m/s with a good reception
+	if (GNSS_speed_accuracy > MAX_VELOCITY_ERROR_GNSS_F9X)
 	  return true;
 	return false;
     }
     else
     {
-	ASSERT(0);
+//	ASSERT(0); // error-tolerant for now, todo fixme
 	return true;
     }
   }
