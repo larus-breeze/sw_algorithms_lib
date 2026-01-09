@@ -8,6 +8,7 @@ set(SOURCE_FILES
     NAV_Algorithms/earth_induction_model.cpp
     NAV_Algorithms/KalmanVario.cpp
     NAV_Algorithms/KalmanVario_PVA.cpp
+    NAV_Algorithms/Kalman_V_A_Aoff_observer.cpp
     NAV_Algorithms/navigator.cpp
     NAV_Algorithms/persistent_data.cpp
     NAV_Algorithms/setup_tester.cpp
@@ -16,7 +17,13 @@ set(SOURCE_FILES
     Output_Formatter/ascii_support.cpp
     Output_Formatter/CAN_output.cpp
     Output_Formatter/NMEA_format.cpp
-)
+    ARM_math/arm_mat_inverse_f32.c
+    ARM_math/arm_mat_inverse_f64.c
+    ARM_math/arm_mat_mult_f32.c
+    ARM_math/arm_mat_mult_f64.c
+    ARM_math/arm_mat_trans_f32.c
+    ARM_math/arm_mat_trans_f64.c
+    )
 
 set(HEADER_FILES
     Generic_Algorithms/accumulating_averager.h
@@ -49,26 +56,29 @@ set(HEADER_FILES
     NAV_Algorithms/GNSS.h
     NAV_Algorithms/KalmanVario.h
     NAV_Algorithms/KalmanVario_PVA.h
+    NAV_Algorithms/Kalman_V_A_Aoff_observer.h
     NAV_Algorithms/navigator.h
     NAV_Algorithms/NAV_tuning_parameters.h
     NAV_Algorithms/organizer.h
     NAV_Algorithms/persistent_data.h
     NAV_Algorithms/soaring_flight_averager.h
-    NAV_Algorithms/windobserver.h
+    NAV_Algorithms/soft_iron_compensator.h
+    NAV_Algorithms/wind_observer.h
     Output_Formatter/ascii_support.h
     Output_Formatter/CAN_gateway.h
     Output_Formatter/CAN_output.h
     Output_Formatter/generic_CAN_driver.h
     Output_Formatter/NMEA_format.h
     Output_Formatter/system_state.h
-)
-
-
-include_directories(
-    ../src
-    Generic_Algorithms
-    NAV_Algorithms
-    Output_Formatter
+    ARM_math/matrix_functions.h
+    ARM_math/arm_math_memory.h
+    ARM_math/arm_math_types.h
+    ARM_math/matrix_utils.h
+    ARM_math/cmsis_compiler.h
+    ARM_math/cmsis_gcc.h
+    ARM_math/matrix_utils.h
+    ARM_math/none.h
+    ARM_math/utils.h
 )
 
 add_library(larus_lib
@@ -76,4 +86,11 @@ add_library(larus_lib
   ${HEADER_FILES}
 )
 
-
+target_include_directories(larus_lib
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/Generic_Algorithms
+        ${CMAKE_CURRENT_SOURCE_DIR}/NAV_Algorithms
+        ${CMAKE_CURRENT_SOURCE_DIR}/Output_Formatter
+        ${CMAKE_CURRENT_SOURCE_DIR}/ARM_math
+        ../src
+)

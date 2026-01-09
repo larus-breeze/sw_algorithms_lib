@@ -30,6 +30,7 @@
 #include "navigator.h"
 #include "earth_induction_model.h"
 #include "sensor_orientation_setup.h"
+#include "system_state.h"
 
 //! set of algorithms and data to be used by Larus flight sensor
 class organizer_t
@@ -127,6 +128,11 @@ public:
     navigator.set_attitude ( roll, pitch, present_heading);
   }
 
+  void set_GNSS_type(GNSS_configration_t configuration)
+  {
+    navigator.set_gnss_type(configuration);
+  }
+
   //! all that needs to be done when a new data set comes from the GNSS receiver
   void update_GNSS_data( const coordinates_t &coordinates)
   {
@@ -168,6 +174,16 @@ public:
   void report_data ( output_data_t &data)
   {
     navigator.report_data ( data);
+
+    if ( navigator.get_speed_accuracy_bad_status() == true )
+      update_system_state_set(GNSS_VELOCITY_ACCURACY_BAD);
+    else
+      update_system_state_clear(GNSS_VELOCITY_ACCURACY_BAD);
+
+    if ( navigator.get_magnetic_disturbance_bad_status() == true )
+	update_system_state_set(MAGNETIC_DISTURBANCE_BAD);
+    else
+	update_system_state_clear(MAGNETIC_DISTURBANCE_BAD);
   }
 
 private:

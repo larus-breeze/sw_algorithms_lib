@@ -78,6 +78,7 @@ void navigator_t::update_GNSS_data( const coordinates_t &coordinates)
       GNSS_heading = 0.0f;
       GNSS_negative_altitude = 0.0f;
       GNSS_speed = 0.0f;
+      GNSS_speed_accuracy = 0.0f;
     }
   else
     {
@@ -86,6 +87,7 @@ void navigator_t::update_GNSS_data( const coordinates_t &coordinates)
       GNSS_heading = coordinates.relPosHeading;
       GNSS_negative_altitude = coordinates.position[DOWN];
       GNSS_speed = coordinates.speed_motion;
+      GNSS_speed_accuracy = coordinates.speed_acc;
     }
 }
 
