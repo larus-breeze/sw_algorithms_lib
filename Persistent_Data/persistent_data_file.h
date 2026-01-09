@@ -37,6 +37,8 @@
 #include "string.h"
 #endif
 
+#define ERASED_FLASH_BYTE 0xff
+
 //!< generic call to write permanent data
 void FLASH_write( uint32_t * dest, uint32_t * source, unsigned n_words);
 
@@ -73,13 +75,22 @@ public:
     return head != 0 && tail != 0;
   }
 
-  bool set_memory_area( uint32_t *begin, uint32_t *behind_end)
+  //!< method for simulation only as it writes 0xff into flash to erase
+  void initialize_memory_area( uint32_t *begin, uint32_t *behind_end)
+  {
+    head 	= (EEPROM_file_system_node * )begin;
+    tail	= (EEPROM_file_system_node * )behind_end;
+    free_space = head;
+    memset( head, 0xff, (tail-head) * sizeof( uint32_t));
+  }
+
+  bool set_memory_to_existing_data( uint32_t *begin, uint32_t *behind_end)
   {
     head 	= (EEPROM_file_system_node * )begin;
     tail	= (EEPROM_file_system_node * )behind_end;
 
     EEPROM_file_system_node * work;
-    for( work = head; (work->id != 0x00) && (work->id != 0xff); work=work->next())
+    for( work = head; work->id != ERASED_FLASH_BYTE; work = work->next())
 	if( work >= tail)
 	  return false;
     free_space = work;
@@ -119,6 +130,8 @@ public:
 
   bool store_data( EEPROM_file_system_node::ID_t id, unsigned data_size_words, const void * data)
   {
+    LOCK_SECTION();
+
     // at first: check if this information is already stored identically
     if( data_size_words == EEPROM_file_system_node::DIRECT_8_BIT)
       {
@@ -129,7 +142,6 @@ public:
       }
     else
       {
-	LOCK_SECTION();
 
 	uint32_t * place_in_file = find_data( id, data_size_words);
 	if( place_in_file != 0)
@@ -274,15 +286,15 @@ public:
   void import_all_data (const EEPROM_file_system &source)
   {
     EEPROM_file_system_node *current_node;
-    for (EEPROM_file_system_node::ID_t id = 1; id < 255; ++id)
+    for (EEPROM_file_system_node::ID_t id = 1; id < ERASED_FLASH_BYTE; ++id)
       {
-	current_node = find_last_datum ( source.head, id);
+	current_node = source.find_last_datum ( source.head, id);
 	if (current_node != 0)
 	  {
 	    switch (current_node->size)
 	      {
 	      case 0:
-	      case 0xff:
+	      case ERASED_FLASH_BYTE:
 		continue; // invalid size
 	      case 1: // direct data node
 		if (not short_node_is_consistent (*current_node))
@@ -335,7 +347,7 @@ private:
     return work->data == crc;
   }
 
-  EEPROM_file_system_node * find_last_datum( EEPROM_file_system_node * start, EEPROM_file_system_node::ID_t id=0xff)
+  EEPROM_file_system_node * find_last_datum( EEPROM_file_system_node * start, EEPROM_file_system_node::ID_t id=ERASED_FLASH_BYTE) const
   {
     EEPROM_file_system_node * thisone = find_first_datum( start, id);
     EEPROM_file_system_node * candidate=0;
@@ -367,9 +379,9 @@ private:
     return work;
   }
 
-  EEPROM_file_system_node * find_first_datum( EEPROM_file_system_node * start, EEPROM_file_system_node::ID_t id)
+  EEPROM_file_system_node * find_first_datum( EEPROM_file_system_node * start, EEPROM_file_system_node::ID_t id) const
   {
-    for( EEPROM_file_system_node * work = start; (work < free_space) && (work->size != 0) && (work->size != 0xff); work = work->next())
+    for( EEPROM_file_system_node * work = start; (work < free_space) && (work->size != 0) && (work->size != ERASED_FLASH_BYTE); work = work->next())
       {
         if( work->id == id)
   	return work;
