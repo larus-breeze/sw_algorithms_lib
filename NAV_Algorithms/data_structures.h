@@ -115,6 +115,7 @@ typedef struct
   float3vector body_induction;
   float3vector body_induction_error;
   float gyro_correction_power;
+  float3vector expected_nav_induction;
 #endif
 #if WITH_EXTERNAL_MAGNETOMETER
   float3vector external_magnetometer_reading;
