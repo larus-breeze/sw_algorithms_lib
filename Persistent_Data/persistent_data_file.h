@@ -119,15 +119,6 @@ public:
       return from;
   }
 
-  static bool wordcomp( uint32_t *one,  uint32_t *two, unsigned size)
-  {
-    while( size--)
-      if( *one++ != *two++)
-	return false;
-
-    return true;
-  }
-
   bool store_data( EEPROM_file_system_node::ID_t id, unsigned data_size_words, const void * data)
   {
     LOCK_SECTION();
@@ -145,7 +136,7 @@ public:
 
 	uint32_t * place_in_file = find_data( id, data_size_words);
 	if( place_in_file != 0)
-	  if( wordcomp( (uint32_t *)data, place_in_file, data_size_words) == 0)
+	  if( compare_words_block_binary( (uint32_t *)data, place_in_file, data_size_words))
 	    return true; // same information found
       }
 
@@ -318,6 +309,15 @@ public:
   }
 
 private:
+  bool compare_words_block_binary( const uint32_t *one,  const uint32_t *two, unsigned size) const
+  {
+    while( size--)
+      {
+      if( *one++ != *two++)
+	return false;
+      }
+    return true;
+  }
 
   uint16_t check_and_pack_id_len_and_data( EEPROM_file_system_node the_node, uint8_t datum)
   {
