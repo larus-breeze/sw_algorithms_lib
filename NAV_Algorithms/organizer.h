@@ -113,7 +113,7 @@ public:
 
     navigator.feed_QFF_density_metering( output_data.m.static_pressure - QNH_offset, -output_data.c.position[DOWN]);
 
-    if( ++magnetic_induction_update_counter > 36000) // every hour
+    if( ++magnetic_induction_update_counter > MAGNETIC_UPDATE_TIME_TENTH_SECS) // every 15 minutes
       {
 	update_magnetic_induction_data( output_data.c.latitude, output_data.c.longitude);
 	magnetic_induction_update_counter=0;

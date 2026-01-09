@@ -170,6 +170,11 @@ public:
     return gyro_correction;
   }
 
+  inline const float3vector& get_expected_nav_induction (void)
+  {
+    return expected_nav_induction;
+  }
+
   flight_state_t get_circling_state (void) const
   {
     return circling_state;
