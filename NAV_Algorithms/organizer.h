@@ -83,17 +83,17 @@ public:
   //! attitude setup after getting the first set of acceleration an magnetic data
   void initialize_after_first_measurement( output_data_t & output_data)
   {
-    navigator.update_pressure( output_data.m.static_pressure - QNH_offset);
-    navigator.initialize_QFF_density_metering( -output_data.c.position[DOWN]);
+    navigator.update_pressure( output_data.obs.m.static_pressure - QNH_offset);
+    navigator.initialize_QFF_density_metering( -output_data.obs.c.position[DOWN]);
     navigator.reset_altitude ();
 
     // setup initial attitude
-    float3vector acc = sensor_mapping * output_data.m.acc;
-    float3vector mag = sensor_mapping * output_data.m.mag;
+    float3vector acc = sensor_mapping * output_data.obs.m.acc;
+    float3vector mag = sensor_mapping * output_data.obs.m.mag;
 
-    if (output_data.c.sat_fix_type & SAT_HEADING)
+    if (output_data.obs.c.sat_fix_type & SAT_HEADING)
       {
-	navigator.set_attitude ( 0.0f, 0.0f, output_data.c.relPosHeading); // todo use acc data some day ?
+	navigator.set_attitude ( 0.0f, 0.0f, output_data.obs.c.relPosHeading); // todo use acc data some day ?
       }
     else
       navigator.set_from_add_mag( acc, mag); // initialize attitude from acceleration + compass
@@ -111,11 +111,11 @@ public:
   {
     bool landing_detected = navigator.update_at_10Hz ();
 
-    navigator.feed_QFF_density_metering( output_data.m.static_pressure - QNH_offset, -output_data.c.position[DOWN]);
+    navigator.feed_QFF_density_metering( output_data.obs.m.static_pressure - QNH_offset, -output_data.obs.c.position[DOWN]);
 
     if( ++magnetic_induction_update_counter > MAGNETIC_UPDATE_TIME_TENTH_SECS) // every 15 minutes
       {
-	update_magnetic_induction_data( output_data.c.latitude, output_data.c.longitude);
+	update_magnetic_induction_data( output_data.obs.c.latitude, output_data.obs.c.longitude);
 	magnetic_induction_update_counter=0;
       }
 
@@ -143,8 +143,8 @@ public:
   void update_at_100_Hz( output_data_t & output_data)
   {
     // rotate sensor coordinates into airframe coordinates
-    float3vector acc  = sensor_mapping * output_data.m.acc;
-    float3vector gyro = sensor_mapping * output_data.m.gyro;
+    float3vector acc  = sensor_mapping * output_data.obs.m.acc;
+    float3vector gyro = sensor_mapping * output_data.obs.m.gyro;
 #if 0 // SIMULATE_EXTERNAL_MAGNETOMETER
     float3vector mag  = output_data.external_magnetometer_reading;
     float3vector x_mag;
@@ -153,9 +153,9 @@ public:
     x_mag[DOWN]  = + mag[DOWN];
     navigator.update_at_100Hz (acc, mag, gyro, x_mag, true);
 #else
-//    float3vector mag  = sensor_mapping * output_data.m.mag;
-    float3vector mag  = output_data.m.mag;
-    navigator.update_at_100Hz (acc, mag, gyro, mag, false);
+    float3vector mag  = output_data.obs.m.mag;
+    float3vector x_mag  = output_data.obs.external_magnetometer_reading;
+    navigator.update_at_100Hz (acc, mag, gyro, x_mag, true);
 #endif
 
 #if DEVELOPMENT_ADDITIONS

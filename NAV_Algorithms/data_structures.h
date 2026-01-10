@@ -59,11 +59,7 @@ typedef struct
 //! combination of all input and output data in one structure
 typedef struct
 {
-  measurement_data_t m;
-  coordinates_t c;
-#if RUN_MICROPHONE
-  float sound_intensity;
-#endif
+  observations_type obs;
   float IAS;
   float TAS;
   float vario_uncompensated;
@@ -116,9 +112,6 @@ typedef struct
   float3vector body_induction_error;
   float gyro_correction_power;
   float3vector expected_nav_induction;
-#endif
-#if WITH_EXTERNAL_MAGNETOMETER
-  float3vector external_magnetometer_reading;
 #endif
 } output_data_t;
 

@@ -401,13 +401,13 @@ void format_NMEA_string_slow( const output_data_t &output_data, string_buffer_t 
   char *next = NMEA_buf.string + NMEA_buf.length;
 
   // NMEA-format time, position, groundspeed, track data
-  format_RMC ( output_data.c, next);
+  format_RMC ( output_data.obs.c, next);
 
   // NMEA-format position report, sat number and GEO separation
-  format_GGA ( output_data.c, next);
+  format_GGA ( output_data.obs.c, next);
 
   // battery_voltage
-  format_PLARB( output_data.m.supply_voltage, next);
+  format_PLARB( output_data.obs.m.supply_voltage, next);
 
   // air density
   format_PLARD( output_data.air_density, 'M', next);
