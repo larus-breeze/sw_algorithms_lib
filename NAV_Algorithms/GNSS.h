@@ -122,10 +122,7 @@ typedef struct
   uint8_t second;
   uint8_t SATS_number;	//!< number of tracked satellites
   uint8_t sat_fix_type;	//!< bit 0: SAT FIX, bit 1: SAT HEADING availale
-
-#if INCLUDING_NANO
-  int32_t nano;		// nanoseconds from time stamp
-#endif
+  int32_t nano;		// nanoseconds offset to time above
 
   int16_t geo_sep_dm; 	//!< (WGS ellipsoid height - elevation MSL) in 0.1m units
   uint16_t dummy;
