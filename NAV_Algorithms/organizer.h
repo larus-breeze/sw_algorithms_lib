@@ -145,6 +145,7 @@ public:
     // rotate sensor coordinates into airframe coordinates
     float3vector acc  = sensor_mapping * output_data.obs.m.acc;
     float3vector gyro = sensor_mapping * output_data.obs.m.gyro;
+
 #if 0 // SIMULATE_EXTERNAL_MAGNETOMETER
     float3vector mag  = output_data.external_magnetometer_reading;
     float3vector x_mag;
@@ -155,14 +156,15 @@ public:
 #else
     float3vector mag  = output_data.obs.m.mag;
     float3vector x_mag  = output_data.obs.external_magnetometer_reading;
-    navigator.update_at_100Hz (acc, mag, gyro, x_mag, true);
+    navigator.update_at_100Hz (acc, mag, gyro,
+       x_mag,
+       system_state & EXTERNAL_MAGNETOMETER_AVAILABLE);
 #endif
 
 #if DEVELOPMENT_ADDITIONS
     output_data.body_acc  = acc;
     output_data.body_gyro = gyro;
 #endif
-
   }
 
   void cleanup_after_landing( void)
