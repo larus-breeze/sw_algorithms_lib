@@ -155,8 +155,6 @@ public:
 	    break;
 
 	  }
-
-	LIMIT_DENSITY_CORRECTION (density_correction);
       }
   }
 
