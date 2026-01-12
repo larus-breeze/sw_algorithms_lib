@@ -178,7 +178,7 @@ void navigator_t::report_data( output_data_t &d)
     d.nav_induction_mag 	= ahrs_magnetic.get_nav_induction();
 
     d.HeadingDifferenceAhrsDgnss = ahrs.getHeadingDifferenceAhrsDgnss();
-    d.satfix			= (float)(d.c.sat_fix_type);
+    d.satfix			= (float)(d.obs.c.sat_fix_type);
     d.inst_wind_N		= wind_observer.get_measurement()[NORTH];
     d.inst_wind_E		= wind_observer.get_measurement()[EAST];
     d.headwind 			= wind_observer.get_headwind();
