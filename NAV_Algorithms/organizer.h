@@ -107,7 +107,7 @@ public:
   }
 
   //! the "SLOW" update of the observed properties
-  bool update_every_100ms( output_data_t & output_data)
+  bool update_at_10Hz( output_data_t & output_data)
   {
     bool landing_detected = navigator.update_at_10Hz ();
 

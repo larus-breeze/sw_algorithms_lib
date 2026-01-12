@@ -118,10 +118,7 @@ bool navigator_t::update_at_10Hz ()
 
       airborne_detector.report_to_be_airborne( airborne_criteria_fulfilled);
       if( airborne_detector.detect_just_landed())
-	{
-	  ahrs.write_calibration_into_EEPROM();
 	  landing_detected = true;
-	}
 
       if( airborne_detector.is_airborne())
 	atmosphere.air_density_metering(

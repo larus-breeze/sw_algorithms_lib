@@ -274,7 +274,11 @@ void AHRS_type::update_diff_GNSS (
   attitude_error_nav[NORTH] = nav_correction[NORTH] / 9.81f;
   attitude_error_nav[EAST]  = nav_correction[EAST] / 9.81f;
 
-  if( circling_state == CIRCLING) // heading correction using acceleration cross product GNSS * INS
+#if USE_ONLY_DGNSS_HEADING
+  nav_correction[DOWN]		= heading_gnss_work * H_GAIN;
+  attitude_error_nav[DOWN]  	= heading_difference_AHRS_DGNSS;
+#else
+    if( circling_state == CIRCLING) // heading correction using acceleration cross product GNSS * INS
     {
 #if USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING
       nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
@@ -292,13 +296,14 @@ void AHRS_type::update_diff_GNSS (
       nav_correction[DOWN]  	= heading_gnss_work * H_GAIN;
       attitude_error_nav[DOWN]  = heading_difference_AHRS_DGNSS;
     }
+#endif
 
   attitude_error = body2nav.reverse_map(attitude_error_nav);
 
   gyro_correction = body2nav.reverse_map(nav_correction);
   gyro_correction *= P_GAIN;
 
-#if 0
+#if SAVE_AND_RESTORE_GYRO_OFFSETS_WHILE_CIRCLING
   if( old_circle_state == STRAIGHT_FLIGHT && circling_state == TRANSITION)
     gyro_offset_register = gyro_integrator;
   if( old_circle_state == TRANSITION && circling_state == STRAIGHT_FLIGHT)
