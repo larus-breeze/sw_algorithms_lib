@@ -72,6 +72,9 @@ AHRS_type::attitude_setup (
   attitude.from_rotation_matrix (coordinates);
   attitude.get_rotation_matrix (body2nav);
   euler = attitude;
+
+  for( unsigned i=0; i<3; ++i)
+    mag_filter[i].set(induction[i]);
 }
 
 /**
