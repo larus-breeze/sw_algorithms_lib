@@ -51,7 +51,17 @@ public:
  //! multiplication (matrix times vector) -> vector
  vector <datatype, size> reverse_map( const vector <datatype, size> & right) const;
 //! matrix transposition
-      matrix<datatype, size> transpose(void);
+  void transpose(void)
+  {
+    for( int i=0; i<size; ++i)
+       for( int k=0; k<size; ++k)
+	 if( i != k)
+	   {
+	     datatype tmp = e[k][i];
+	     e[k][i] = e[i][k];
+	     e[i][k] = tmp;
+	   }
+  }
 
 //#ifdef DEBUG
 //! dump to cout debug helper function
@@ -65,9 +75,9 @@ public:
 
 template <class datatype, int size> matrix <datatype, size>::matrix()
    {
-   for( int i=0; i<size; ++i)
-      for( int k=0; k<size; ++k)
-         e[i][k]=(i==k) ? 1.0 : 0.0;
+  for( int i=0; i<size; ++i)
+     for( int k=0; k<size; ++k)
+        e[i][k]=(i==k) ? 1.0 : 0.0;
    }
 
 template<class datatype, int size>
