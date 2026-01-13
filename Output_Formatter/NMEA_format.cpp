@@ -307,6 +307,24 @@ void format_PLARV ( float variometer, float avg_variometer, float pressure_altit
   p = NMEA_append_tail ( line_start);
 }
 
+ROM char PLARI[]="$PLARI,";
+
+//! Indicated Airspeed (IAS) in km/h
+void format_PLARI ( float IAS, char * &p)
+{
+    char * line_start = p;
+    append_string( p, PLARI);
+
+    // Clipping to realistic values for a glider
+    IAS = CLIP<float>(IAS, 0, 100);
+
+    // Output IAS in km/h with one decimal
+    to_ascii_n_decimals( IAS * MPS_TO_KMPH, 1, p);
+
+    p = NMEA_append_tail ( line_start);
+}
+
+
 ROM char PLARS[]="$PLARS,L,";
 ROM char PLARS_MC[]="MC,";
 ROM char PLARS_BAL[]="BAL,";
@@ -404,6 +422,9 @@ void format_NMEA_string_fast( const output_data_t &output_data, string_buffer_t 
 
   // instant wind
   format_PLARW (output_data.wind[NORTH], output_data.wind[EAST], 'I', next);
+
+  // NEW: Indicated Airspeed (IAS)
+  format_PLARI (output_data.IAS, next);
 
 //  assert(   next - NMEA_buf.string < string_buffer_t::BUFLEN);
   NMEA_buf.length = next - NMEA_buf.string;
