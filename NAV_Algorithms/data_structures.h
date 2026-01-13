@@ -31,6 +31,13 @@
 
 #pragma pack(push, 1)
 
+typedef enum
+{
+  LEGACY_LOG_FORMAT,
+  STD_LOG_FORMAT,
+  EXTENDED_LOG_FORMAT
+} log_file_format_t;
+
 //! contains all input data from the sensors
 typedef struct
 {
@@ -48,18 +55,29 @@ typedef struct
 {
   measurement_data_t m;
   coordinates_t c;
-#if WITH_EXTERNAL_MAGNETOMETER
-  float3vector external_magnetometer_reading;
-#endif
-#if RUN_MICROPHONE
-  float sound_intensity;
-#endif
+} legacy_observations_type;
+
+//! this structure contains all the observations from sensors and GNSS
+typedef struct
+{
+  measurement_data_t m;
+  coordinates_t c;
+  uint32_t sensor_status;
 } observations_type;
+
+//! this structure contains all the observations plus external magnetometer data
+typedef struct
+{
+  measurement_data_t m;
+  coordinates_t c;
+  uint32_t sensor_status;
+  float3vector external_magnetometer_reading;
+} extended_observations_type;
 
 //! combination of all input and output data in one structure
 typedef struct
 {
-  observations_type obs;
+  extended_observations_type obs;
   float IAS;
   float TAS;
   float vario_uncompensated;
