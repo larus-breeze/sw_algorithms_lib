@@ -142,11 +142,11 @@ public:
   //! the "FAST" update of the observed properties
   void update_at_100_Hz( output_data_t & output_data)
   {
+    output_data.obs.sensor_status = system_state;
+
     // rotate sensor coordinates into airframe coordinates
     float3vector acc  = sensor_mapping * output_data.obs.m.acc;
     float3vector gyro = sensor_mapping * output_data.obs.m.gyro;
-
-#if WITH_EXTERNAL_MAGNETOMETER
 
 #if SIMULATE_EXTERNAL_MAGNETOMETER
     float3vector mag  = output_data.external_magnetometer_reading;
@@ -154,18 +154,19 @@ public:
     x_mag[FRONT] = + mag[RIGHT];
     x_mag[RIGHT] = - mag[FRONT];
     x_mag[DOWN]  = + mag[DOWN];
+    bool external_magnetometer_active = true;
 #else
+    bool external_magnetometer_active = system_state & EXTERNAL_MAGNETOMETER_AVAILABLE;
     float3vector mag  = output_data.obs.m.mag;
-    float3vector x_mag  = output_data.obs.external_magnetometer_reading;
-    navigator.update_at_100Hz (acc, mag, gyro,
-       x_mag,
-       system_state & EXTERNAL_MAGNETOMETER_AVAILABLE);
+
+    float3vector x_mag  =
+	external_magnetometer_active
+	  ? output_data.obs.external_magnetometer_reading
+	  : float3vector(); // default constructor delivers all zeros
 #endif
 
-#else
-    float3vector mag  = output_data.obs.m.mag;
-    navigator.update_at_100Hz (acc, mag, gyro, mag, false);
-#endif
+    navigator.update_at_100Hz (acc, mag, gyro,
+       x_mag, external_magnetometer_active);
 
 #if DEVELOPMENT_ADDITIONS
     output_data.body_acc  = acc;
