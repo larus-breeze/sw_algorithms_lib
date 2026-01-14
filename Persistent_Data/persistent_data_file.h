@@ -89,12 +89,12 @@ public:
     memset( head, 0xff, (tail-head) * sizeof( uint32_t));
   }
 
-  bool set_memory_virgin( uint32_t *begin, uint32_t *behind_end)
+  void set_memory_virgin( uint32_t *begin, uint32_t *behind_end)
   {
     head 	= (EEPROM_file_system_node * )begin;
     tail	= (EEPROM_file_system_node * )behind_end;
     free_space = head;
-    }
+  }
 
   bool set_memory_to_existing_data( uint32_t *begin, uint32_t *behind_end)
   {
