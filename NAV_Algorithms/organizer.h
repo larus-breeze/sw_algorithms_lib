@@ -83,6 +83,9 @@ public:
   //! attitude setup after getting the first set of acceleration an magnetic data
   void initialize_after_first_measurement( output_data_t & output_data)
   {
+    if( output_data.obs.c.sat_fix_type > 0)
+      update_magnetic_induction_data( output_data.obs.c.latitude, output_data.obs.c.longitude);
+
     navigator.update_pressure( output_data.obs.m.static_pressure - QNH_offset);
     navigator.initialize_QFF_density_metering( -output_data.obs.c.position[DOWN]);
     navigator.reset_altitude ();
@@ -96,7 +99,7 @@ public:
 	navigator.set_attitude ( 0.0f, 0.0f, output_data.obs.c.relPosHeading); // todo use acc data some day ?
       }
     else
-      navigator.set_from_add_mag( acc, mag); // initialize attitude from acceleration + compass
+      navigator.set_from_acc_mag( acc, mag); // initialize attitude from acceleration + compass
   }
 
   //! update the navigator taking the current pressure measurements

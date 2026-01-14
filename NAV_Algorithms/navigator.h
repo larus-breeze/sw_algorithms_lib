@@ -143,7 +143,7 @@ public:
 
   void report_data( output_data_t &d);
 
-  void set_from_add_mag ( const float3vector &acc, const float3vector &mag)
+  void set_from_acc_mag ( const float3vector &acc, const float3vector &mag)
   {
     ahrs.attitude_setup(acc, mag);
 #if DEVELOPMENT_ADDITIONS
