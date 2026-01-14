@@ -257,7 +257,7 @@ private:
     MAGNETIC, D_GNSS
   };
 
-  void handle_magnetic_induction( float3vector measured_induction, const float3vector &x_mag_, bool x_mag_valid, const float3vector &gyro);
+  void handle_magnetic_induction( const float3vector &measured_induction, const float3vector &x_mag_, bool x_mag_valid, const float3vector &gyro);
 
   void handle_magnetic_calibration (void);
 
@@ -282,7 +282,7 @@ private:
   flight_state_t
   update_circling_state (void);
 
-  void filter_magnetic_induction (const float3vector &gyro, float3vector &mag);
+  float3vector filter_magnetic_induction (const float3vector &gyro, const float3vector &mag);
 
   ftype Ts;
   ftype Ts_div_2;

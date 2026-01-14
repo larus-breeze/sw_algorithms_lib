@@ -46,6 +46,9 @@ AHRS_type::attitude_setup (
     const float3vector &induction)
 {
   float3vector calibrated_induction = compass_calibrator_3D.calibrate(induction);
+  for( unsigned i=0; i<3; ++i)
+    mag_filter[i].set( calibrated_induction[i]);
+
   float3vector north, east, down;
 
   down = acceleration;
@@ -68,13 +71,10 @@ AHRS_type::attitude_setup (
 	east[0], east[1], east[2],
 	down[0], down[1], down[2] };
 
-  float3matrix coordinates (fcoordinates);
-  attitude.from_rotation_matrix (coordinates);
+  float3matrix coordinates ( fcoordinates);
+  attitude.from_rotation_matrix ( coordinates);
   attitude.get_rotation_matrix (body2nav);
   euler = attitude;
-
-  for( unsigned i=0; i<3; ++i)
-    mag_filter[i].set(induction[i]);
 }
 
 /**
@@ -172,10 +172,13 @@ void AHRS_type::update (
   float GNSS_heading,
   bool GNSS_heading_valid)
 {
+  handle_magnetic_induction( mag, external_mag, external_mag_valid, gyro);
+
 #if DISABLE_SAT_COMPASS
-  update_compass(gyro, acc, mag,  external_mag, external_mag_valid, GNSS_acceleration);
+  if( false)
 #else
   if( GNSS_heading_valid)
+#endif
     {
       if( heading_source == MAGNETIC)
 	{
@@ -193,7 +196,6 @@ void AHRS_type::update (
 	}
       update_compass(gyro, acc, mag,  external_mag, external_mag_valid, GNSS_acceleration);
     }
-#endif
 }
 
 /**
@@ -242,8 +244,6 @@ void AHRS_type::update_diff_GNSS (
   const float3vector &GNSS_acceleration,
   float GNSS_heading)
 {
-  handle_magnetic_induction( measured_induction, measured_external_induction, ext_induction_valid, gyro);
-
   float3vector nav_acceleration = body2nav * acc;
   float heading_gnss_work = GNSS_heading	// correct for antenna alignment
       + antenna_DOWN_correction  * SIN (euler.roll)
@@ -333,8 +333,6 @@ void AHRS_type::update_compass (
   bool external_mag_valid,
   const float3vector &GNSS_acceleration)
 {
-  handle_magnetic_induction( induction, external_induction, external_mag_valid, gyro);
-
   float3vector nav_acceleration = body2nav * acc;
   float3vector nav_induction = body2nav * body_induction;
 
@@ -406,7 +404,7 @@ void AHRS_type::update_compass (
 }
 
 void AHRS_type::handle_magnetic_induction (
-    float3vector induction_measurement,
+    const float3vector &induction_measurement,
     const float3vector &external_induction_measurement,
     bool external_mag_valid,
     const float3vector &gyro)
@@ -421,8 +419,12 @@ void AHRS_type::handle_magnetic_induction (
     }
   else
     {
-      filter_magnetic_induction (gyro, induction_measurement);
+#if 0 // filter
+      float3vector mag_calibrated = compass_calibrator_3D.calibrate ( induction_measurement);
+      body_induction = filter_magnetic_induction (gyro, mag_calibrated);
+#else
       body_induction = compass_calibrator_3D.calibrate ( induction_measurement);
+#endif
     }
 
   expected_body_induction = body2nav.reverse_map (expected_nav_induction);
@@ -480,9 +482,11 @@ void AHRS_type::write_calibration_into_EEPROM( void)
     }
 }
 
-void AHRS_type::filter_magnetic_induction( const float3vector &gyro, float3vector &mag)
+float3vector AHRS_type::filter_magnetic_induction( const float3vector &gyro, const float3vector &mag)
 {
   float absolute_rotation = gyro.abs();
+  float3vector retv;
   for( unsigned i=0; i<3; ++i)
-	mag[i] = mag_filter[i].respond(mag[i], absolute_rotation * Ts * MAX_EXPECTED_INDUCTION_SLOPE);
+	retv[i] = mag_filter[i].respond(mag[i], absolute_rotation * Ts * MAX_EXPECTED_INDUCTION_SLOPE);
+  return retv;
 }
