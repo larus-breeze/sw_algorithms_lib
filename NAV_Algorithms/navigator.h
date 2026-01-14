@@ -62,9 +62,7 @@ public:
 	 GNSS_negative_altitude( ZERO),
 	 GNSS_fix_type( 0),
 	 GNSS_type(GNSS_TYPE_NOT_DEFINED),
-	 vario_integrator( configuration( VARIO_INT_TC) < 0.25f
-	   ? configuration( VARIO_INT_TC) // normalized stop frequency given, old version
-	   : (FAST_SAMPLING_TIME / configuration( VARIO_INT_TC) ) ), // time-constant given, new version
+	 vario_integrator( FAST_SAMPLING_TIME / configuration( VARIO_INT_TC) ),
 	 TAS_averager(1.0f / 1.0f / 100.0f),
 	 IAS_averager(1.0f / 1.0f / 100.0f)
   {};
@@ -72,9 +70,7 @@ public:
   void tune(void)
   {
     variometer.tune();
-    vario_integrator.tune( configuration( VARIO_INT_TC) < 0.25f
-	   ? configuration( VARIO_INT_TC) // normalized stop frequency given, old version
-	   : (FAST_SAMPLING_TIME / configuration( VARIO_INT_TC) ) ); // time-constant given, new version
+    vario_integrator.tune( FAST_SAMPLING_TIME / configuration( VARIO_INT_TC) );
     wind_observer.tune();
     ahrs.tune();
 #if DEVELOPMENT_ADDITIONS
