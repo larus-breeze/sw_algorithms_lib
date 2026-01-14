@@ -136,6 +136,27 @@ public:
 		normalize();
 	}
 
+	//! rotation vector -> quaternion transformation
+	void from_rotation_vector( const vector <datatype, 3> &r)
+	{
+	  datatype theta = r.abs();
+	  if (theta < 1e-8)
+	    {
+	      this->e[0] = ONE;
+	      this->e[1]=this->e[2]=this->e[3]=ZERO;
+	    }
+	  else
+	    {
+	      datatype theta_half = theta * HALF;
+	      datatype s = SIN(theta_half);
+	      datatype inv_theta = ONE / theta;
+	      this->e[0] = COS( theta_half);
+	      this->e[1] = r[0] * inv_theta * s;
+	      this->e[2] = r[1] * inv_theta * s;
+	      this->e[3] = r[2] * inv_theta * s;
+	    }
+	}
+
 	//! euler angle -> quaternion transformation
 	void from_euler( datatype p, datatype q, datatype r)
 	{
@@ -175,6 +196,7 @@ public:
 	    m.e[2][1] = TWO * (e2*e3+e0*e1);
 	    m.e[2][2] = TWO * (e0*e0+e3*e3) - ONE;
 	}
+
 	quaternion <datatype> operator * ( const quaternion <datatype> & right) const //!< quaternion multiplication
 		{
 		quaternion <datatype> result;
