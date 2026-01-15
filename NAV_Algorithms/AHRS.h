@@ -324,7 +324,9 @@ private:
   slope_limiter<float> mag_filter[3];
   delay_line<float3vector, MAX_GNSS_DELAY> GNSS_delay_compensation;
   delay_line<float, MAX_GNSS_DELAY> GNSS_heading_delay_compensation;
+#if ATTITUDE_ERROR_EVALUATED
   float3vector attitude_error;
+#endif
 };
 
 #endif /* AHRS_H_ */

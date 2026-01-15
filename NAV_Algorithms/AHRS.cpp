@@ -273,35 +273,30 @@ void AHRS_type::update_diff_GNSS (
 	   + nav_acceleration[NORTH] * GNSS_acceleration[EAST]
 	   - nav_acceleration[EAST]  * GNSS_acceleration[NORTH];
 
+#if ATTITUDE_ERROR_EVALUATED
   float3vector attitude_error_nav;
   attitude_error_nav[NORTH] = nav_correction[NORTH] / 9.81f;
   attitude_error_nav[EAST]  = nav_correction[EAST] / 9.81f;
+#endif
 
-#if USE_ONLY_DGNSS_HEADING
-  nav_correction[DOWN]		= heading_gnss_work * H_GAIN;
-  attitude_error_nav[DOWN]  	= heading_difference_AHRS_DGNSS;
-#else
-    if( circling_state == CIRCLING) // heading correction using acceleration cross product GNSS * INS
+    if( (circling_state == CIRCLING) && ( GNSS_acceleration.abs() > MINIMUM_HORIZONTAL_ACCELERATION_AHRS))
     {
-#if USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING
-      nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
-      attitude_error_nav[DOWN]  = cross_acc_correction / SQRT( SQR( nav_acceleration[NORTH]) + SQR( nav_acceleration[EAST])) ;
-#else
-      float3vector nav_induction    = body2nav * corrected_body_induction;
-      float mag_correction =
-    	+ nav_induction[NORTH] * expected_nav_induction[EAST]
-    	- nav_induction[EAST]  * expected_nav_induction[NORTH];
-      nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN + mag_correction * magnetic_control_gain ; // use X-ACC and MAG: better !
+	    nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
+#if ATTITUDE_ERROR_EVALUATED
+	    attitude_error_nav[DOWN]  = cross_acc_correction / GNSS_acceleration.abs();
 #endif
     }
   else
     {
       nav_correction[DOWN]  	= heading_gnss_work * H_GAIN;
+#if ATTITUDE_ERROR_EVALUATED
       attitude_error_nav[DOWN]  = heading_difference_AHRS_DGNSS;
-    }
 #endif
+    }
 
-  attitude_error = body2nav.reverse_map(attitude_error_nav);
+#if ATTITUDE_ERROR_EVALUATED
+  attitude_error = body2nav.reverse_map( attitude_error_nav);
+#endif
 
   gyro_correction = body2nav.reverse_map(nav_correction);
   gyro_correction *= P_GAIN;
@@ -360,9 +355,11 @@ void AHRS_type::update_compass (
 	   + nav_acceleration[NORTH] * GNSS_acceleration[EAST]
 	   - nav_acceleration[EAST]  * GNSS_acceleration[NORTH];
 
+#if ATTITUDE_ERROR_EVALUATED
   float3vector attitude_error_nav;
   attitude_error_nav[NORTH] = nav_correction[NORTH] / 9.81f;
   attitude_error_nav[EAST]  = nav_correction[EAST] / 9.81f;
+#endif
 
   switch (circling_state)
     {
@@ -370,7 +367,9 @@ void AHRS_type::update_compass (
     case TRANSITION:
     default:
       {
+#if ATTITUDE_ERROR_EVALUATED
       attitude_error_nav[DOWN]  = mag_correction;
+#endif
 	nav_correction[DOWN] = magnetic_control_gain * mag_correction;
 	gyro_correction = body2nav.reverse_map (nav_correction);
 	gyro_correction *= P_GAIN;
@@ -382,7 +381,9 @@ void AHRS_type::update_compass (
       {
 #if USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING
 	    nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN; // no MAG or D-GNSS use here ! (old version)
-	    attitude_error_nav[DOWN]  = cross_acc_correction / SQRT( SQR( nav_acceleration[NORTH]) + SQR( nav_acceleration[EAST])) ;
+#if ATTITUDE_ERROR_EVALUATED
+	    attitude_error_nav[DOWN]  = cross_acc_correction / GNSS_acceleration.abs();
+#endif
 #else
 	nav_correction[DOWN] = 
 		cross_acc_correction * CROSS_GAIN
@@ -394,7 +395,9 @@ void AHRS_type::update_compass (
       break;
     }
 
+#if ATTITUDE_ERROR_EVALUATED
   attitude_error = body2nav.reverse_map(attitude_error_nav);
+#endif
 
   gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
   gyro_correction_power = SQR( gyro_correction[0]) + SQR( gyro_correction[1]) +SQR( gyro_correction[2]);

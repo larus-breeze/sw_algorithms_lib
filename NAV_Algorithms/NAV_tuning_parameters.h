@@ -33,6 +33,7 @@
 #define D_GNSS_HEADING_DELAY		8
 #define SINGLE_GNSS_DELAY		30
 #define MAX_GNSS_DELAY			30
+#define MINIMUM_HORIZONTAL_ACCELERATION_AHRS 1.5f
 
 #define MAG_CALIBRATION_LETHARGY	0.75f
 #define MAX_EXPECTED_INDUCTION_SLOPE	1.1f
@@ -71,8 +72,8 @@
 
 #define USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING 1 //!< if 1: do not use induction to control attitude while circling
 #define DISABLE_CIRCLING_STATE		0	//!< for tests only: never use circling AHRS algorithm
-#define SAVE_AND_RESTORE_GYRO_OFFSETS_WHILE_CIRCLING 0
-#define USE_ONLY_DGNSS_HEADING		1
+#define SAVE_AND_RESTORE_GYRO_OFFSETS_WHILE_CIRCLING 0 //!< more precision while circling
+#define USE_ONLY_DGNSS_HEADING		0
 
 #define AIRBORNE_TRIGGER_SPEED_COMP	0.5f //!< speed-compensator vario value m/s
 #define AIRBORNE_TRIGGER_SPEED		15.0f //!< ground speed / m/s
