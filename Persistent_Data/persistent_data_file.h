@@ -75,6 +75,11 @@ public:
     return head != 0 && tail != 0;
   }
 
+  unsigned get_remaining_space_words( void) const
+  {
+    return tail - free_space;
+  }
+
   //!< method for simulation only as it writes 0xff into flash to erase
   void initialize_memory_area( uint32_t *begin, uint32_t *behind_end)
   {
@@ -82,6 +87,13 @@ public:
     tail	= (EEPROM_file_system_node * )behind_end;
     free_space = head;
     memset( head, 0xff, (tail-head) * sizeof( uint32_t));
+  }
+
+  void set_memory_virgin( uint32_t *begin, uint32_t *behind_end)
+  {
+    head 	= (EEPROM_file_system_node * )begin;
+    tail	= (EEPROM_file_system_node * )behind_end;
+    free_space = head;
   }
 
   bool set_memory_to_existing_data( uint32_t *begin, uint32_t *behind_end)
@@ -94,7 +106,7 @@ public:
 	if( work >= tail)
 	  return false;
     free_space = work;
-    return is_consistent();
+      return is_consistent();
   }
 
   EEPROM_file_system_node * find_datum( EEPROM_file_system_node::ID_t id)
