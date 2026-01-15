@@ -38,7 +38,8 @@
 #define MAX_EXPECTED_INDUCTION_SLOPE	1.1f
 #define MAX_VELOCITY_ERROR_GNSS_M9N 	0.35f	// A M9N-GNSS shall be < 0.35m/s with a good reception
 #define MAX_VELOCITY_ERROR_GNSS_F9X	0.15f  	// A F9P-GNSS shall be < 0.15m/s with a good reception
-#define MINIMUM_MAG_CALIB_SAMPLES 	(2*60*100)	// collected at 100 Hz
+#define MINIMUM_MAG_CALIB_SAMPLES 	300 // todo patch (2*60*100)	// collected at 100 Hz
+#define MAGNETIC_CALIBRATION_ON_CONDITION 0 // todo patch
 
 #define CIRCLE_LIMIT (10 * 100) //!< 10 * 1/100 s delay into / out of circling state
 
@@ -71,7 +72,7 @@
 #define USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING 1 //!< if 1: do not use induction to control attitude while circling
 #define DISABLE_CIRCLING_STATE		0	//!< for tests only: never use circling AHRS algorithm
 #define SAVE_AND_RESTORE_GYRO_OFFSETS_WHILE_CIRCLING 0
-#define USE_ONLY_DGNSS_HEADING		0
+#define USE_ONLY_DGNSS_HEADING		1
 
 #define AIRBORNE_TRIGGER_SPEED_COMP	0.5f //!< speed-compensator vario value m/s
 #define AIRBORNE_TRIGGER_SPEED		15.0f //!< ground speed / m/s
