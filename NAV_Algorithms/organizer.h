@@ -112,7 +112,7 @@ public:
   //! the "SLOW" update of the observed properties
   bool update_at_10Hz( output_data_t & output_data)
   {
-    bool landing_detected = navigator.update_at_10Hz ();
+    bool landing_detected_here = navigator.update_at_10Hz ();
 
     navigator.feed_QFF_density_metering( output_data.obs.m.static_pressure - QNH_offset, -output_data.obs.c.position[DOWN]);
 
@@ -122,7 +122,7 @@ public:
 	magnetic_induction_update_counter=0;
       }
 
-    return landing_detected;
+    return landing_detected_here;
   }
 
   // initialization of the AHRS attitude if the roll pitch heading angles are known

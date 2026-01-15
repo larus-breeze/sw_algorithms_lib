@@ -102,7 +102,7 @@ bool navigator_t::update_at_10Hz ()
 			   ahrs.get_euler ().yaw,
 			   ahrs.get_circling_state ());
 
-  bool landing_detected=false;
+  bool landing_detected_here=false;
 
   if( GNSS_fix_type > 0)
     {
@@ -118,7 +118,7 @@ bool navigator_t::update_at_10Hz ()
 
       airborne_detector.report_to_be_airborne( airborne_criteria_fulfilled);
       if( airborne_detector.detect_just_landed())
-	  landing_detected = true;
+	landing_detected_here = true;
 
       if( airborne_detector.is_airborne())
 	atmosphere.air_density_metering(
@@ -126,7 +126,7 @@ bool navigator_t::update_at_10Hz ()
 	    variometer.get_filtered_GNSS_altitude());
     }
 
-  return landing_detected;
+  return landing_detected_here;
 }
 
 //! copy all navigator data into output_data structure
