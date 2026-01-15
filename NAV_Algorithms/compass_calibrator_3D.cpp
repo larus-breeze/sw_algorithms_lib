@@ -53,17 +53,16 @@ bool compass_calibrator_3D_t::learn (
     sector_index = (turning_right ? OBSERVATIONS / TWO : 0) + (unsigned)(present_heading * RECIP_SECTOR_SIZE);
 
   // if we have just left the last sector to be collected: report ready for computation
-  if( ( last_sector_collected != -1) && ( sector_index != last_sector_collected) && (++measurement_counter > MINIMUM_MAG_CALIB_SAMPLES))
+  if( ( last_sector_collected != INVALID) && ( sector_index != last_sector_collected))
     return true;
+
+  if ( heading_sector_error[sector_index] < error_margin)
+    return false; // we have collected more precise data for this observation earlier
 
   if( heading_sector_error[sector_index] > 1e19f) // this sector has not been written before
     ++populated_sectors;
 
-#if MAGNETIC_CALIBRATION_ON_CONDITION
-  if ( heading_sector_error[sector_index] < error_margin)
-    return false; // we have collected more precise data for this observation earlier
-#endif
-
+  // so we take it and remember the precision
   heading_sector_error[sector_index] = error_margin;
 
   for( unsigned axis = 0; axis < AXES; ++axis)

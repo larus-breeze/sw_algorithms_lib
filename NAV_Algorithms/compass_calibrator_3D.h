@@ -56,7 +56,6 @@ public:
 
   compass_calibrator_3D_t( magnetic_calculation_data_t &_d)
     : buffer_used_for_calibration(INVALID),
-      measurement_counter(0),
       calibration_status( CALIBRATION_INVALID),
       d( _d)
 {
@@ -67,7 +66,6 @@ public:
   {
     populated_sectors = 0;
     last_sector_collected = INVALID;
-    measurement_counter=0;
     for( unsigned i=0; i < OBSERVATIONS; ++i)
       heading_sector_error[i]=1e20f;
   }
@@ -118,7 +116,6 @@ private:
   int buffer_used_for_calibration;
   unsigned populated_sectors;
   int last_sector_collected;
-  int measurement_counter;
   calibration_status_t calibration_status;
 
   // sensor transfer matrix
