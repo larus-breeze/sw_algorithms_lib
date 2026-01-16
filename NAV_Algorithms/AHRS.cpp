@@ -422,12 +422,8 @@ void AHRS_type::handle_magnetic_induction (
     }
   else
     {
-#if 0 // filter
       float3vector mag_calibrated = compass_calibrator_3D.calibrate ( induction_measurement);
       body_induction = filter_magnetic_induction (gyro, mag_calibrated);
-#else
-      body_induction = compass_calibrator_3D.calibrate ( induction_measurement);
-#endif
     }
 
   expected_body_induction = body2nav.reverse_map (expected_nav_induction);

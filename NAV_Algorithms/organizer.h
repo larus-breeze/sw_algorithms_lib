@@ -151,25 +151,17 @@ public:
     float3vector acc  = sensor_mapping * output_data.obs.m.acc;
     float3vector gyro = sensor_mapping * output_data.obs.m.gyro;
 
-#if SIMULATE_EXTERNAL_MAGNETOMETER
-    float3vector mag  = output_data.external_magnetometer_reading;
-    float3vector x_mag;
-    x_mag[FRONT] = + mag[RIGHT];
-    x_mag[RIGHT] = - mag[FRONT];
-    x_mag[DOWN]  = + mag[DOWN];
-    bool external_magnetometer_active = true;
-#else
-    bool external_magnetometer_active = system_state & EXTERNAL_MAGNETOMETER_AVAILABLE;
+    bool external_magnetometer_active = output_data.obs.sensor_status & EXTERNAL_MAGNETOMETER_AVAILABLE;
     float3vector mag  = output_data.obs.m.mag;
 
     float3vector x_mag  =
 	external_magnetometer_active
 	  ? output_data.obs.external_magnetometer_reading
 	  : float3vector(); // default constructor delivers all zeros
-#endif
 
-    navigator.update_at_100Hz (acc, mag, gyro,
-       x_mag, external_magnetometer_active);
+    navigator.update_at_100Hz (
+	acc, mag, gyro,
+	x_mag, external_magnetometer_active);
 
 #if DEVELOPMENT_ADDITIONS
     output_data.body_acc  = acc;
