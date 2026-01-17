@@ -38,13 +38,6 @@ ROM persistent_data_t PERSISTENT_DATA[]=
 	{PITOT_SPAN, 	"Pitot_Span",		false,  1.0f, 0},	//! Pitot Span signed (around 1.0f)
 	{QNH_OFFSET, 	"QNH-delta",		false,  0.0f, 0},	//! Absolute pressure sensor offset signed / Pa
 
-	{MAG_X_OFF,	"Mag_X_Off",		false,  0.0f, 0},	//! Induction sensor x offset signed / ( 10.0f / 32768 )
-	{MAG_X_SCALE,	"Mag_X_Scale",		false,  1.0f, 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
-	{MAG_Y_OFF,	"Mag_Y_Off",		false,  0.0f, 0},	//! Induction sensor x offset signed / ( 10.0f / 32768 )
-	{MAG_Y_SCALE,	"Mag_Y_Scale", 		false,  1.0f, 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
-	{MAG_Z_OFF,	"Mag_Z_Off",		false,  0.0f, 0},	//! Induction sensor x offset signed / ( 10.0f / 32768 )
-	{MAG_Z_SCALE,	"Mag_Z_Scale",		false,  1.0f, 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
-
 	{VARIO_TC,	"Vario_TC",		false, 2.0f, 0}, 	//! Vario time constant unsigned s / ( 100.0f / 65536 )
 	{VARIO_INT_TC,	"Vario_Int_TC",		false, 30.0f, 0},	//! Vario integrator time constant unsigned s / ( 100.0f / 65536 )
 	{WIND_TC,	"Wind_TC",		false, 5.0f, 0}, 	//! Wind fast time constant unsigned s / ( 100.0f / 65536 )
