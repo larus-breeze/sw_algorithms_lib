@@ -40,7 +40,7 @@ void navigator_t::update_at_100Hz (
     GNSS_heading,
     GNSS_fix_type == (SAT_FIX | SAT_HEADING));
 
-#if 0 // DEVELOPMENT_ADDITIONS todo patch
+#if DEVELOPMENT_ADDITIONS
   ahrs_magnetic.update_compass(
       gyro, acc,
       mag,
