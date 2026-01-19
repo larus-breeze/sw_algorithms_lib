@@ -254,6 +254,7 @@ private:
   float 	TAS;
   float 	IAS;
 
+  unsigned 	old_GNSS_timestamp_ms;
   float3vector 	GNSS_velocity; //!< 3-dim velocity
   float		GNSS_speed;	//!< ground speed as reported from GNSS
   float		GNSS_speed_accuracy; //!< observing gnss quality for reporting

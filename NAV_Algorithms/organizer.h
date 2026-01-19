@@ -87,7 +87,7 @@ public:
       update_magnetic_induction_data( output_data.obs.c.latitude, output_data.obs.c.longitude);
 
     navigator.update_pressure( output_data.obs.m.static_pressure - QNH_offset);
-    navigator.initialize_QFF_density_metering( -output_data.obs.c.position[DOWN]);
+    navigator.initialize_QFF_density_metering( output_data.obs.c.GNSS_MSL_altitude);
     navigator.reset_altitude ();
 
     // setup initial attitude
@@ -114,7 +114,7 @@ public:
   {
     bool landing_detected_here = navigator.update_at_10Hz ();
 
-    navigator.feed_QFF_density_metering( output_data.obs.m.static_pressure - QNH_offset, -output_data.obs.c.position[DOWN]);
+    navigator.feed_QFF_density_metering( output_data.obs.m.static_pressure - QNH_offset, output_data.obs.c.GNSS_MSL_altitude);
 
     if( ++magnetic_induction_update_counter > MAGNETIC_UPDATE_TIME_TENTH_SECS) // every 15 minutes
       {
@@ -139,6 +139,7 @@ public:
   //! all that needs to be done when a new data set comes from the GNSS receiver
   void update_GNSS_data( const coordinates_t &coordinates)
   {
+
     navigator.update_GNSS_data( coordinates);
   }
 

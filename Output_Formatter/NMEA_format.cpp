@@ -183,7 +183,7 @@ void format_GGA( const coordinates_t &coordinates, char * &p)
   *p++ = '0';
   *p++ = ',';
 
-  to_ascii_n_decimals( coordinates.position[DOWN] * -1.0f, 1, p);
+  to_ascii_n_decimals( coordinates.GNSS_MSL_altitude, 1, p);
   *p++ = ',';
   *p++ = 'M';
   *p++ = ',';

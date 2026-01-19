@@ -125,6 +125,34 @@ typedef struct
   int32_t nano;		// nanoseconds offset to time above
 
   int16_t geo_sep_dm; 	//!< (WGS ellipsoid height - elevation MSL) in 0.1m units
+  uint16_t dummy;
+} legacy_coordinates_t;
+
+//! Contains all important data from the GNSS
+typedef struct
+{
+  float	GNSS_MSL_altitude;  	//!< altitude above mean sea level
+  float3vector velocity;  	//!< NED / m/s
+  float  heading_motion;	//!< ground track in degrees
+  float  speed_motion;		//!< ground speed m/s
+  float3vector relPosNED;	//!< vector from primary to secondary GNSS antenna
+  float relPosHeading;		//!< heading from D-GNSS
+  float speed_acc;		//!< speed accuracy m/s
+  double latitude;		//!< latitude / degrees
+  double longitude;		//!< longitude / degrees
+
+  uint8_t year;
+  uint8_t month;
+  uint8_t day;
+  uint8_t hour;
+
+  uint8_t minute;
+  uint8_t second;
+  uint8_t SATS_number;	//!< number of tracked satellites
+  uint8_t sat_fix_type;	//!< bit 0: SAT FIX, bit 1: SAT HEADING availale
+  int32_t nano;		// nanoseconds offset to time above
+
+  int16_t geo_sep_dm; 	//!< (WGS ellipsoid height - elevation MSL) in 0.1m units
   uint16_t pDOP;	//!< Position dilution of precision 0.01 units
 } coordinates_t;
 
@@ -140,7 +168,6 @@ public:
   void reset_reference( void)
   {
     fix_type = FIX_none;
-    latitude_reference = 0; // will be updated on next fix
   }
 
   FIX_TYPE get_fix_type( void) const
@@ -179,10 +206,6 @@ private:
   }
 
   uint8_t num_SV;
-  int32_t latitude_reference;
-  int32_t longitude_reference;
-  float latitude_scale;
-  unsigned old_timestamp_ms;
 };
 
 extern GNSS_type GNSS;

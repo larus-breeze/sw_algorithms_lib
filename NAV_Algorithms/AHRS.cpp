@@ -128,7 +128,7 @@ AHRS_type::AHRS_type (float sampling_time)
   nav_correction(),
   gyro_correction(),
   earth_rotation(),
-  acceleration_nav_frame(),
+  acceleration_nav_frame_INS(),
   induction_nav_frame(),
   expected_nav_induction(),
   body2nav(),
@@ -218,7 +218,7 @@ AHRS_type::update_attitude ( const float3vector &acc,
 
   attitude.get_rotation_matrix (body2nav);
 
-  acceleration_nav_frame = body2nav * acc;
+  acceleration_nav_frame_INS = body2nav * acc;
   induction_nav_frame 	 = body2nav * mag;
   euler = attitude;
 

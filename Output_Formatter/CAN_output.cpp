@@ -167,7 +167,7 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
 
   p.id=CAN_Id_GPS_Alt;
   p.dlc=8;
-  p.data_f[0] = - x.obs.c.position[DOWN];
+  p.data_f[0] = x.obs.c.GNSS_MSL_altitude;
   p.data_f[1] = x.obs.c.geo_sep_dm * 0.1f; // dm -> m
   CAN_send(p, 1);
 

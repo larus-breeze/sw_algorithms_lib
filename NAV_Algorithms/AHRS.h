@@ -113,7 +113,7 @@ public:
 
   inline const float3vector& get_nav_acceleration (void) const
   {
-    return acceleration_nav_frame;
+    return acceleration_nav_frame_INS;
   }
 
   inline const float3vector& get_nav_induction (void) const
@@ -295,7 +295,7 @@ private:
   float3vector nav_correction;
   float3vector gyro_correction;
   float3vector earth_rotation;
-  float3vector acceleration_nav_frame;
+  float3vector acceleration_nav_frame_INS;
   float3vector induction_nav_frame; 	//!< observed NAV induction
   float3vector expected_nav_induction;	//!< expected NAV induction
   float3vector expected_body_induction;	//!< expected body frame induction

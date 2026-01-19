@@ -82,12 +82,28 @@ void navigator_t::update_GNSS_data( const coordinates_t &coordinates)
     }
   else
     {
+      // compute time since last sample has been recorded
+      int32_t day_time_ms =
+	  coordinates.hour   * 3600000 +
+	  coordinates.minute * 60000 +
+	  coordinates.second * 1000  +
+	  coordinates.nano   / 1000000; // ns -> ms , see uBlox documentation. nano is SIGNED !
+
+      float delta_t = (float)( day_time_ms - old_GNSS_timestamp_ms) * 0.001f;
+      if( delta_t > 0.001f) // avoid dividing by zero below
+	{
+	  // use the last and the present velocity measurement to evaluate the acceleration
+	  GNSS_acceleration[NORTH]= ( GNSS_velocity[NORTH] - coordinates.velocity[NORTH]) / delta_t;
+	  GNSS_acceleration[EAST] = ( GNSS_velocity[EAST]  - coordinates.velocity[EAST])  / delta_t;
+	}
+
       GNSS_velocity = coordinates.velocity;
-      GNSS_acceleration = coordinates.acceleration;
       GNSS_heading = coordinates.relPosHeading;
-      GNSS_negative_altitude = coordinates.position[DOWN];
+      GNSS_negative_altitude = - coordinates.GNSS_MSL_altitude;
       GNSS_speed = coordinates.speed_motion;
       GNSS_speed_accuracy = coordinates.speed_acc;
+
+      old_GNSS_timestamp_ms = day_time_ms; // remember last acquisition time
     }
 }
 
