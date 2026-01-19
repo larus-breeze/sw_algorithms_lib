@@ -260,7 +260,7 @@ private:
   float 	TAS;
   float 	IAS;
 
-  uint32_t 	old_GNSS_timestamp_ms;
+  int32_t 	old_GNSS_timestamp_ms;
   float3vector 	GNSS_velocity_3d; //!< 3-dim velocity
   float		GNSS_speed; //!< absolute speed
   float		GNSS_speed_accuracy; //!< observing gnss quality for reporting
