@@ -125,7 +125,7 @@ typedef struct
   int32_t nano;		// nanoseconds offset to time above
 
   int16_t geo_sep_dm; 	//!< (WGS ellipsoid height - elevation MSL) in 0.1m units
-  uint16_t dummy;
+  uint16_t pDOP;	//!< Position dilution of precision 0.01 units
 } coordinates_t;
 
 //! Organizing the data transfer from a uBlox-GNSS receiver
