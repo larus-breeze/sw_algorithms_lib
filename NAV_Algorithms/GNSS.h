@@ -110,6 +110,7 @@ typedef struct
   float3vector relPosNED;	//!< vector from primary to secondary GNSS antenna
   float relPosHeading;		//!< heading from D-GNSS
   float speed_acc;		//!< speed accuracy m/s
+
   double latitude;		//!< latitude / degrees
   double longitude;		//!< longitude / degrees
 
@@ -131,13 +132,13 @@ typedef struct
 //! Contains all important data from the GNSS
 typedef struct
 {
-  float	GNSS_MSL_altitude;  	//!< altitude above mean sea level
   float3vector velocity;  	//!< NED / m/s
-  float  heading_motion;	//!< ground track in degrees
-  float  speed_motion;		//!< ground speed m/s
+  float heading_motion;		//!< ground track in degrees NOT rad
+  float	GNSS_MSL_altitude;  	//!< altitude above mean sea level
   float3vector relPosNED;	//!< vector from primary to secondary GNSS antenna
   float relPosHeading;		//!< heading from D-GNSS
   float speed_acc;		//!< speed accuracy m/s
+
   double latitude;		//!< latitude / degrees
   double longitude;		//!< longitude / degrees
 

@@ -54,7 +54,7 @@ typedef struct
 typedef struct
 {
   measurement_data_t m;
-  coordinates_t c;
+  legacy_coordinates_t c;
 } legacy_observations_type;
 
 //! this structure contains all the observations from sensors and GNSS
@@ -80,6 +80,7 @@ typedef struct
   extended_observations_type obs;
   float IAS;
   float TAS;
+  float groundspeed; //!< ground speed
   float vario_uncompensated;
   float vario;
   float vario_pressure;

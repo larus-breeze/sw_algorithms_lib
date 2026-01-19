@@ -24,6 +24,8 @@
 
 #include <navigator.h>
 
+#define INVALID -100000
+
 // to be called at 100 Hz
 void navigator_t::update_at_100Hz (
     const float3vector &acc,
@@ -53,10 +55,10 @@ void navigator_t::update_at_100Hz (
   heading_vector[EAST]  = ahrs.get_east  ();
   heading_vector[DOWN]  = ahrs.get_down  ();
 
-  wind_observer.process_at_100_Hz( GNSS_velocity - heading_vector * TAS);
+  wind_observer.process_at_100_Hz( GNSS_velocity_3d - heading_vector * TAS);
 
   variometer.update_at_100Hz (
-      GNSS_velocity,
+      GNSS_velocity_3d,
       ahrs.get_nav_acceleration (),
       heading_vector,
       GNSS_negative_altitude,
@@ -67,40 +69,42 @@ void navigator_t::update_at_100Hz (
       );
 }
 
-void navigator_t::update_GNSS_data( const coordinates_t &coordinates)
+void navigator_t::update_GNSS_data (const coordinates_t &coordinates)
 {
   GNSS_fix_type = coordinates.sat_fix_type;
 
   if (coordinates.sat_fix_type == SAT_FIX_NONE) // presently no GNSS fix
     {
-      GNSS_velocity = 	{ 0 };
+      GNSS_velocity_3d = { 0 };
       GNSS_acceleration = { 0 };
       GNSS_heading = 0.0f;
       GNSS_negative_altitude = 0.0f;
-      GNSS_speed = 0.0f;
       GNSS_speed_accuracy = 0.0f;
+      GNSS_speed = 0;
+      old_GNSS_timestamp_ms = INVALID; // mark as "invalid"
     }
   else
     {
       // compute time since last sample has been recorded
-      int32_t day_time_ms =
-	  coordinates.hour   * 3600000 +
-	  coordinates.minute * 60000 +
-	  coordinates.second * 1000  +
-	  coordinates.nano   / 1000000; // ns -> ms , see uBlox documentation. nano is SIGNED !
+      int32_t day_time_ms = coordinates.hour * 3600000
+	  + coordinates.minute * 60000 + coordinates.second * 1000
+	  + coordinates.nano / 1000000; // ns -> ms , see uBlox documentation. nano is SIGNED !
 
-      float delta_t = (float)( day_time_ms - old_GNSS_timestamp_ms) * 0.001f;
-      if( delta_t > 0.001f) // avoid dividing by zero below
+      if (old_GNSS_timestamp_ms != INVALID)
 	{
-	  // use the last and the present velocity measurement to evaluate the acceleration
-	  GNSS_acceleration[NORTH]= ( GNSS_velocity[NORTH] - coordinates.velocity[NORTH]) / delta_t;
-	  GNSS_acceleration[EAST] = ( GNSS_velocity[EAST]  - coordinates.velocity[EAST])  / delta_t;
-	}
+	  float delta_t = (float) (day_time_ms - old_GNSS_timestamp_ms) * 0.001f;
 
-      GNSS_velocity = coordinates.velocity;
+	  if (delta_t > 0.001f) // avoid dividing by zero below
+	    {
+	      // use the last and the present velocity measurement to evaluate the acceleration
+	      GNSS_acceleration[NORTH] = (coordinates.velocity[NORTH] - GNSS_velocity_3d[NORTH] ) / delta_t;
+	      GNSS_acceleration[EAST] = (coordinates.velocity[EAST] - GNSS_velocity_3d[EAST] ) / delta_t;
+	    }
+	}
+      GNSS_velocity_3d = coordinates.velocity;
+      GNSS_speed = SQRT( SQR( coordinates.velocity[NORTH]) + SQR( coordinates.velocity[EAST]));
       GNSS_heading = coordinates.relPosHeading;
-      GNSS_negative_altitude = - coordinates.GNSS_MSL_altitude;
-      GNSS_speed = coordinates.speed_motion;
+      GNSS_negative_altitude = -coordinates.GNSS_MSL_altitude;
       GNSS_speed_accuracy = coordinates.speed_acc;
 
       old_GNSS_timestamp_ms = day_time_ms; // remember last acquisition time
@@ -126,7 +130,7 @@ bool navigator_t::update_at_10Hz ()
       if( abs( variometer.get_speed_compensation_GNSS()) > AIRBORNE_TRIGGER_SPEED_COMP)
 	++ airborne_criteria_fulfilled;
 
-      if( GNSS_velocity.abs() > AIRBORNE_TRIGGER_SPEED)
+      if( GNSS_velocity_3d.abs() > AIRBORNE_TRIGGER_SPEED)
 	++ airborne_criteria_fulfilled;
 
       if( IAS > AIRBORNE_TRIGGER_SPEED)
@@ -150,6 +154,7 @@ void navigator_t::report_data( output_data_t &d)
 {
     d.TAS 			= TAS_averager.get_output();
     d.IAS 			= IAS_averager.get_output();
+    d.groundspeed		= get_GNSS_speed();
 
     d.euler			= ahrs.get_euler();
     d.q				= ahrs.get_attitude();
@@ -207,7 +212,7 @@ void navigator_t::report_data( output_data_t &d)
     d.vario_wind_N		= wind_observer.get_speed_compensator_wind()[NORTH];
     d.vario_wind_E		= wind_observer.get_speed_compensator_wind()[EAST];
     d.body_induction		= ahrs.getBodyInduction();
-    d.body_induction_error	= ahrs_magnetic.getBodyInductionError();
+    d.body_induction_error	= ahrs.getBodyInductionError();
     d.gyro_correction_power	= ahrs.getGyro_correction_Power();
     d.expected_nav_induction	= ahrs.get_expected_nav_induction();
 #endif

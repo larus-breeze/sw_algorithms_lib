@@ -54,8 +54,9 @@ public:
 	 pitot_pressure(0.0f),
 	 TAS( 0.0f),
 	 IAS( 0.0f),
-	 GNSS_velocity(),
-	 GNSS_speed(),
+	 old_GNSS_timestamp_ms(0),
+	 GNSS_velocity_3d(),
+	 GNSS_speed(0),
 	 GNSS_speed_accuracy(),
 	 GNSS_acceleration(),
 	 GNSS_heading(),
@@ -125,6 +126,11 @@ public:
     if (ahrs.getMagneticDisturbance() > MAGNETIC_DISTURBANCE_LIMIT)
 	return true;
     return false;
+  }
+
+  float get_GNSS_speed( void) const
+  {
+    return GNSS_speed;
   }
 
   void initialize_QFF_density_metering( float MSL_altitude)
@@ -254,9 +260,9 @@ private:
   float 	TAS;
   float 	IAS;
 
-  unsigned 	old_GNSS_timestamp_ms;
-  float3vector 	GNSS_velocity; //!< 3-dim velocity
-  float		GNSS_speed;	//!< ground speed as reported from GNSS
+  uint32_t 	old_GNSS_timestamp_ms;
+  float3vector 	GNSS_velocity_3d; //!< 3-dim velocity
+  float		GNSS_speed; //!< absolute speed
   float		GNSS_speed_accuracy; //!< observing gnss quality for reporting
   float3vector 	GNSS_acceleration;
   float 	GNSS_heading;
