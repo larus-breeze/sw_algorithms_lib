@@ -90,7 +90,7 @@ public:
 
   void process_at_100_Hz( const float3vector &instant_wind)
   {
-    if( (instant_wind_averager.get_last_input().abs() < NEGLECTABLE_WIND) && instant_wind.abs() < NEGLECTABLE_WIND) // avoid FPU underflow
+    if( (instant_wind_averager.get_output().abs() < NEGLECTABLE_WIND) && instant_wind.abs() < NEGLECTABLE_WIND) // avoid FPU underflow
       {
 	 wind_resampler_100_10Hz.settle({0});
 	 instant_wind_averager.settle({0});
