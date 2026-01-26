@@ -206,7 +206,7 @@ bool compass_calibrator_3D_t::calculate( void)
 	    }
 //	  printf("\n");
 	}
-      printf(" Std dev. = %e\n", SQRT( variance_sum / AXES / PARAMETERS));
+      printf(" Std dev. = %e\n\n", SQRT( variance_sum / AXES / PARAMETERS));
 
       float3matrix m;
       m.e[0][0]=c[next_buffer][0][1];
@@ -226,7 +226,40 @@ bool compass_calibrator_3D_t::calculate( void)
       eulerangle<float > e;
       e = q;
 
-      printf("Rotation rpy = %f %f %f\n\n", e.roll * 180/M_PI, e.pitch * 180/M_PI, e.yaw * 180/M_PI);
+      printf("Rotation rpy = %f %f %f\n", e.roll * 180/M_PI, e.pitch * 180/M_PI, e.yaw * 180/M_PI);
+
+      quaternion <float>inverse_q;
+      inverse_q = q.inverse();
+      float3matrix r;
+      inverse_q.get_rotation_matrix( r);
+
+      ARM_MATRIX_INSTANCE sensor_matrix;
+      sensor_matrix.numCols=3;
+      sensor_matrix.numRows=3;
+      sensor_matrix.pData = (computation_float_type *)m.e;
+
+      ARM_MATRIX_INSTANCE inverse_rotation_matrix;
+      inverse_rotation_matrix.numCols=3;
+      inverse_rotation_matrix.numRows=3;
+      inverse_rotation_matrix.pData = (computation_float_type *)r.e;
+
+      float3matrix  ptm;
+      ARM_MATRIX_INSTANCE pure_transfer_matrix;
+      pure_transfer_matrix.numCols=3;
+      pure_transfer_matrix.numRows=3;
+      pure_transfer_matrix.pData = (computation_float_type *)ptm.e;
+
+      arm_status result = ARM_MAT_MULT( &inverse_rotation_matrix, &sensor_matrix, &pure_transfer_matrix);
+      if( result != ARM_MATH_SUCCESS)
+	{
+	  start_learning(); // discard data
+	  return false;
+	}
+
+      printf("Pure_sensor_Matrix = %f %f %f\n", ptm.e[0][0], ptm.e[0][1], ptm.e[0][2]);
+      printf("                     %f %f %f\n", ptm.e[1][0], ptm.e[1][1], ptm.e[1][2]);
+      printf("                     %f %f %f\n", ptm.e[2][0], ptm.e[2][1], ptm.e[2][2]);
+      printf("Offsets = %f %f %f\n\n", c[next_buffer][0][0], c[next_buffer][1][0], c[next_buffer][2][0]);
 
 #endif
 
