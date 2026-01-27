@@ -109,7 +109,6 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
   {
     case BOARD_ID:
     case GNSS_CONFIGURATION:
-    case MAG_AUTO_CALIB:
     case HORIZON:
       if( read)
 	value = (float)(EEPROM_value.u16);
@@ -124,9 +123,6 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
 	EEPROM_value.i16 = (int16_t)value;
       break;
     case PITOT_SPAN:
-    case MAG_X_SCALE:
-    case MAG_Y_SCALE:
-    case MAG_Z_SCALE:
       if( read)
 	value = ( (float)(EEPROM_value.i16) / 32768.0f) + 1.0f;
       else
@@ -138,25 +134,6 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
 	    ivalue = -32768;
 	  EEPROM_value.i16 = (int16_t)ivalue;
 	}
-      break;
-    case MAG_STD_DEVIATION:
-      if( read)
-	value = (float)(EEPROM_value.u16) / 65536.0f * 1e-2f;
-      else
-	{
-	  if( value >= 0.009999f || value < 0.0f)
-	    EEPROM_value.u16 = 0xffff;
-	  else
-	    EEPROM_value.u16 = (uint16_t)(value * 1e2f * 65536.0f);
-	}
-      break;
-    case MAG_X_OFF:
-    case MAG_Y_OFF:
-    case MAG_Z_OFF:
-      if( read)
-	value = ( (float)(EEPROM_value.i16) / 3276.8f);
-      else
-	EEPROM_value.i16 = (int16_t)(value * 3276.8f);
       break;
     case ANT_BASELENGTH: // max +/- 32.768 m
     case ANT_SLAVE_DOWN:
