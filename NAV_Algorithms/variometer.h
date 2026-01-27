@@ -54,10 +54,11 @@ public:
     vario_averager_GNSS( FAST_SAMPLING_TIME / configuration( VARIO_TC)),
     kinetic_energy_differentiator( 1.0f, FAST_SAMPLING_TIME),
     KalmanVario_GNSS( 0.0f, 0.0f, 0.0f, - GRAVITY),
-    KalmanVario_pressure( 0.0f, 0.0f, 0.0f, - GRAVITY),
     specific_energy_differentiator( 1.0f, FAST_SAMPLING_TIME),
 #if USE_OLD_FASHIONED_PRESSURE_VARIO
     pressure_vario_differentiator( 1.0f, FAST_SAMPLING_TIME),
+#else
+    KalmanVario_pressure( 0.0f, 0.0f, 0.0f, - GRAVITY),
 #endif
     Kalman_v_a_observer_N(),
     Kalman_v_a_observer_E(),
@@ -160,10 +161,12 @@ private:
 	pt2<float,float> vario_averager_GNSS;
 	differentiator<float,float>kinetic_energy_differentiator;
 	KalmanVario_PVA_t KalmanVario_GNSS;
-	KalmanVario_t KalmanVario_pressure;
+
 	differentiator<float,float>specific_energy_differentiator;
 #if USE_OLD_FASHIONED_PRESSURE_VARIO
 	differentiator<float,float>pressure_vario_differentiator;
+#else
+	KalmanVario_t KalmanVario_pressure;
 #endif
 	Kalman_V_A_Aoff_observer_t Kalman_v_a_observer_N;
 	Kalman_V_A_Aoff_observer_t Kalman_v_a_observer_E;

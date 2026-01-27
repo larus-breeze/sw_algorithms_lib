@@ -138,5 +138,9 @@ void variometer_t::update_at_100Hz (
 void variometer_t::reset(float pressure_negative_altitude, float GNSS_negative_altitude)
 {
   KalmanVario_GNSS.reset( GNSS_negative_altitude, -9.81f);
+#if USE_OLD_FASHIONED_PRESSURE_VARIO
+  pressure_vario_differentiator.initialize( pressure_negative_altitude);
+#else
   KalmanVario_pressure.reset( pressure_negative_altitude, -9.81f);
+#endif
 }
