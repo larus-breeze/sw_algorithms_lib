@@ -81,11 +81,7 @@ typedef struct
   float IAS;
   float TAS;
   float groundspeed; //!< ground speed
-  float vario_uncompensated;
   float vario;
-  float vario_pressure;
-  float speed_compensation_TAS;
-  float speed_compensation_GNSS;
   float integrator_vario;
   float3vector wind;
   float3vector wind_average;
@@ -104,6 +100,11 @@ typedef struct
   float3vector nav_induction_gnss;
 
 #if DEVELOPMENT_ADDITIONS
+  float vario_pressure;
+  float speed_compensation_TAS;
+  float vario_uncompensated_GNSS;
+  float speed_compensation_GNSS;
+
   float3vector nav_correction;
   float3vector gyro_correction;
 

@@ -66,8 +66,6 @@ public:
     GNSS_availability_counter(0),
     vario_uncompensated_pressure( ZERO),
     speed_compensation_IAS( ZERO),
-    speed_compensation_GNSS( 0.0f),
-    vario_uncompensated_GNSS( ZERO),
     specific_energy(0.0f),
     speed_compensation_INS_GNSS_1(0.0f),
     speed_compensation_kalman_2(0.0f),
@@ -121,38 +119,46 @@ public:
 
 	float get_speed_compensation_IAS( void ) const
 	{
-		return speed_compensation_IAS;
+	  return speed_compensation_IAS;
 	}
 
 	float get_speed_compensation_GNSS( void ) const
 	{
-		return speed_compensation_GNSS;
+	  return GNSS_INS_speedcomp_fusioner.get_value();;
 	}
 
 	float get_vario_uncompensated_GNSS( void ) const
 	{
-		return vario_uncompensated_GNSS;
+	  return -KalmanVario_GNSS.get_x( KalmanVario_PVA_t::VARIO);
 	}
 
 	float get_vario_pressure( void ) const
 	{
-		return (float)( vario_averager_pressure.get_output());
+	  return (float)( vario_averager_pressure.get_output());
 	}
 
 	float get_vario_GNSS( void ) const
 	{
-		return vario_averager_GNSS.get_output();
+	  return vario_averager_GNSS.get_output();
 	}
 
 	float get_filtered_GNSS_altitude( void) const
 	{
 	  // the Kalman filter operates on *negative* altitude
-		return - KalmanVario_GNSS.get_x( KalmanVario_PVA_t::ALTITUDE);
+	  return - KalmanVario_GNSS.get_x( KalmanVario_PVA_t::ALTITUDE);
 	}
 
 	float get_effective_vertical_acceleration( void) const
 	{
-		return KalmanVario_GNSS.get_x( KalmanVario_PVA_t::ACCELERATION_OBSERVED);
+	  return KalmanVario_GNSS.get_x( KalmanVario_PVA_t::ACCELERATION_OBSERVED);
+	}
+
+	float get_active_vario( void) const
+	{
+	  if( GNSS_availability_counter < GNSS_FIX_USAGE_DELAY)
+	    return vario_averager_pressure.get_output();
+	  else
+	    return vario_averager_GNSS.get_output();
 	}
 
 private:
@@ -176,7 +182,6 @@ private:
 	// variometer-related signals
 	float vario_uncompensated_pressure;
 	float speed_compensation_IAS;
-	float speed_compensation_GNSS;
 	float vario_uncompensated_GNSS;
 	float specific_energy;
 

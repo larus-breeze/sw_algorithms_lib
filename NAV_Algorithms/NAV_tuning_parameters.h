@@ -52,6 +52,8 @@
 #define DEFAULT_WIND_TC 	5.0f
 #define DEFAULT_WIND_AVG_TC 	30.0f
 #define NEGLECTABLE_WIND	0.5f
+#define GNSS_FIX_EVALUATION_DELAY 200 // 2s
+#define GNSS_FIX_USAGE_DELAY 	1000 // 10s
 
 // AHRS tuning parameters:
 // These parameters have been tuned for the flight-dynamics of gliders
