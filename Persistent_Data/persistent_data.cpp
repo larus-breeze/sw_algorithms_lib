@@ -38,6 +38,8 @@ ROM persistent_data_t PERSISTENT_DATA[]=
 	{PITOT_SPAN, 	"Pitot_Span",		false,  1.0f, 0},	//! Pitot Span signed (around 1.0f)
 	{QNH_OFFSET, 	"QNH-delta",		false,  0.0f, 0},	//! Absolute pressure sensor offset signed / Pa
 
+	{MAG_AUTO_CALIB, "Mag_Auto_Calib",	false,  0.0f, 0},	//! Magnetic calibration automatic (legacy / compatibility)
+
 	{VARIO_TC,	"Vario_TC",		false, 2.0f, 0}, 	//! Vario time constant unsigned s / ( 100.0f / 65536 )
 	{VARIO_INT_TC,	"Vario_Int_TC",		false, 30.0f, 0},	//! Vario integrator time constant unsigned s / ( 100.0f / 65536 )
 	{WIND_TC,	"Wind_TC",		false, 5.0f, 0}, 	//! Wind fast time constant unsigned s / ( 100.0f / 65536 )
@@ -109,6 +111,7 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
   {
     case BOARD_ID:
     case GNSS_CONFIGURATION:
+    case MAG_AUTO_CALIB:
     case HORIZON:
       if( read)
 	value = (float)(EEPROM_value.u16);
