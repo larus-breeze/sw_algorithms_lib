@@ -120,7 +120,7 @@ void format_GNSS_timestamp(const coordinates_t &coordinates, char * &p)
 ROM char GPRMC[]="$GPRMC,";
 
 //! NMEA-format time, position, groundspeed, track data
-void format_RMC (const coordinates_t &coordinates, char * &p)
+void format_RMC (const coordinates_t &coordinates, float groundspeed, char * &p)
 {
   char * line_start = p;
   append_string( p, GPRMC);
@@ -135,7 +135,7 @@ void format_RMC (const coordinates_t &coordinates, char * &p)
   angle_format (coordinates.longitude, 'E', 'W', p, true);
   *p++ = ',';
 
-  to_ascii_n_decimals( coordinates.speed_motion * MPS_TO_NMPH, 1, p);
+  to_ascii_n_decimals( groundspeed * MPS_TO_NMPH, 1, p);
   *p++ = ',';
 
   float true_track = coordinates.heading_motion;
@@ -183,7 +183,7 @@ void format_GGA( const coordinates_t &coordinates, char * &p)
   *p++ = '0';
   *p++ = ',';
 
-  to_ascii_n_decimals( coordinates.position[DOWN] * -1.0f, 1, p);
+  to_ascii_n_decimals( coordinates.GNSS_MSL_altitude, 1, p);
   *p++ = ',';
   *p++ = 'M';
   *p++ = ',';
@@ -326,26 +326,12 @@ void format_PLARS ( float value, PLARS_TYPES option, char * &p)
       to_ascii_n_decimals( value, 1, p);
       break;
     case BAL:  //BAL Ballast (fraction of water ballast 0.000 - 1.000)
+      CLIP( value, 0.0f, 1.0f);
       append_string( p, PLARS_BAL);
-      if (value < 0.0)
-	{
-	  value = 0.0;
-	}
-      if (value > 1.0)
-	{
-	  value = 1.0;
-	}
       to_ascii_n_decimals( value, 3, p);
       break;
     case BUGS:  //BUGS Bugs in % (0 - 50)
-      if (value < 1.0)
-        {
-	  value = 1.0;
-        }
-      if (value > 1.5)
-	{
-	  value = 1.5;
-	}
+      CLIP( value, 1.0f, 1.5f);
       value = (value - 1.0f) * 100.0f + 0.5f; // Scale CAN
       append_string( p, PLARS_BUGS);
       to_ascii_n_decimals( value, 2, p);
@@ -415,13 +401,13 @@ void format_NMEA_string_slow( const output_data_t &output_data, string_buffer_t 
   char *next = NMEA_buf.string + NMEA_buf.length;
 
   // NMEA-format time, position, groundspeed, track data
-  format_RMC ( output_data.c, next);
+  format_RMC ( output_data.obs.c, output_data.groundspeed, next);
 
   // NMEA-format position report, sat number and GEO separation
-  format_GGA ( output_data.c, next);
+  format_GGA ( output_data.obs.c, next);
 
   // battery_voltage
-  format_PLARB( output_data.m.supply_voltage, next);
+  format_PLARB( output_data.obs.m.supply_voltage, next);
 
   // air density
   format_PLARD( output_data.air_density, 'M', next);

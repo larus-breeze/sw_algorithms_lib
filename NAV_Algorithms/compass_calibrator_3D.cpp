@@ -22,34 +22,47 @@
 
  **************************************************************************/
 
+#include "system_configuration.h"
+#include "embedded_math.h"
+#include <matrix_functions.h>
+#include "compass_calibrator_3D.h"
+#include "NAV_tuning_parameters.h"
+
 #if PRINT_3D_MAG_PARAMETERS
 #include "stdio.h"
 #endif
 
-#include "embedded_math.h"
-#include <matrix_functions.h>
-#include "compass_calibrator_3D.h"
-
 ROM float RECIP_SECTOR_SIZE = compass_calibrator_3D_t::OBSERVATIONS / M_PI_F / TWO / TWO;
 
-bool compass_calibrator_3D_t::learn (const float3vector &observed_induction,const float3vector &expected_induction, const quaternion<float> &q, bool turning_right, float error_margin)
+bool compass_calibrator_3D_t::learn (
+    const float3vector &observed_induction,
+    const float3vector &expected_induction,
+    const quaternion<float> &q,
+    bool turning_right,
+    float error_margin)
 {
+  int sector_index;
   float present_heading = q.get_heading();
-  if( present_heading <0.0f)
-    present_heading += M_PI_F * TWO;
+  if( present_heading < ZERO)
+	present_heading += M_PI_F * TWO;
 
-  int sector_index = (turning_right ? OBSERVATIONS / TWO : 0) + (unsigned)(present_heading * RECIP_SECTOR_SIZE);
+  if( calibration_status == USING_ORIENTATION_DEFAULTS)
+    // we need to be fast and therefore use only one circling direction
+    sector_index = (unsigned)(present_heading * RECIP_SECTOR_SIZE * TWO);
+  else
+    sector_index = (turning_right ? OBSERVATIONS / TWO : 0) + (unsigned)(present_heading * RECIP_SECTOR_SIZE);
 
   // if we have just left the last sector to be collected: report ready for computation
-  if( ( last_sector_collected != -1) && ( sector_index != last_sector_collected) && (++measurement_counter > 10000))
+  if( ( last_sector_collected != INVALID) && ( sector_index != last_sector_collected))
     return true;
-
-  if( heading_sector_error[sector_index] > 1e19) // this sector has not been written before
-    ++populated_sectors;
 
   if ( heading_sector_error[sector_index] < error_margin)
     return false; // we have collected more precise data for this observation earlier
 
+  if( heading_sector_error[sector_index] > 1e19f) // this sector has not been written before
+    ++populated_sectors;
+
+  // so we take it and remember the precision
   heading_sector_error[sector_index] = error_margin;
 
   for( unsigned axis = 0; axis < AXES; ++axis)
@@ -71,36 +84,32 @@ bool compass_calibrator_3D_t::learn (const float3vector &observed_induction,cons
 
 bool compass_calibrator_3D_t::calculate( void)
 {
-//  if( buffer_used_for_calibration != INVALID)
-//    return false;
+//  unsigned size = sizeof( magnetic_calculation_data_t);
+//  unsigned obj_size = sizeof( *this);
 
-  computation_float_type temporary_solution_matrix[PARAMETERS][PARAMETERS];
   ARM_MATRIX_INSTANCE solution;
   solution.numCols=PARAMETERS;
   solution.numRows=PARAMETERS;
-  solution.pData = (computation_float_type *)temporary_solution_matrix;
+  solution.pData = (computation_float_type *)d.temporary_solution_matrix;
 
   ARM_MATRIX_INSTANCE  observations;
   observations.numCols=PARAMETERS;
   observations.numRows=OBSERVATIONS;
 
-  computation_float_type transposed_matrix[PARAMETERS][OBSERVATIONS];
   ARM_MATRIX_INSTANCE observations_transposed;
   observations_transposed.numCols=OBSERVATIONS;
   observations_transposed.numRows=PARAMETERS;
-  observations_transposed.pData = (computation_float_type *)transposed_matrix;
+  observations_transposed.pData = (computation_float_type *)d.transposed_matrix;
 
-  computation_float_type matrix_to_be_inverted_data[PARAMETERS][PARAMETERS];
   ARM_MATRIX_INSTANCE matrix_to_be_inverted;
   matrix_to_be_inverted.numCols=PARAMETERS;
   matrix_to_be_inverted.numRows=PARAMETERS;
-  matrix_to_be_inverted.pData = (computation_float_type *)matrix_to_be_inverted_data;
+  matrix_to_be_inverted.pData = (computation_float_type *)d.matrix_to_be_inverted_data;
 
-  computation_float_type solution_mapping_data[PARAMETERS][OBSERVATIONS];
   ARM_MATRIX_INSTANCE solution_mapping;
   solution_mapping.numCols=OBSERVATIONS;
   solution_mapping.numRows=PARAMETERS;
-  solution_mapping.pData = (computation_float_type *)solution_mapping_data;
+  solution_mapping.pData = (computation_float_type *)d.solution_mapping_data;
 
   int next_buffer;
   if( buffer_used_for_calibration == 0)
@@ -114,8 +123,8 @@ bool compass_calibrator_3D_t::calculate( void)
 
       // calculation, once per axis (FRONT, RIGHT, DOWN):
       // target vector:        T = ideal induction values for all observations
-      // single measurement:   < 1 induction q0q1 q0q2 q0q3 q1q1 q1q2 q1q3 q2q2 q2q3 q3q3 > (single row)
-      // measurement matrix:   M = single measurement * # OBSERVATIONS
+      // single measurement:   < 1 induction_x induction_y induction_z >
+      // measurement matrix:   M = single measurement * OBSERVATIONS
       // solution matrix:      S = inverse( M_transposed * M) * M_transposed
       // axis parameter set:   P = S * T
 
@@ -162,29 +171,145 @@ bool compass_calibrator_3D_t::calculate( void)
 	  start_learning(); // discard data
 	  return false;
 	}
+
+      if( ( calibration_status == INITIAL) || ( calibration_status == REGULAR))
+	{
+	  unsigned other_buffer = next_buffer == 0 ? 1 : 0;
+	  for( unsigned k=0; k < PARAMETERS; ++k)
+	    c[next_buffer][axis][k] = (ONE - MAG_CALIBRATION_LETHARGY) * c[next_buffer][axis][k] + MAG_CALIBRATION_LETHARGY * c[other_buffer][axis][k];
+	}
     }
 
-  buffer_used_for_calibration = next_buffer; // switch now in a thread-save manner
-  
+  switch( calibration_status)
+  {
+	case CALIBRATION_INVALID:
+	case USING_ORIENTATION_DEFAULTS:
+	  calibration_status = INITIAL;
+	  break;
+	case INITIAL:
+	  calibration_status = REGULAR;
+	  break;
+	case REGULAR:
+	default:
+	  break;
+  };
+
 #if PRINT_3D_MAG_PARAMETERS
 
-  for( unsigned k=0; k < AXES; ++k)
-    {
-      for( unsigned i=0; i<PARAMETERS; ++i)
-	printf("%e\t", (double)(c[next_buffer][k][i]));
-      printf("\n");
-    }
-  printf("\n");
+      float variance_sum = 0.0f;
+      for( unsigned k=0; k < AXES; ++k)
+	{
+	  for( unsigned i=0; i<PARAMETERS; ++i)
+	    {
+	      printf("%e\t", (double)(c[next_buffer][k][i]));
+	      variance_sum += SQR(c[0][k][i]-c[1][k][i]); // compute difference power
+	    }
+	}
+      printf(" Delta Std dev. = %e\n\n", SQRT( variance_sum / AXES / PARAMETERS));
+
+      // matrix diagonalization:
+      // split the observed sensor transfer matrix into a pure rotation and nonorthogonality + gain
+      float3matrix m;
+      m.e[0][0]=c[next_buffer][0][1]; // we drop the offset components here ( [*][0] )
+      m.e[0][1]=c[next_buffer][0][2];
+      m.e[0][2]=c[next_buffer][0][3];
+
+      m.e[1][0]=c[next_buffer][1][1];
+      m.e[1][1]=c[next_buffer][1][2];
+      m.e[1][2]=c[next_buffer][1][3];
+
+      m.e[2][0]=c[next_buffer][2][1];
+      m.e[2][1]=c[next_buffer][2][2];
+      m.e[2][2]=c[next_buffer][2][3];
+
+      quaternion<float> q1;
+      q1.from_rotation_matrix(m);
+      eulerangle<float > e;
+      e = q1;
+
+      // now we have detected the rotation part
+      printf("Rotation rpy = %f %f %f Degrees\n", e.roll * 180/M_PI, e.pitch * 180/M_PI, e.yaw * 180/M_PI);
+
+      // remove the rotation part from the sensor transfer matrix
+      quaternion <float>inverse_q;
+      inverse_q = q1.inverse();
+      float3matrix rot1;
+      inverse_q.get_rotation_matrix( rot1);
+
+      ARM_MATRIX_INSTANCE sensor_matrix;
+      sensor_matrix.numCols=3;
+      sensor_matrix.numRows=3;
+      sensor_matrix.pData = (computation_float_type *)m.e;
+
+      ARM_MATRIX_INSTANCE inverse_rotation_matrix;
+      inverse_rotation_matrix.numCols=3;
+      inverse_rotation_matrix.numRows=3;
+      inverse_rotation_matrix.pData = (computation_float_type *)rot1.e;
+
+      float3matrix  ptm;
+      ARM_MATRIX_INSTANCE pure_transfer_matrix;
+      pure_transfer_matrix.numCols=3;
+      pure_transfer_matrix.numRows=3;
+      pure_transfer_matrix.pData = (computation_float_type *)ptm.e;
+
+      arm_status result = ARM_MAT_MULT( &inverse_rotation_matrix, &sensor_matrix, &pure_transfer_matrix);
+
+      printf("Pure_sensor_Matrix = %f %f %f\n", ptm.e[0][0], ptm.e[0][1], ptm.e[0][2]);
+      printf("                     %f %f %f\n", ptm.e[1][0], ptm.e[1][1], ptm.e[1][2]);
+      printf("                     %f %f %f\n", ptm.e[2][0], ptm.e[2][1], ptm.e[2][2]);
+      printf("Offsets = %f %f %f\n", c[next_buffer][0][0], c[next_buffer][1][0], c[next_buffer][2][0]);
+
+      quaternion<float> q2;
+      q2.from_rotation_matrix( ptm);
+      e = q2;
+      printf("Residual rotation = %f %f %f Degrees\n\n",  e.roll * 180/M_PI, e.pitch * 180/M_PI, e.yaw * 180/M_PI);
+
+      // one more iteration to remove the residual rotation component from the pure transfer matrix
+
+      float3matrix rot2;
+      inverse_q = q2.inverse();
+      inverse_q.get_rotation_matrix( rot2);
+
+      float3matrix upsm;
+      sensor_matrix.pData = (computation_float_type *)upsm.e;
+      inverse_rotation_matrix.pData = (computation_float_type *)rot2.e;
+
+      result = ARM_MAT_MULT( &inverse_rotation_matrix, &pure_transfer_matrix, &sensor_matrix);
+
+      printf("Ultra-Pure_sensor_Matrix = %f %f %f\n", upsm.e[0][0], upsm.e[0][1], upsm.e[0][2]);
+      printf("                           %f %f %f\n", upsm.e[1][0], upsm.e[1][1], upsm.e[1][2]);
+      printf("                           %f %f %f\n", upsm.e[2][0], upsm.e[2][1], upsm.e[2][2]);
+
+      quaternion<float> q3;
+      q3.from_rotation_matrix( upsm);
+      e = q3;
+      printf("Residual rotation = %f %f %f Degrees\n\n",  e.roll * 180/M_PI, e.pitch * 180/M_PI, e.yaw * 180/M_PI);
+
+      // final check
+      quaternion <float> q_complete;
+      q_complete = q1 * q2 * q3;
+      float3matrix m_complete;
+      q_complete.get_rotation_matrix( m_complete);
+
+      inverse_rotation_matrix.pData = (computation_float_type *)m_complete.e;
+      result = ARM_MAT_MULT( &inverse_rotation_matrix, &sensor_matrix , &pure_transfer_matrix);
+
+      e = q_complete;
+      printf("Final rotation = %f %f %f Degrees\n\n",  e.roll * 180/M_PI, e.pitch * 180/M_PI, e.yaw * 180/M_PI);
+
+
 #endif
-  
+
+  buffer_used_for_calibration = next_buffer; // switch now in a thread-save manner
+
   start_learning(); // ... again
 
   return true;
 }
 
-float3vector compass_calibrator_3D_t::calibrate( const float3vector &induction, const quaternion<float> &q)
+float3vector compass_calibrator_3D_t::calibrate( const float3vector &induction)
   {
-    if( buffer_used_for_calibration == INVALID) // we do not have a valid calibration
+    if( calibration_status == CALIBRATION_INVALID) // we do not have a valid calibration
       return induction;
 
     unsigned b=buffer_used_for_calibration; // just to save expensive characters ...

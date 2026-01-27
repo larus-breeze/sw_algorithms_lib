@@ -24,31 +24,41 @@
 
 #include <navigator.h>
 
+#define INVALID -100000
+
 // to be called at 100 Hz
 void navigator_t::update_at_100Hz (
     const float3vector &acc,
     const float3vector &mag,
-    const float3vector &gyro)
+    const float3vector &gyro,
+    const float3vector &x_mag, bool x_mag_valid)
 {
-  ahrs.update( gyro, acc, mag,
-	    GNSS_acceleration,
-	    GNSS_heading,
-	    GNSS_fix_type == (SAT_FIX | SAT_HEADING));
+  ahrs.update(
+      gyro, acc,
+      mag,
+      x_mag,
+      x_mag_valid,
+      GNSS_acceleration,
+    GNSS_heading,
+    GNSS_fix_type == (SAT_FIX | SAT_HEADING));
 
 #if DEVELOPMENT_ADDITIONS
   ahrs_magnetic.update_compass(
-	  gyro, acc, mag,
-	  GNSS_acceleration);
+      gyro, acc,
+      mag,
+      x_mag,
+      x_mag_valid,
+      GNSS_acceleration);
 #endif
   float3vector heading_vector;
   heading_vector[NORTH] = ahrs.get_north ();
   heading_vector[EAST]  = ahrs.get_east  ();
   heading_vector[DOWN]  = ahrs.get_down  ();
 
-  wind_observer.process_at_100_Hz( GNSS_velocity - heading_vector * TAS);
+  wind_observer.process_at_100_Hz( GNSS_velocity_3d - heading_vector * TAS);
 
   variometer.update_at_100Hz (
-      GNSS_velocity,
+      GNSS_velocity_3d,
       ahrs.get_nav_acceleration (),
       heading_vector,
       GNSS_negative_altitude,
@@ -59,27 +69,45 @@ void navigator_t::update_at_100Hz (
       );
 }
 
-void navigator_t::update_GNSS_data( const coordinates_t &coordinates)
+void navigator_t::update_GNSS_data (const coordinates_t &coordinates)
 {
   GNSS_fix_type = coordinates.sat_fix_type;
 
   if (coordinates.sat_fix_type == SAT_FIX_NONE) // presently no GNSS fix
     {
-      GNSS_velocity = 	{ 0 };
+      GNSS_velocity_3d = { 0 };
       GNSS_acceleration = { 0 };
       GNSS_heading = 0.0f;
       GNSS_negative_altitude = 0.0f;
-      GNSS_speed = 0.0f;
       GNSS_speed_accuracy = 0.0f;
+      GNSS_speed = 0;
+      old_GNSS_timestamp_ms = INVALID; // mark as "invalid"
     }
   else
     {
-      GNSS_velocity = coordinates.velocity;
-      GNSS_acceleration = coordinates.acceleration;
+      // compute time since last sample has been recorded
+      int32_t day_time_ms = coordinates.hour * 3600000
+	  + coordinates.minute * 60000 + coordinates.second * 1000
+	  + coordinates.nano / 1000000; // ns -> ms , see uBlox documentation. nano is SIGNED !
+
+      if (old_GNSS_timestamp_ms != INVALID)
+	{
+	  float delta_t = (float) (day_time_ms - old_GNSS_timestamp_ms) * 0.001f;
+
+	  if (delta_t > 0.001f) // avoid dividing by zero below
+	    {
+	      // use the last and the present velocity measurement to evaluate the acceleration
+	      GNSS_acceleration[NORTH] = (coordinates.velocity[NORTH] - GNSS_velocity_3d[NORTH] ) / delta_t;
+	      GNSS_acceleration[EAST] = (coordinates.velocity[EAST] - GNSS_velocity_3d[EAST] ) / delta_t;
+	    }
+	}
+      GNSS_velocity_3d = coordinates.velocity;
+      GNSS_speed = SQRT( SQR( coordinates.velocity[NORTH]) + SQR( coordinates.velocity[EAST]));
       GNSS_heading = coordinates.relPosHeading;
-      GNSS_negative_altitude = coordinates.position[DOWN];
-      GNSS_speed = coordinates.speed_motion;
+      GNSS_negative_altitude = -coordinates.GNSS_MSL_altitude;
       GNSS_speed_accuracy = coordinates.speed_acc;
+
+      old_GNSS_timestamp_ms = day_time_ms; // remember last acquisition time
     }
 }
 
@@ -94,7 +122,7 @@ bool navigator_t::update_at_10Hz ()
 			   ahrs.get_euler ().yaw,
 			   ahrs.get_circling_state ());
 
-  bool landing_detected=false;
+  bool landing_detected_here=false;
 
   if( GNSS_fix_type > 0)
     {
@@ -102,7 +130,7 @@ bool navigator_t::update_at_10Hz ()
       if( abs( variometer.get_speed_compensation_GNSS()) > AIRBORNE_TRIGGER_SPEED_COMP)
 	++ airborne_criteria_fulfilled;
 
-      if( GNSS_velocity.abs() > AIRBORNE_TRIGGER_SPEED)
+      if( GNSS_velocity_3d.abs() > AIRBORNE_TRIGGER_SPEED)
 	++ airborne_criteria_fulfilled;
 
       if( IAS > AIRBORNE_TRIGGER_SPEED)
@@ -110,10 +138,7 @@ bool navigator_t::update_at_10Hz ()
 
       airborne_detector.report_to_be_airborne( airborne_criteria_fulfilled);
       if( airborne_detector.detect_just_landed())
-	{
-	  ahrs.write_calibration_into_EEPROM();
-	  landing_detected = true;
-	}
+	landing_detected_here = true;
 
       if( airborne_detector.is_airborne())
 	atmosphere.air_density_metering(
@@ -121,7 +146,7 @@ bool navigator_t::update_at_10Hz ()
 	    variometer.get_filtered_GNSS_altitude());
     }
 
-  return landing_detected;
+  return landing_detected_here;
 }
 
 //! copy all navigator data into output_data structure
@@ -129,6 +154,7 @@ void navigator_t::report_data( output_data_t &d)
 {
     d.TAS 			= TAS_averager.get_output();
     d.IAS 			= IAS_averager.get_output();
+    d.groundspeed		= get_GNSS_speed();
 
     d.euler			= ahrs.get_euler();
     d.q				= ahrs.get_attitude();
@@ -149,7 +175,7 @@ void navigator_t::report_data( output_data_t &d)
     if( airborne_detector.is_airborne())
       d.flight_mode 		= ahrs.get_circling_state();
     else
-      d.flight_mode		= 3; // = ON_GROUND
+      d.flight_mode		= ON_GROUND;
 
     d.turn_rate			= ahrs.get_turn_rate();
     d.slip_angle		= ahrs.getSlipAngle();
@@ -173,7 +199,7 @@ void navigator_t::report_data( output_data_t &d)
     d.nav_induction_mag 	= ahrs_magnetic.get_nav_induction();
 
     d.HeadingDifferenceAhrsDgnss = ahrs.getHeadingDifferenceAhrsDgnss();
-    d.satfix			= (float)(d.c.sat_fix_type);
+    d.satfix			= (float)(d.obs.c.sat_fix_type);
     d.inst_wind_N		= wind_observer.get_measurement()[NORTH];
     d.inst_wind_E		= wind_observer.get_measurement()[EAST];
     d.headwind 			= wind_observer.get_headwind();
@@ -187,7 +213,7 @@ void navigator_t::report_data( output_data_t &d)
     d.vario_wind_E		= wind_observer.get_speed_compensator_wind()[EAST];
     d.body_induction		= ahrs.getBodyInduction();
     d.body_induction_error	= ahrs.getBodyInductionError();
-//    d.body_induction_error	= ahrs_magnetic.getBodyInductionError();
     d.gyro_correction_power	= ahrs.getGyro_correction_Power();
+    d.expected_nav_induction	= ahrs.get_expected_nav_induction();
 #endif
 }

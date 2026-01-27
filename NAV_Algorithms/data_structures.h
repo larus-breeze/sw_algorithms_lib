@@ -31,6 +31,13 @@
 
 #pragma pack(push, 1)
 
+typedef enum
+{
+  LEGACY_LOG_FORMAT,
+  STD_LOG_FORMAT,
+  EXTENDED_LOG_FORMAT
+} log_file_format_t;
+
 //! contains all input data from the sensors
 typedef struct
 {
@@ -43,45 +50,37 @@ typedef struct
   float supply_voltage;  //Measuring the supply voltage. Might be related to sensor noise.
 } measurement_data_t;
 
-//! this structure contains all the observations from all sensors and the GNSS-receiver
+//! this structure contains all the observations from sensors and GNSS
 typedef struct
 {
-  float3vector acc;
-  float3vector gyro;
-  float3vector mag;
-  float temperature;
-} extra_sensor_data_t;
+  measurement_data_t m;
+  legacy_coordinates_t c;
+} legacy_observations_type;
 
 //! this structure contains all the observations from sensors and GNSS
 typedef struct
 {
   measurement_data_t m;
-#if WITH_DENSITY_DUMMY
-  float dummy1;
-  float dummy2;
-#endif
   coordinates_t c;
-#if WITH_EXTERNAL_IMU
-  extra_sensor_data_t extra;
-#endif
-#if RUN_MICROPHONE
-  float sound_intensity;
-#endif
+  uint32_t sensor_status;
 } observations_type;
 
-//! combination of all input and output data in one structure
+//! this structure contains all the observations plus external magnetometer data
 typedef struct
 {
   measurement_data_t m;
   coordinates_t c;
-#if WITH_EXTERNAL_IMU
-  extra_sensor_data_t extra;
-#endif
-#if RUN_MICROPHONE
-  float sound_intensity;
-#endif
+  uint32_t sensor_status;
+  float3vector external_magnetometer_reading;
+} extended_observations_type;
+
+//! combination of all input and output data in one structure
+typedef struct
+{
+  extended_observations_type obs;
   float IAS;
   float TAS;
+  float groundspeed; //!< ground speed
   float vario_uncompensated;
   float vario;
   float vario_pressure;
@@ -131,8 +130,8 @@ typedef struct
   float3vector body_induction;
   float3vector body_induction_error;
   float gyro_correction_power;
+  float3vector expected_nav_induction;
 #endif
-
 } output_data_t;
 
 #pragma pack(pop)

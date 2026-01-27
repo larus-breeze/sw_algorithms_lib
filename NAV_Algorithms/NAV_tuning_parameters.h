@@ -25,19 +25,20 @@
 #ifndef NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_
 #define NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_
 
-#define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
-#define MAGNETIC_DISTURBANCE_LIMIT 0.1f
-#define USE_SOFT_IRON_COMPENSATION	1
-#define D_GNSS_GNSS_DELAY	13
-#define D_GNSS_HEADING_DELAY	6
-#define SINGLE_GNSS_DELAY	30
-#define MAX_GNSS_DELAY		30
+#define OMEGA_EARTH 7.2921150e-5f
+#define MAGNETIC_UPDATE_TIME_TENTH_SECS 9000
 
-#define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
 #define MAGNETIC_DISTURBANCE_LIMIT 	0.1f
-#define UNCOMPENSATED_MAG_DISTURBANCE_LIMIT	0.05f
-#define SOFT_IRON_LETHARGY		0.8f
+#define D_GNSS_GNSS_DELAY		8
+#define D_GNSS_HEADING_DELAY		8
+#define SINGLE_GNSS_DELAY		30
+#define MAX_GNSS_DELAY			30
+#define MINIMUM_HORIZONTAL_ACCELERATION_AHRS 1.5f
+
+#define MAG_CALIBRATION_LETHARGY	0.75f
 #define MAX_EXPECTED_INDUCTION_SLOPE	1.1f
+#define MAX_VELOCITY_ERROR_GNSS_M9N 	0.35f	// A M9N-GNSS shall be < 0.35m/s with a good reception
+#define MAX_VELOCITY_ERROR_GNSS_F9X	0.15f  	// A F9P-GNSS shall be < 0.15m/s with a good reception
 
 #define CIRCLE_LIMIT (10 * 100) //!< 10 * 1/100 s delay into / out of circling state
 
@@ -50,38 +51,37 @@
 #define DEFAULT_AVG_VARIO_TC 	30.0f
 #define DEFAULT_WIND_TC 	5.0f
 #define DEFAULT_WIND_AVG_TC 	30.0f
-#define NEGLECTABLE_WIND	0.01f
+#define NEGLECTABLE_WIND	0.5f
 
 // AHRS tuning parameters:
 // These parameters have been tuned for the flight-dynamics of gliders
 // and the use of the MTI high-precision IMU
-#define P_GAIN 0.03f			//!< Attitude controller: proportional gain
-#define I_GAIN 0.00006f 		//!< Attitude controller: integral gain
-#define H_GAIN 38.0f			//!< Attitude controller: horizontal gain
-#define M_H_GAIN 6.0f			//!< Attitude controller: horizontal gain magnetic
-#define CROSS_GAIN 0.05f		//!< Attitude controller: cross-product gain
-#define INDUCTION_ERROR	0.015		//!< Maximum std deviation to update earth induction parameters
-#define NAV_CORRECTION_LIMIT 5.0f	//!< limit for "low AHRS correcting variable"
-#define HIGH_TURN_RATE 8.0*M_PI/180.0f	//!< turn rate high limit
-#define LOW_TURN_RATE  1.0*M_PI/180.0f	//!< turn rate low limit
-#define SPEED_COMPENSATION_FUSIONER_FEEDBACK 0.99995f // empirically tuned alpha
-#define USE_OLD_FASHIONED_PRESSURE_VARIO 1 // for vario comparison tests (offline)
+#define P_GAIN 			0.03f			//!< Attitude controller: proportional gain
+#define I_GAIN 			0.00006f 		//!< Attitude controller: integral gain
+#define H_GAIN 			38.0f			//!< Attitude controller: horizontal gain
+#define M_H_GAIN 		6.0f			//!< Attitude controller: horizontal gain magnetic
+#define CROSS_GAIN 		0.05f		//!< Attitude controller: cross-product gain
+#define NAV_CORRECTION_LIMIT 	5.0f	//!< limit for "low AHRS correcting variable"
+#define HIGH_TURN_RATE 		4.0f*M_PI_F/180.0f	//!< turn rate high limit
+#define LOW_TURN_RATE  		0.5f*M_PI_F/180.0f	//!< turn rate low limit
+
+#define SPEED_COMPENSATION_FUSIONER_FEEDBACK 	0.99995f // empirically tuned alpha
+#define USE_OLD_FASHIONED_PRESSURE_VARIO 	1 // for vario comparison tests (offline)
 
 #define USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING 1 //!< if 1: do not use induction to control attitude while circling
 #define DISABLE_CIRCLING_STATE		0	//!< for tests only: never use circling AHRS algorithm
-
-#define INDUCTION_STD_DEVIATION_LIMIT	0.03 	//!< results outperforming this number will be used further on
+#define SAVE_AND_RESTORE_GYRO_OFFSETS_WHILE_CIRCLING 0 //!< more precision while circling
+#define USE_ONLY_DGNSS_HEADING		0
 
 #define AIRBORNE_TRIGGER_SPEED_COMP	0.5f //!< speed-compensator vario value m/s
 #define AIRBORNE_TRIGGER_SPEED		15.0f //!< ground speed / m/s
 
-#define MAG_SCALE			10000.0f //!< scale factor for high-precision integer statistics
 #define FAST_SAMPLING_REQUENCY 		100.0f
 #define FAST_SAMPLING_TIME 		0.01f
 #define SLOW_SAMPLING_REQUENCY 		10.0f
 #define SLOW_SAMPLING_TIME 		0.1f
 
 #define GRAVITY				9.81f
-#define VECTOR_AVERAGE_COUNT		100 //!< average count for sensor orientation setup
+#define VECTOR_AVERAGE_COUNT_SETUP	100 //!< average count for sensor orientation setup
 
 #endif /* NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_ */

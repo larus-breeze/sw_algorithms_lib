@@ -28,8 +28,8 @@
 #include "magnetic_induction_report.h"
 #include "embedded_memory.h"
 #include "NAV_tuning_parameters.h"
-#include "soft_iron_compensator.h"
 #include "compass_calibrator_3D.h"
+#include "persistent_data_file.h"
 
 #if USE_HARDWARE_EEPROM	== 0
 #include "EEPROM_emulation.h"
@@ -41,26 +41,22 @@
  * @brief initial attitude setup from observables
  */
 void
-AHRS_type::attitude_setup (const float3vector &acceleration,
-			   const float3vector &mag)
+AHRS_type::attitude_setup (
+    const float3vector &acceleration,
+    const float3vector &induction)
 {
-  float3vector north, east, down;
-
-  float3vector induction;
-  if( compass_calibration.available())
-    induction = compass_calibration.calibrate( mag);
-  else
-    induction = mag;
-
+  float3vector calibrated_induction = compass_calibrator_3D.calibrate(induction);
   for( unsigned i=0; i<3; ++i)
-    mag_filter[i].set( induction[i]);
+    mag_filter[i].set( calibrated_induction[i]);
+
+  float3vector north, east, down;
 
   down = acceleration;
 
   down.negate ();
   down.normalize ();
 
-  north = induction; // deviation neglected here
+  north = calibrated_induction; // deviation neglected here
   north.normalize ();
 
   // setup world coordinate system
@@ -75,8 +71,8 @@ AHRS_type::attitude_setup (const float3vector &acceleration,
 	east[0], east[1], east[2],
 	down[0], down[1], down[2] };
 
-  float3matrix coordinates (fcoordinates);
-  attitude.from_rotation_matrix (coordinates);
+  float3matrix coordinates ( fcoordinates);
+  attitude.from_rotation_matrix ( coordinates);
   attitude.get_rotation_matrix (body2nav);
   euler = attitude;
 }
@@ -84,7 +80,7 @@ AHRS_type::attitude_setup (const float3vector &acceleration,
 /**
  * @brief  decide about circling state
  */
-circle_state_t
+flight_state_t
 AHRS_type::update_circling_state ()
 {
 #if DISABLE_CIRCLING_STATE
@@ -111,27 +107,12 @@ AHRS_type::update_circling_state ()
 #endif
 }
 
-void AHRS_type::feed_magnetic_induction_observer( const float3vector &mag_sensor, const float3vector &mag_delta)
+void AHRS_type::feed_magnetic_induction_observer( const float3vector &mag_sensor, const float3vector &external_mag_sensor)
 {
   float error_margin = nav_correction.abs();
   if(  error_margin > NAV_CORRECTION_LIMIT)
-    return;
+    return; // we need a very good AHRS attitude quality
 
-  bool turning_right = turn_rate_averager.get_output() > 0.0f;
-
-  if(( automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE) 
-  	&& (uncompensated_magnetic_disturbance_averager.get_output() < UNCOMPENSATED_MAG_DISTURBANCE_LIMIT)) // only if the precision is already reasonably good ...
-    {
-      bool calibration_data_complete = soft_iron_compensator.learn( mag_delta, attitude, turning_right, error_margin);
-      if( calibration_data_complete)
-	trigger_soft_iron_compensator_calculation();
-    }
-
-  for (unsigned i = 0; i < 3; ++i)
-    if( turning_right)
-      mag_calibration_data_collector_right_turn[i].add_value ( MAG_SCALE * expected_body_induction[i], MAG_SCALE * mag_sensor[i]);
-    else
-      mag_calibration_data_collector_left_turn[i].add_value ( MAG_SCALE * expected_body_induction[i], MAG_SCALE * mag_sensor[i]);
 }
 
 AHRS_type::AHRS_type (float sampling_time)
@@ -146,7 +127,8 @@ AHRS_type::AHRS_type (float sampling_time)
   heading_source_changed( false),
   nav_correction(),
   gyro_correction(),
-  acceleration_nav_frame(),
+  earth_rotation(),
+  acceleration_nav_frame_INS(),
   induction_nav_frame(),
   expected_nav_induction(),
   body2nav(),
@@ -155,26 +137,19 @@ AHRS_type::AHRS_type (float sampling_time)
   pitch_angle_averager( ANGLE_F_BY_FS),
   turn_rate_averager( ANGLE_F_BY_FS),
   G_load_averager(     G_LOAD_F_BY_FS),
-  compass_calibration(),
+  magnetic_disturbance_averager( 0.001f),
   antenna_DOWN_correction(  configuration( ANT_SLAVE_DOWN)  / configuration( ANT_BASELENGTH)),
   antenna_RIGHT_correction( configuration( ANT_SLAVE_RIGHT) / configuration( ANT_BASELENGTH)),
   heading_difference_AHRS_DGNSS(0.0f),
   cross_acc_correction(0.0f),
-  magnetic_disturbance_averager( 0.001f),
-  uncompensated_magnetic_disturbance_averager( 0.001f),
   magnetic_control_gain(1.0f),
-  automatic_magnetic_calibration( (magnetic_calibration_type)(round)(configuration(MAG_AUTO_CALIB))),
-  magnetic_calibration_updated( false)
-#if USE_GYRO_CALIBRATOR
-  gyro_gain_right( 1.0f),
-  gyro_gain_down( 1.0f)
-#endif
+  magnetic_calibration_updated( false),
+  external_magnetic_calibration_updated( false),
+  mag_calibration_complete( false),
+  external_mag_calibration_complete( false)
 {
   update_magnetic_loop_gain(); // adapt to magnetic inclination
 
-  bool fail = compass_calibration.read_from_EEPROM();
-  if( fail)
-    compass_calibration.set_default();
   GNSS_delay_compensation.set_used_length(
       configuration(GNSS_CONFIGURATION) > GNSS_M9N
 	  ? D_GNSS_GNSS_DELAY : SINGLE_GNSS_DELAY);
@@ -185,28 +160,32 @@ void AHRS_type::tune( void)
 {
   antenna_DOWN_correction = configuration( ANT_SLAVE_DOWN)  / configuration( ANT_BASELENGTH);
   antenna_RIGHT_correction = configuration( ANT_SLAVE_RIGHT) / configuration( ANT_BASELENGTH);
-  automatic_magnetic_calibration = (magnetic_calibration_type)(round)(configuration(MAG_AUTO_CALIB));
 }
 
-void
-AHRS_type::update (const float3vector &gyro,
-		   const float3vector &acc,
-		   const float3vector &mag,
-		   const float3vector &GNSS_acceleration,
-		   float GNSS_heading,
-		   bool GNSS_heading_valid)
+void AHRS_type::update (
+  const float3vector &gyro,
+  const float3vector &acc,
+  const float3vector &mag,
+  const float3vector &external_mag,
+  bool external_mag_valid,
+  const float3vector &GNSS_acceleration,
+  float GNSS_heading,
+  bool GNSS_heading_valid)
 {
+  handle_magnetic_induction( mag, external_mag, external_mag_valid, gyro);
+
 #if DISABLE_SAT_COMPASS
-  update_compass(gyro, acc, mag, GNSS_acceleration);
+  if( false)
 #else
   if( GNSS_heading_valid)
+#endif
     {
       if( heading_source == MAGNETIC)
 	{
 	  heading_source = D_GNSS;
 	  heading_source_changed = true;
 	}
-      update_diff_GNSS (gyro, acc, mag, GNSS_acceleration, GNSS_heading);
+      update_diff_GNSS (gyro, acc, mag, external_mag, external_mag_valid, GNSS_acceleration, GNSS_heading);
     }
   else
     {
@@ -215,9 +194,8 @@ AHRS_type::update (const float3vector &gyro,
 	  heading_source = MAGNETIC;
 	  heading_source_changed = true;
 	}
-      update_compass(gyro, acc, mag, GNSS_acceleration);
+      update_compass(gyro, acc, mag,  external_mag, external_mag_valid, GNSS_acceleration);
     }
-#endif
 }
 
 /**
@@ -230,20 +208,22 @@ AHRS_type::update_attitude ( const float3vector &acc,
 			     const float3vector &gyro,
 			     const float3vector &mag)
 {
-  attitude.rotate (gyro[ROLL] * Ts_div_2,
-		   gyro[PITCH] * Ts_div_2,
-		   gyro[YAW]  * Ts_div_2);
+  float3vector gyro_wo_earth_rotation = gyro - body2nav.reverse_map(earth_rotation);
+
+  attitude.rotate (gyro_wo_earth_rotation[ROLL]    * Ts_div_2,
+		   gyro_wo_earth_rotation[PITCH]   * Ts_div_2,
+		   gyro_wo_earth_rotation[HEADING] * Ts_div_2);
 
   attitude.normalize ();
 
   attitude.get_rotation_matrix (body2nav);
 
-  acceleration_nav_frame = body2nav * acc;
+  acceleration_nav_frame_INS = body2nav * acc;
   induction_nav_frame 	 = body2nav * mag;
   euler = attitude;
 
   float3vector nav_rotation;
-  nav_rotation = body2nav * gyro;
+  nav_rotation = body2nav * gyro_wo_earth_rotation;
   turn_rate_averager.respond( nav_rotation[DOWN]);
 
   slip_angle_averager.respond( ATAN2( -acc[RIGHT], -acc[DOWN]));
@@ -255,29 +235,15 @@ AHRS_type::update_attitude ( const float3vector &acc,
 /**
  * @brief  update attitude from IMU data D-GNSS compass
  */
-void
-AHRS_type::update_diff_GNSS (const float3vector &gyro,
-			     const float3vector &acc,
-			     const float3vector &mag_sensor,
-			     const float3vector &GNSS_acceleration,
-			     float GNSS_heading)
+void AHRS_type::update_diff_GNSS (
+  const float3vector &gyro,
+  const float3vector &acc,
+  const float3vector &measured_induction,
+  const float3vector &measured_external_induction,
+  bool ext_induction_valid,
+  const float3vector &GNSS_acceleration,
+  float GNSS_heading)
 {
-  float3vector measured_induction = mag_sensor; // make it writable
-  filter_magnetic_induction( gyro, measured_induction);
-
-  float3vector calibrated_body_induction = compass_calibration.calibrate(measured_induction);
-
-  expected_body_induction = body2nav.reverse_map( expected_nav_induction);
-
-  float3vector corrected_body_induction;
-  if( automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE)
-    corrected_body_induction = calibrated_body_induction - soft_iron_compensator.compensate( expected_body_induction, attitude);
-  else
-    corrected_body_induction = calibrated_body_induction;
-
-  body_induction_error = corrected_body_induction - expected_body_induction;
-  uncompensated_magnetic_disturbance_averager.feed((calibrated_body_induction - expected_body_induction).abs());
-
   float3vector nav_acceleration = body2nav * acc;
   float heading_gnss_work = GNSS_heading	// correct for antenna alignment
       + antenna_DOWN_correction  * SIN (euler.roll)
@@ -303,91 +269,67 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   nav_correction[NORTH] = - nav_acceleration[EAST]  + GNSS_acceleration[EAST];
   nav_correction[EAST]  = + nav_acceleration[NORTH] - GNSS_acceleration[NORTH];
 
-  cross_acc_correction = // vector cross product GNSS-acc und INS-acc -> heading error
+  cross_acc_correction = // vector cross product GNSS-acc and INS-acc -> heading error
 	   + nav_acceleration[NORTH] * GNSS_acceleration[EAST]
 	   - nav_acceleration[EAST]  * GNSS_acceleration[NORTH];
 
-  circle_state_t old_circle_state = circling_state;
-  update_circling_state ();
-
-  if( circling_state == CIRCLING) // heading correction using acceleration cross product GNSS * INS
-    {
-#if USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING
-      nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
-#else
-      float3vector nav_induction    = body2nav * corrected_body_induction;
-      float mag_correction =
-    	+ nav_induction[NORTH] * expected_nav_induction[EAST]
-    	- nav_induction[EAST]  * expected_nav_induction[NORTH];
-      nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN + mag_correction * magnetic_control_gain ; // use X-ACC and MAG: better !
+#if ATTITUDE_ERROR_EVALUATED
+  float3vector attitude_error_nav;
+  attitude_error_nav[NORTH] = nav_correction[NORTH] / 9.81f;
+  attitude_error_nav[EAST]  = nav_correction[EAST] / 9.81f;
 #endif
-#if USE_GYRO_CALIBRATOR
-      gyro_gain_adjuster_right.learn( gyro_adjusted[RIGHT], gyro_correction[RIGHT]);
-      gyro_gain_adjuster_down.learn ( gyro_adjusted[DOWN], gyro_correction[DOWN]);
+
+    if( (circling_state == CIRCLING) && ( GNSS_acceleration.abs() > MINIMUM_HORIZONTAL_ACCELERATION_AHRS))
+    {
+	    nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
+#if ATTITUDE_ERROR_EVALUATED
+	    attitude_error_nav[DOWN]  = cross_acc_correction / GNSS_acceleration.abs();
 #endif
     }
   else
-      nav_correction[DOWN]  =   heading_gnss_work * H_GAIN;
+    {
+      nav_correction[DOWN]  	= heading_gnss_work * H_GAIN;
+#if ATTITUDE_ERROR_EVALUATED
+      attitude_error_nav[DOWN]  = heading_difference_AHRS_DGNSS;
+#endif
+    }
+
+#if ATTITUDE_ERROR_EVALUATED
+  attitude_error = body2nav.reverse_map( attitude_error_nav);
+#endif
 
   gyro_correction = body2nav.reverse_map(nav_correction);
   gyro_correction *= P_GAIN;
 
+#if SAVE_AND_RESTORE_GYRO_OFFSETS_WHILE_CIRCLING
+  if( old_circle_state == STRAIGHT_FLIGHT && circling_state == TRANSITION)
+    gyro_offset_register = gyro_integrator;
+  if( old_circle_state == TRANSITION && circling_state == STRAIGHT_FLIGHT)
+    gyro_integrator = gyro_offset_register;
+#endif
+
   if (circling_state == STRAIGHT_FLIGHT)
-      gyro_integrator += gyro_correction; // update integrator
+    gyro_integrator += gyro_correction; // update integrator
 
   gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
   gyro_correction_power = SQR( gyro_correction[0]) + SQR( gyro_correction[1]) +SQR( gyro_correction[2]);
 
-  update_attitude (acc, gyro + gyro_correction, corrected_body_induction);
-
-  // only here we get fresh magnetic entropy
-  // and: wait for low control loop error
-  if ( circling_state == CIRCLING)
-    feed_magnetic_induction_observer (mag_sensor, calibrated_body_induction - expected_body_induction);
-
-  // when circling is finished eventually update the calibration
-  if( (old_circle_state == CIRCLING) && (circling_state == TRANSITION))
-    {
-	  if( automatic_magnetic_calibration)
-	    handle_magnetic_calibration();
-//	  gyro_gain_adjuster_right.calculate();
-//	  gyro_gain_adjuster_right.update_gain( gyro_gain_right);
-#if USE_GYRO_CALIBRATOR
-	  if( gyro_gain_adjuster_down.calculate())
-	    {
-	      gyro_gain_adjuster_down.update_gain( gyro_gain_down);
-	      printf( "Gain = %8.6f\n",  gyro_gain_down);
-	    }
-#endif
-    }
+  update_attitude (acc, gyro + gyro_correction, body_induction);
 }
 
 /**
  * @brief  update attitude from IMU data and magnetometer
  */
-void
-AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
-			   const float3vector &mag_sensor,
-			   const float3vector &GNSS_acceleration)
+void AHRS_type::update_compass (
+  const float3vector &gyro,
+  const float3vector &acc,
+  const float3vector &induction,
+  const float3vector &external_induction,
+  bool external_mag_valid,
+  const float3vector &GNSS_acceleration)
 {
-  float3vector measured_induction = mag_sensor; // make it writable
-  filter_magnetic_induction( gyro, measured_induction);
-
-  float3vector calibrated_body_induction = compass_calibration.calibrate(measured_induction);
-
-  expected_body_induction = body2nav.reverse_map( expected_nav_induction);
-
-  float3vector corrected_body_induction;
-  if( automatic_magnetic_calibration == AUTO_SOFT_IRON_COMPENSATE)
-    corrected_body_induction = calibrated_body_induction - soft_iron_compensator.compensate( expected_body_induction, attitude);
-  else
-    corrected_body_induction = calibrated_body_induction;
-
-  body_induction_error = corrected_body_induction - expected_body_induction;
-  uncompensated_magnetic_disturbance_averager.feed((calibrated_body_induction - expected_body_induction).abs());
-
   float3vector nav_acceleration = body2nav * acc;
-  float3vector nav_induction = body2nav * corrected_body_induction;
+  float3vector nav_induction = body2nav * body_induction;
 
   nav_acceleration = GNSS_delay_compensation.respond(nav_acceleration);
 
@@ -408,14 +350,16 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
       heading_source_changed = false;
       GNSS_heading_delay_compensation.initialize(mag_correction);
     }
-  mag_correction = GNSS_heading_delay_compensation.respond(mag_correction);
 
   cross_acc_correction = // vector cross product GNSS-acc und INS-acc -> heading error
 	   + nav_acceleration[NORTH] * GNSS_acceleration[EAST]
 	   - nav_acceleration[EAST]  * GNSS_acceleration[NORTH];
 
-  circle_state_t old_circle_state = circling_state;
-  update_circling_state ();
+#if ATTITUDE_ERROR_EVALUATED
+  float3vector attitude_error_nav;
+  attitude_error_nav[NORTH] = nav_correction[NORTH] / 9.81f;
+  attitude_error_nav[EAST]  = nav_correction[EAST] / 9.81f;
+#endif
 
   switch (circling_state)
     {
@@ -423,6 +367,9 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
     case TRANSITION:
     default:
       {
+#if ATTITUDE_ERROR_EVALUATED
+      attitude_error_nav[DOWN]  = mag_correction;
+#endif
 	nav_correction[DOWN] = magnetic_control_gain * mag_correction;
 	gyro_correction = body2nav.reverse_map (nav_correction);
 	gyro_correction *= P_GAIN;
@@ -434,6 +381,9 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
       {
 #if USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING
 	    nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN; // no MAG or D-GNSS use here ! (old version)
+#if ATTITUDE_ERROR_EVALUATED
+	    attitude_error_nav[DOWN]  = cross_acc_correction / GNSS_acceleration.abs();
+#endif
 #else
 	nav_correction[DOWN] = 
 		cross_acc_correction * CROSS_GAIN
@@ -441,71 +391,101 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 #endif
 	gyro_correction = body2nav.reverse_map (nav_correction);
 	gyro_correction *= P_GAIN;
-
-#if USE_GYRO_CALIBRATOR
-	gyro_gain_adjuster_right.learn( gyro_adjusted[RIGHT], gyro_correction[RIGHT]);
-	gyro_gain_adjuster_down.learn ( gyro_adjusted[DOWN], gyro_correction[DOWN]);
-#endif
       }
       break;
     }
+
+#if ATTITUDE_ERROR_EVALUATED
+  attitude_error = body2nav.reverse_map(attitude_error_nav);
+#endif
 
   gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
   gyro_correction_power = SQR( gyro_correction[0]) + SQR( gyro_correction[1]) +SQR( gyro_correction[2]);
 
   // feed quaternion update with corrected sensor readings
-  update_attitude (acc, gyro + gyro_correction, corrected_body_induction);
+  update_attitude (acc, gyro + gyro_correction, body_induction);
+}
+
+void AHRS_type::handle_magnetic_induction (
+    const float3vector &induction_measurement,
+    const float3vector &external_induction_measurement,
+    bool external_mag_valid,
+    const float3vector &gyro)
+{
+  flight_state_t old_circling_state = circling_state;
+  update_circling_state ();
+  bool circling_just_terminated = (old_circling_state == CIRCLING) && (circling_state == TRANSITION);
+
+  if (external_mag_valid)
+    {
+      body_induction = external_compass_calibrator_3D.calibrate ( external_induction_measurement);
+    }
+  else
+    {
+      float3vector mag_calibrated = compass_calibrator_3D.calibrate ( induction_measurement);
+      body_induction = filter_magnetic_induction (gyro, mag_calibrated);
+    }
+
+  expected_body_induction = body2nav.reverse_map (expected_nav_induction);
+
+  body_induction_error = body_induction - expected_body_induction;
 
   // only here we get fresh magnetic entropy
-  // and: wait for low control loop error
-  if ( circling_state == CIRCLING)
-    feed_magnetic_induction_observer (mag_sensor, calibrated_body_induction - expected_body_induction);
-
-  // when circling is finished eventually update the calibration
-  if( (old_circle_state == CIRCLING) && (circling_state == TRANSITION))
+  if (circling_state == CIRCLING)
     {
-	  if( automatic_magnetic_calibration)
-	    handle_magnetic_calibration();
-//	  gyro_gain_adjuster_right.calculate();
-//	  gyro_gain_adjuster_right.update_gain( gyro_gain_right);
-#if USE_GYRO_CALIBRATOR
-	  if( gyro_gain_adjuster_down.calculate())
-	    {
-	      gyro_gain_adjuster_down.update_gain( gyro_gain_down);
-	      printf( "Gain = %8.6f\n",  gyro_gain_down);
-	    }
-#endif
+      mag_calibration_complete |= compass_calibrator_3D.learn (
+	  induction_measurement,
+	  expected_body_induction,
+	  attitude,
+	  turn_rate_averager.get_output () > 0.0f,
+	  nav_correction.abs ());
+      if( external_mag_valid)
+	  external_mag_calibration_complete |= external_compass_calibrator_3D.learn (
+	      external_induction_measurement,
+	      expected_body_induction,
+	      attitude,
+	      turn_rate_averager.get_output () > 0.0f,
+	      nav_correction.abs ());
+    }
+
+  if ( mag_calibration_complete && circling_just_terminated )
+    {
+      trigger_compass_calibrator_3D_calculation ( false);
+      mag_calibration_complete = false;
+      magnetic_calibration_updated = true;
+    }
+
+  if (external_mag_calibration_complete && circling_just_terminated)
+    {
+      trigger_compass_calibrator_3D_calculation (true);
+      external_mag_calibration_complete = false;
+      external_magnetic_calibration_updated = true;
     }
 }
 
 void AHRS_type::write_calibration_into_EEPROM( void)
 {
-  if( ! magnetic_calibration_updated)
-    return;
-
-  compass_calibration.write_into_EEPROM();
-  magnetic_calibration_updated = false; // done ...
-}
-
-void AHRS_type::handle_magnetic_calibration ( void)
-{
-  bool poor_mag_calibration = magnetic_disturbance_averager.get_output() > MAGNETIC_DISTURBANCE_LIMIT;
-  bool calibration_changed = compass_calibration.set_calibration_if_changed ( mag_calibration_data_collector_right_turn, mag_calibration_data_collector_left_turn, MAG_SCALE, poor_mag_calibration);
-
-  if( calibration_changed)
+  if( magnetic_calibration_updated)
     {
-#if REPORT_MAGNETIC_CALIBRATION == 1
-      magnetic_induction_report_t magnetic_induction_report;
-      for( unsigned i=0; i<3; ++i)
-	magnetic_induction_report.calibration[i] = (compass_calibration.get_calibration())[i];
-#endif
-      magnetic_calibration_updated = true;
+      auto parameters = compass_calibrator_3D.get_current_parameters();
+      if( parameters != 0)
+	{
+	  permanent_data_file.store_data( MAG_SENSOR_XFER_MATRIX, 12, parameters);
+	  magnetic_calibration_updated = false;
+	}
+    }
+  if( external_magnetic_calibration_updated)
+    {
+      permanent_data_file.store_data( EXT_MAG_SENSOR_XFER_MATRIX, 12, external_compass_calibrator_3D.get_current_parameters());
+      magnetic_calibration_updated = false;
     }
 }
 
-void AHRS_type::filter_magnetic_induction( const float3vector &gyro, float3vector &mag)
+float3vector AHRS_type::filter_magnetic_induction( const float3vector &gyro, const float3vector &mag)
 {
   float absolute_rotation = gyro.abs();
+  float3vector retv;
   for( unsigned i=0; i<3; ++i)
-	mag[i] = mag_filter[i].respond(mag[i], absolute_rotation * Ts * MAX_EXPECTED_INDUCTION_SLOPE);
+	retv[i] = mag_filter[i].respond(mag[i], absolute_rotation * Ts * MAX_EXPECTED_INDUCTION_SLOPE);
+  return retv;
 }

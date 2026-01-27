@@ -38,15 +38,6 @@ ROM persistent_data_t PERSISTENT_DATA[]=
 	{PITOT_SPAN, 	"Pitot_Span",		false,  1.0f, 0},	//! Pitot Span signed (around 1.0f)
 	{QNH_OFFSET, 	"QNH-delta",		false,  0.0f, 0},	//! Absolute pressure sensor offset signed / Pa
 
-	{MAG_X_OFF,	"Mag_X_Off",		false,  0.0f, 0},	//! Induction sensor x offset signed / ( 10.0f / 32768 )
-	{MAG_X_SCALE,	"Mag_X_Scale",		false,  1.0f, 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
-	{MAG_Y_OFF,	"Mag_Y_Off",		false,  0.0f, 0},	//! Induction sensor x offset signed / ( 10.0f / 32768 )
-	{MAG_Y_SCALE,	"Mag_Y_Scale", 		false,  1.0f, 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
-	{MAG_Z_OFF,	"Mag_Z_Off",		false,  0.0f, 0},	//! Induction sensor x offset signed / ( 10.0f / 32768 )
-	{MAG_Z_SCALE,	"Mag_Z_Scale",		false,  1.0f, 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
-	{MAG_STD_DEVIATION, "Mag_Calib_Err",	false,  1e-2f, 0},	//! Magnetic calibration STD deviation / ( 1 % / 65536 )
-	{MAG_AUTO_CALIB, "Mag_Auto_Calib",	false,  2.0f, 0},	//! Magnetic calibration automatic { OFF=0, 2D=1, 3D=2 }
-
 	{VARIO_TC,	"Vario_TC",		false, 2.0f, 0}, 	//! Vario time constant unsigned s / ( 100.0f / 65536 )
 	{VARIO_INT_TC,	"Vario_Int_TC",		false, 30.0f, 0},	//! Vario integrator time constant unsigned s / ( 100.0f / 65536 )
 	{WIND_TC,	"Wind_TC",		false, 5.0f, 0}, 	//! Wind fast time constant unsigned s / ( 100.0f / 65536 )
@@ -75,7 +66,7 @@ bool all_EEPROM_parameters_available( void)
   return true;
 }
 
-void ensure_EEPROM_parameter_integrity( void)
+bool ensure_EEPROM_parameter_integrity( void)
 {
   float dummy;
   const persistent_data_t * parameter = PERSISTENT_DATA;
@@ -83,10 +74,13 @@ void ensure_EEPROM_parameter_integrity( void)
     {
       if( true == read_EEPROM_value( parameter->id, dummy)) // parameter missing
 	{
-	  (void) write_EEPROM_value( parameter->id, parameter->default_value);
+	  bool error = write_EEPROM_value( parameter->id, parameter->default_value);
+	  if( error)
+	    return false;
 	}
       ++parameter;
     }
+  return true;
 }
 
 const persistent_data_t * find_parameter_from_name( char * name)
@@ -107,11 +101,7 @@ const persistent_data_t * find_parameter_from_ID( EEPROM_PARAMETER_ID id)
 
 #if UNIX != 1
 
-#include "eeprom.h"
 #include "my_assert.h"
-
-#define READ true
-#define WRITE false
 
 bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float & value , bool read )
 {
@@ -211,31 +201,6 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
       break;
   }
   return false; // OK
-}
-
-bool write_EEPROM_value( EEPROM_PARAMETER_ID id, float value)
-{
-  EEPROM_data_t EEPROM_value;
-  if( EEPROM_convert( id, EEPROM_value, value , WRITE))
-      return true; // error
-
-  return EE_WriteVariableBuffered( id, EEPROM_value.u16);
-}
-
-bool read_EEPROM_value( EEPROM_PARAMETER_ID id, float &value)
-{
-  uint16_t data;
-  if( HAL_OK != EE_ReadVariableBuffered( id, (uint16_t*)&data))
-    return true;
-  return ( EEPROM_convert( id, (EEPROM_data_t &)data, value , READ));
-}
-
-float configuration( EEPROM_PARAMETER_ID id)
-{
-  float value;
-  bool result = read_EEPROM_value( id, value);
-  ASSERT( result == false);
-  return value;
 }
 
 #endif

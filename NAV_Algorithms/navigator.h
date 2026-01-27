@@ -54,17 +54,16 @@ public:
 	 pitot_pressure(0.0f),
 	 TAS( 0.0f),
 	 IAS( 0.0f),
-	 GNSS_velocity(),
-	 GNSS_speed(),
+	 old_GNSS_timestamp_ms(0),
+	 GNSS_velocity_3d(),
+	 GNSS_speed(0),
 	 GNSS_speed_accuracy(),
 	 GNSS_acceleration(),
 	 GNSS_heading(),
 	 GNSS_negative_altitude( ZERO),
 	 GNSS_fix_type( 0),
 	 GNSS_type(GNSS_TYPE_NOT_DEFINED),
-	 vario_integrator( configuration( VARIO_INT_TC) < 0.25f
-	   ? configuration( VARIO_INT_TC) // normalized stop frequency given, old version
-	   : (FAST_SAMPLING_TIME / configuration( VARIO_INT_TC) ) ), // time-constant given, new version
+	 vario_integrator( FAST_SAMPLING_TIME / configuration( VARIO_INT_TC) ),
 	 TAS_averager(1.0f / 1.0f / 100.0f),
 	 IAS_averager(1.0f / 1.0f / 100.0f)
   {};
@@ -72,9 +71,7 @@ public:
   void tune(void)
   {
     variometer.tune();
-    vario_integrator.tune( configuration( VARIO_INT_TC) < 0.25f
-	   ? configuration( VARIO_INT_TC) // normalized stop frequency given, old version
-	   : (FAST_SAMPLING_TIME / configuration( VARIO_INT_TC) ) ); // time-constant given, new version
+    vario_integrator.tune( FAST_SAMPLING_TIME / configuration( VARIO_INT_TC) );
     wind_observer.tune();
     ahrs.tune();
 #if DEVELOPMENT_ADDITIONS
@@ -89,12 +86,13 @@ public:
     ahrs_magnetic.update_magnetic_induction_data( declination, inclination);
 #endif
   }
-  void set_density_data( float temperature, float humidity)
+
+  void set_earth_rotation( float latitude)
   {
-    if( ! isnan( temperature) && ! isnan( humidity) )
-      atmosphere.set_ambient_air_data( CLIP( temperature, -40.0f, 50.0f), CLIP( humidity, 0.0f, 1.0f));
-    else
-      atmosphere.disregard_ambient_air_data();
+    ahrs.set_earth_rotation( latitude);
+#if DEVELOPMENT_ADDITIONS
+    ahrs_magnetic.set_earth_rotation( latitude);
+#endif
   }
 
   void set_gnss_type(GNSS_configration_t type)
@@ -106,19 +104,19 @@ public:
   {
     if (GNSS_type == GNSS_M9N)
     {
-	if (GNSS_speed_accuracy > 0.35) // A M9N-GNSS shall be < 0.35m/s with a good reception
+	if (GNSS_speed_accuracy > MAX_VELOCITY_ERROR_GNSS_M9N)
 	  return true;
 	return false;
     }
     else if ((GNSS_type == GNSS_F9P_F9H) || (GNSS_type == GNSS_F9P_F9P))
     {
-	if (GNSS_speed_accuracy > 0.15)  // A F9P-GNSS shall be < 0.15m/s with a good reception
+	if (GNSS_speed_accuracy > MAX_VELOCITY_ERROR_GNSS_F9X)
 	  return true;
 	return false;
     }
     else
     {
-	ASSERT(0);
+//	ASSERT(0); // error-tolerant for now, todo fixme
 	return true;
     }
   }
@@ -128,6 +126,11 @@ public:
     if (ahrs.getMagneticDisturbance() > MAGNETIC_DISTURBANCE_LIMIT)
 	return true;
     return false;
+  }
+
+  float get_GNSS_speed( void) const
+  {
+    return GNSS_speed;
   }
 
   void initialize_QFF_density_metering( float MSL_altitude)
@@ -140,14 +143,9 @@ public:
     atmosphere.air_density_metering( pressure, MSL_altitude);
   }
 
-  void disregard_density_data( void)
-  {
-    atmosphere.disregard_ambient_air_data();
-  }
-
   void report_data( output_data_t &d);
 
-  void set_from_add_mag ( const float3vector &acc, const float3vector &mag)
+  void set_from_acc_mag ( const float3vector &acc, const float3vector &mag)
   {
     ahrs.attitude_setup(acc, mag);
 #if DEVELOPMENT_ADDITIONS
@@ -203,7 +201,11 @@ public:
    * to be called @ 100 Hz, triggers all fast calculations,
    * especially AHRS attitude data and fast flight-observer stuff
    */
-  void update_at_100Hz( const float3vector &acc, const float3vector &mag, const float3vector &gyro);
+  void update_at_100Hz (
+      const float3vector &acc,
+      const float3vector &mag,
+      const float3vector &gyro,
+      const float3vector &x_mag, bool x_mag_valid);
 
   /**
      * @brief slow update flight observer data
@@ -212,7 +214,7 @@ public:
      * calculate wind data and vario average for "vario integrator"
      * @return true if a landing has just been detected
      */
-  bool update_at_10Hz();
+  bool update_at_10Hz( void);
 
     /**
        * @brief update on new navigation data from GNSS
@@ -238,6 +240,11 @@ public:
 #endif
   }
 
+  void cleanup_after_landing( void)
+  {
+    ahrs.write_calibration_into_EEPROM();
+  }
+
 private:
   AHRS_type	ahrs;
 #if DEVELOPMENT_ADDITIONS
@@ -253,8 +260,9 @@ private:
   float 	TAS;
   float 	IAS;
 
-  float3vector 	GNSS_velocity; //!< 3-dim velocity
-  float		GNSS_speed;	//!< ground speed as reported from GNSS
+  int32_t 	old_GNSS_timestamp_ms;
+  float3vector 	GNSS_velocity_3d; //!< 3-dim velocity
+  float		GNSS_speed; //!< absolute speed
   float		GNSS_speed_accuracy; //!< observing gnss quality for reporting
   float3vector 	GNSS_acceleration;
   float 	GNSS_heading;

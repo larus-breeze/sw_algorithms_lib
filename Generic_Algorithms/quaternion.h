@@ -136,6 +136,27 @@ public:
 		normalize();
 	}
 
+	//! rotation vector -> quaternion transformation
+	void from_rotation_vector( const vector <datatype, 3> &r)
+	{
+	  datatype theta = r.abs();
+	  if (theta < 1e-8)
+	    {
+	      this->e[0] = ONE;
+	      this->e[1]=this->e[2]=this->e[3]=ZERO;
+	    }
+	  else
+	    {
+	      datatype theta_half = theta * HALF;
+	      datatype s = SIN(theta_half);
+	      datatype inv_theta = ONE / theta;
+	      this->e[0] = COS( theta_half);
+	      this->e[1] = r[0] * inv_theta * s;
+	      this->e[2] = r[1] * inv_theta * s;
+	      this->e[3] = r[2] * inv_theta * s;
+	    }
+	}
+
 	//! euler angle -> quaternion transformation
 	void from_euler( datatype p, datatype q, datatype r)
 	{
@@ -175,6 +196,7 @@ public:
 	    m.e[2][1] = TWO * (e2*e3+e0*e1);
 	    m.e[2][2] = TWO * (e0*e0+e3*e3) - ONE;
 	}
+
 	quaternion <datatype> operator * ( const quaternion <datatype> & right) const //!< quaternion multiplication
 		{
 		quaternion <datatype> result;
@@ -199,20 +221,36 @@ public:
 		  return *this;
 		}
 
-	void from_rotation_matrix( matrix<datatype, 3> &rotm) //!< rotation matrix -> quaternion transformation
-		{
-		float tmp;
-		tmp = ONE + rotm.e[0][0] + rotm.e[1][1] + rotm.e[2][2];
-		//! formula from roenbaeck p35
-		tmp = SQRT( tmp);
-		tmp *= HALF;
-		this->e[0] = tmp;
-		tmp = QUARTER / tmp;
-		this->e[1] = tmp * (rotm.e[2][1] - rotm.e[1][2]);
-		this->e[2] = tmp * (rotm.e[0][2] - rotm.e[2][0]);
-		this->e[3] = tmp * (rotm.e[1][0] - rotm.e[0][1]);
-		normalize(); // compensate computational inaccuracies
-		};
+	void from_rotation_matrix( const matrix<datatype, 3> &m)
+	{
+	    float trace = m.e[0][0] + m.e[1][1] + m.e[2][2];
+
+	    if (trace > 0.0f) {
+	        float S = SQRT(trace + 1.0f) * TWO; // S = 4 * qw
+	        this->e[0] = 0.25f * S;
+	        this->e[1] = (m.e[2][1] - m.e[1][2]) / S;
+	        this->e[2] = (m.e[0][2] - m.e[2][0]) / S;
+	        this->e[3] = (m.e[1][0] - m.e[0][1]) / S;
+	    } else if (m.e[0][0] > m.e[1][1] && m.e[0][0] > m.e[2][2]) {
+	        float S = SQRT(1.0f + m.e[0][0] - m.e[1][1] - m.e[2][2]) * TWO;
+	        this->e[0] = (m.e[2][1] - m.e[1][2]) / S;
+	        this->e[1] = 0.25f * S;
+	        this->e[2] = (m.e[0][1] + m.e[1][0]) / S;
+	        this->e[3] = (m.e[0][2] + m.e[2][0]) / S;
+	    } else if (m.e[1][1] > m.e[2][2]) {
+	        float S = SQRT(1.0f - m.e[0][0] + m.e[1][1] - m.e[2][2]) * TWO;
+	        this->e[0] = (m.e[0][2] - m.e[2][0]) / S;
+	        this->e[1] = (m.e[0][1] + m.e[1][0]) / S;
+	        this->e[2] = 0.25f * S;
+	        this->e[3] = (m.e[1][2] + m.e[2][1]) / S;
+	    } else {
+	        float S = SQRT(1.0f - m.e[0][0] - m.e[1][1] + m.e[2][2]) * TWO;
+	        this->e[0] = (m.e[1][0] - m.e[0][1]) / S;
+	        this->e[1] = (m.e[0][2] + m.e[2][0]) / S;
+	        this->e[2] = (m.e[1][2] + m.e[2][1]) / S;
+	        this->e[3] = 0.25f * S;
+	    }
+	}
 
 	quaternion <datatype> inverse( void)
 	{

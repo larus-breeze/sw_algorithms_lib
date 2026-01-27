@@ -90,7 +90,7 @@ public:
 
   void process_at_100_Hz( const float3vector &instant_wind)
   {
-    if( (instant_wind_averager.get_last_input().abs() < NEGLECTABLE_WIND) && instant_wind.abs() < NEGLECTABLE_WIND) // avoid FPU underflow
+    if( (instant_wind_averager.get_output().abs() < NEGLECTABLE_WIND) && instant_wind.abs() < NEGLECTABLE_WIND) // avoid FPU underflow
       {
 	 wind_resampler_100_10Hz.settle({0});
 	 instant_wind_averager.settle({0});
@@ -176,8 +176,8 @@ private:
   soaring_flight_averager< float3vector, true, true> relative_wind_observer;
   pt2<float3vector,float> corrected_wind_averager;
   accumulating_averager < float3vector> circling_wind_averager;
-  circle_state_t circling_state;
-  circle_state_t old_circling_state;
+  flight_state_t circling_state;
+  flight_state_t old_circling_state;
   float3vector wind_correction_nav;
 };
 

@@ -27,6 +27,9 @@
 
 #include "stdint.h"
 
+#define READ true
+#define WRITE false
+
 #ifdef __cplusplus
 
 typedef union
@@ -37,11 +40,17 @@ typedef union
 
 enum GNSS_configration_t
 {
-  GNSS_M9N=1, 	// single frequency module, usually on PCB
-  GNSS_F9P_F9P=2, // D-GNSS using 2 * uBlox F9P, both on USART 3
-  GNSS_F9P_F9H=3,  // D-GNSS using F9P on USART 3 and F9H (heading) on USART4
-  GNSS_TYPE_NOT_DEFINED = 0xff
+  GNSS_TYPE_NOT_DEFINED=0,
+  GNSS_M9N, 	// single frequency module, usually on PCB
+  GNSS_F9P_F9P, // D-GNSS using 2 * uBlox F9P, both on USART 3
+  GNSS_F9P_F9H  // D-GNSS using F9P on USART 3 and F9H (heading) on USART4
 };
+
+enum EEPROM_PARAMETER_FILE_ID
+{
+  MAG_SENSOR_XFER_MATRIX=50,	// 4 input 3 output channels : 12 floats
+  EXT_MAG_SENSOR_XFER_MATRIX	// 4 input 3 output channels : 12 floats
+} ;
 
 enum EEPROM_PARAMETER_ID
 {
@@ -54,6 +63,15 @@ enum EEPROM_PARAMETER_ID
   PITOT_OFFSET=4,
   PITOT_SPAN,
   QNH_OFFSET,
+
+  MAG_X_OFF=10,
+  MAG_X_SCALE,
+  MAG_Y_OFF,
+  MAG_Y_SCALE,
+  MAG_Z_OFF,
+  MAG_Z_SCALE,
+  MAG_STD_DEVIATION,
+  MAG_AUTO_CALIB,
 
   VARIO_TC=30,
   VARIO_INT_TC,
@@ -88,7 +106,8 @@ const persistent_data_t * find_parameter_from_ID( EEPROM_PARAMETER_ID id);
 float configuration( EEPROM_PARAMETER_ID id);
 bool write_EEPROM_value( EEPROM_PARAMETER_ID id, float value);
 bool read_EEPROM_value( EEPROM_PARAMETER_ID id, float &value);
-void ensure_EEPROM_parameter_integrity(void);
+bool ensure_EEPROM_parameter_integrity(void);
+bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float & value , bool read);
 
 extern const persistent_data_t PERSISTENT_DATA[];
 extern const unsigned PERSISTENT_DATA_ENTRIES;
