@@ -50,12 +50,12 @@ void variometer_t::update_at_100Hz (
 	GNSS_availability_counter = 0;
 
 #if USE_OLD_FASHIONED_PRESSURE_VARIO
-  vario_uncompensated_pressure = pressure_vario_differentiator.respond( negative_pressure_altitude);
+  float vario_uncompensated_pressure = pressure_vario_differentiator.respond( negative_pressure_altitude);
 #else
-  vario_uncompensated_pressure = KalmanVario_pressure.update (
+  float vario_uncompensated_pressure = KalmanVario_pressure.update (
       negative_pressure_altitude, ahrs_acceleration[DOWN]);
 #endif
-  speed_compensation_IAS = kinetic_energy_differentiator.respond ( IAS * IAS * ONE_DIV_BY_GRAVITY_TIMES_2);
+  float speed_compensation_IAS = kinetic_energy_differentiator.respond ( IAS * IAS * ONE_DIV_BY_GRAVITY_TIMES_2);
   vario_averager_pressure.respond ( speed_compensation_IAS - vario_uncompensated_pressure); // -> positive on positive energy gain
 
   // prepare GNSS vario data if we have a stable sat fix
@@ -74,7 +74,7 @@ void variometer_t::update_at_100Hz (
       Kalman_v_a_observer_E.update ( gnss_velocity[EAST]  - speed_compensator_wind[EAST],  ahrs_acceleration[EAST]);
 
       // compute our kinetic energy in the air-system
-      specific_energy = (
+      float specific_energy = (
             SQR( gnss_velocity[NORTH] - speed_compensator_wind[NORTH])
 	  + SQR( gnss_velocity[EAST]  - speed_compensator_wind[EAST])
 	  + SQR( gnss_velocity[DOWN]))

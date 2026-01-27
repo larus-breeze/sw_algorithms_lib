@@ -64,9 +64,6 @@ public:
     Kalman_v_a_observer_E(),
     GNSS_INS_speedcomp_fusioner(SPEED_COMPENSATION_FUSIONER_FEEDBACK),
     GNSS_availability_counter(0),
-    vario_uncompensated_pressure( ZERO),
-    speed_compensation_IAS( ZERO),
-    specific_energy(0.0f),
     speed_compensation_INS_GNSS_1(0.0f),
     speed_compensation_kalman_2(0.0f),
     speed_compensation_energy_3(0.0f),
@@ -119,7 +116,7 @@ public:
 
 	float get_speed_compensation_IAS( void ) const
 	{
-	  return speed_compensation_IAS;
+	  return pressure_vario_differentiator.get_value();
 	}
 
 	float get_speed_compensation_GNSS( void ) const
@@ -180,11 +177,6 @@ private:
 	unsigned GNSS_availability_counter;
 
 	// variometer-related signals
-	float vario_uncompensated_pressure;
-	float speed_compensation_IAS;
-	float vario_uncompensated_GNSS;
-	float specific_energy;
-
 	float speed_compensation_INS_GNSS_1;
 	float speed_compensation_kalman_2;
 	float speed_compensation_energy_3;
