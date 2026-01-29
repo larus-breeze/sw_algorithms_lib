@@ -122,6 +122,16 @@ public:
 	magnetic_induction_update_counter=0;
       }
 
+    if ( navigator.get_speed_accuracy_bad_status() == true )
+      update_system_state_set(GNSS_VELOCITY_ACCURACY_BAD);
+    else
+      update_system_state_clear(GNSS_VELOCITY_ACCURACY_BAD);
+
+    if ( navigator.get_magnetic_disturbance_bad_status() == true )
+	update_system_state_set(MAGNETIC_DISTURBANCE_BAD);
+    else
+	update_system_state_clear(MAGNETIC_DISTURBANCE_BAD);
+
     return landing_detected_here;
   }
 
@@ -179,16 +189,6 @@ public:
   void report_data ( output_data_t &data)
   {
     navigator.report_data ( data);
-
-    if ( navigator.get_speed_accuracy_bad_status() == true )
-      update_system_state_set(GNSS_VELOCITY_ACCURACY_BAD);
-    else
-      update_system_state_clear(GNSS_VELOCITY_ACCURACY_BAD);
-
-    if ( navigator.get_magnetic_disturbance_bad_status() == true )
-	update_system_state_set(MAGNETIC_DISTURBANCE_BAD);
-    else
-	update_system_state_clear(MAGNETIC_DISTURBANCE_BAD);
   }
 
 private:
