@@ -112,7 +112,7 @@ public:
     return SQRT( dynamic_pressure * RECIP_STD_DENSITY_TIMES_2);
   }
 
-  float get_extrapolated_sea_level_pressure () const
+  float get_QFF () const
   {
     return extrapolated_sea_level_pressure;
   }

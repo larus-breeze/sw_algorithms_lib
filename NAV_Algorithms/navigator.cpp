@@ -160,7 +160,7 @@ void navigator_t::report_data( output_data_t &d)
     d.q				= ahrs.get_attitude();
 
     d.vario			= variometer.get_active_vario(); // todo pick one vario
-    d.integrator_vario		= vario_integrator.get_output();
+    d.vario_average		= vario_integrator.get_output();
 
     d.wind 			= wind_observer.get_instant_value();
     d.wind_average		= wind_observer.get_average_value();
@@ -180,7 +180,7 @@ void navigator_t::report_data( output_data_t &d)
     d.pressure_altitude		= - atmosphere.get_negative_pressure_altitude();
     d.magnetic_disturbance	= ahrs.getMagneticDisturbance();
     d.air_density		= atmosphere.get_density();
-    d.nav_induction_gnss 	= ahrs.get_nav_induction();
+    d.nav_induction 	= ahrs.get_nav_induction();
 
 #if DEVELOPMENT_ADDITIONS
     d.vario_pressure		= variometer.get_vario_pressure();
@@ -188,7 +188,7 @@ void navigator_t::report_data( output_data_t &d)
     d.vario_uncompensated_GNSS 	= variometer.get_vario_uncompensated_GNSS();
     d.speed_compensation_GNSS 	= variometer.get_speed_compensation_GNSS();
 
-    d.QFF			= atmosphere.get_extrapolated_sea_level_pressure();
+    d.QFF			= atmosphere.get_QFF();
     d.nav_correction		= ahrs.get_nav_correction();
     d.gyro_correction		= ahrs.get_gyro_correction();
     d.nav_acceleration_gnss 	= ahrs.get_nav_acceleration();
@@ -200,8 +200,7 @@ void navigator_t::report_data( output_data_t &d)
 
     d.HeadingDifferenceAhrsDgnss = ahrs.getHeadingDifferenceAhrsDgnss();
     d.satfix			= (float)(d.obs.c.sat_fix_type);
-    d.inst_wind_N		= wind_observer.get_measurement()[NORTH];
-    d.inst_wind_E		= wind_observer.get_measurement()[EAST];
+    d.instant_wind		= wind_observer.get_measurement();
     d.headwind 			= wind_observer.get_headwind();
     d.crosswind			= wind_observer.get_crosswind();
     d.inst_wind_corrected_N	= wind_observer.get_corrected_wind()[NORTH];

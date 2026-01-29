@@ -89,7 +89,7 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
 
   p.id=CAN_Id_Vario;
   p.data_f[0] = x.vario;
-  p.data_f[1] = x.integrator_vario;
+  p.data_f[1] = x.vario_average;
   CAN_send(p, 1);
 
   p.id=CAN_Id_Wind;

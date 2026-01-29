@@ -383,7 +383,7 @@ void format_NMEA_string_fast( const output_data_t &output_data, string_buffer_t 
 
   // report instant and average total-energy-compensated variometer, pressure altitude, TAS
   format_PLARV ( output_data.vario,
-		 output_data.integrator_vario,
+		 output_data.vario_average,
 		 output_data.pressure_altitude,
 		 output_data.TAS,
 		 next);
