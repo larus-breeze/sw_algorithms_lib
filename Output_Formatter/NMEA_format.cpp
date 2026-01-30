@@ -120,7 +120,7 @@ void format_GNSS_timestamp(const coordinates_t &coordinates, char * &p)
 ROM char GPRMC[]="$GPRMC,";
 
 //! NMEA-format time, position, groundspeed, track data
-void format_RMC (const coordinates_t &coordinates, float groundspeed, char * &p)
+void format_RMC (const coordinates_t &coordinates, float ground_speed, float ground_track, char * &p)
 {
   char * line_start = p;
   append_string( p, GPRMC);
@@ -135,10 +135,10 @@ void format_RMC (const coordinates_t &coordinates, float groundspeed, char * &p)
   angle_format (coordinates.longitude, 'E', 'W', p, true);
   *p++ = ',';
 
-  to_ascii_n_decimals( groundspeed * MPS_TO_NMPH, 1, p);
+  to_ascii_n_decimals( ground_speed * MPS_TO_NMPH, 1, p);
   *p++ = ',';
 
-  float true_track = coordinates.heading_motion;
+  float true_track = ground_track * RAD_TO_DEGREE;
   if( true_track < 0.0f)
     true_track += 360.0f;
 
@@ -401,7 +401,7 @@ void format_NMEA_string_slow( const output_data_t &output_data, string_buffer_t 
   char *next = NMEA_buf.string + NMEA_buf.length;
 
   // NMEA-format time, position, groundspeed, track data
-  format_RMC ( output_data.obs.c, output_data.groundspeed, next);
+  format_RMC ( output_data.obs.c, output_data.ground_speed, output_data.ground_track, next);
 
   // NMEA-format position report, sat number and GEO separation
   format_GGA ( output_data.obs.c, next);

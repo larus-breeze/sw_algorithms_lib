@@ -173,8 +173,8 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
 
   p.id=CAN_Id_GPS_Trk_Spd;
   // heading handled in degrees
-  p.data_f[0] = x.obs.c.heading_motion * M_PI_F / 180.0f;
-  p.data_f[1] = x.groundspeed;
+  p.data_f[0] = x.ground_track;
+  p.data_f[1] = x.ground_speed;
   CAN_send(p, 1);
 
   p.id=CAN_Id_GPS_Sats;

@@ -80,7 +80,8 @@ typedef struct
   extended_observations_type obs; 	//!< original recordings
   float IAS;				//!< Indicated airspeed
   float TAS;				//!< True airspeed
-  float groundspeed; 			//!< ground speed
+  float ground_speed; 			//!< ground speed
+  float ground_track; 			//!< ground track / rad
   float vario;				//!< variometer output
   float vario_average;			//!< average variometer output
   float3vector wind;			//!< instant wind

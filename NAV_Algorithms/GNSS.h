@@ -133,7 +133,6 @@ typedef struct
 typedef struct
 {
   float3vector velocity;  	//!< NED / m/s
-  float heading_motion;		//!< ground track in degrees NOT rad
   float	GNSS_MSL_altitude;  	//!< altitude above mean sea level
   float3vector relPosNED;	//!< vector from primary to secondary GNSS antenna
   float relPosHeading;		//!< heading from D-GNSS
