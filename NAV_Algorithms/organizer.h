@@ -114,23 +114,28 @@ public:
   {
     bool landing_detected_here = navigator.update_at_10Hz ();
 
-    navigator.feed_QFF_density_metering( output_data.obs.m.static_pressure - QNH_offset, output_data.obs.c.GNSS_MSL_altitude);
-
-    if( ++magnetic_induction_update_counter > MAGNETIC_UPDATE_TIME_TENTH_SECS) // every 15 minutes
-      {
-	update_magnetic_induction_data( output_data.obs.c.latitude, output_data.obs.c.longitude);
-	magnetic_induction_update_counter=0;
-      }
-
     if ( navigator.get_speed_accuracy_bad_status() == true )
       update_system_state_set(GNSS_VELOCITY_ACCURACY_BAD);
     else
-      update_system_state_clear(GNSS_VELOCITY_ACCURACY_BAD);
+      {
+	update_system_state_clear(GNSS_VELOCITY_ACCURACY_BAD);
+
+	// this stuff can only be done with good GNSS quality
+	navigator.feed_QFF_density_metering( output_data.obs.m.static_pressure - QNH_offset, output_data.obs.c.GNSS_MSL_altitude);
+
+	if( ++magnetic_induction_update_counter > MAGNETIC_UPDATE_TIME_TENTH_SECS) // every 15 minutes
+	  {
+	    update_magnetic_induction_data( output_data.obs.c.latitude, output_data.obs.c.longitude);
+	    magnetic_induction_update_counter=0;
+	  }
+      }
 
     if ( navigator.get_magnetic_disturbance_bad_status() == true )
 	update_system_state_set(MAGNETIC_DISTURBANCE_BAD);
     else
+      {
 	update_system_state_clear(MAGNETIC_DISTURBANCE_BAD);
+      }
 
     return landing_detected_here;
   }

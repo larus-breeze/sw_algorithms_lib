@@ -79,7 +79,7 @@ void navigator_t::update_GNSS_data (const coordinates_t &coordinates)
       GNSS_acceleration = { 0 };
       GNSS_heading = 0.0f;
       GNSS_negative_altitude = 0.0f;
-      GNSS_speed_accuracy = 0.0f;
+      GNSS_speed_accuracy = 1000.0f; // mark as REALLY bad
       GNSS_speed = 0;
       old_GNSS_timestamp_ms = INVALID; // mark as "invalid"
     }
@@ -116,8 +116,6 @@ bool navigator_t::update_at_10Hz ()
 {
   atmosphere.update_density( -GNSS_negative_altitude, GNSS_fix_type > 0);
 
-  wind_observer.process_at_10_Hz( ahrs);
-
   vario_integrator.update (variometer.get_active_vario(), // here because of the update rate 10Hz
 			   ahrs.get_euler ().yaw,
 			   ahrs.get_circling_state ());
@@ -126,6 +124,8 @@ bool navigator_t::update_at_10Hz ()
 
   if( GNSS_fix_type > 0)
     {
+      wind_observer.process_at_10_Hz( ahrs);
+
       unsigned airborne_criteria_fulfilled = 0;
       if( abs( variometer.get_speed_compensation_GNSS()) > AIRBORNE_TRIGGER_SPEED_COMP)
 	++ airborne_criteria_fulfilled;
