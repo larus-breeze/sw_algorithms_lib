@@ -107,14 +107,6 @@ AHRS_type::update_circling_state ()
 #endif
 }
 
-void AHRS_type::feed_magnetic_induction_observer( const float3vector &mag_sensor, const float3vector &external_mag_sensor)
-{
-  float error_margin = nav_correction.abs();
-  if(  error_margin > NAV_CORRECTION_LIMIT)
-    return; // we need a very good AHRS attitude quality
-
-}
-
 AHRS_type::AHRS_type (float sampling_time)
 :
   Ts(sampling_time),
