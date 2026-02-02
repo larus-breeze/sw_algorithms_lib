@@ -41,20 +41,26 @@ public:
       {};
 
    //! update differentiator taking next input value
-      datatype respond( const datatype & right)
-         {
-            output = (right-old_value) * time_constant;
-            old_value = right;
-            return output;
-         };
+    datatype respond( const datatype & right)
+       {
+	  output = (right-old_value) * time_constant;
+	  old_value = right;
+	  return output;
+       };
 
-//! returns current output
+    //! first time initialization
+    void initialize( const datatype & right)
+    {
+      old_value = right;
+    }
+
+    //! returns current output
    const datatype & get_value( void) const
       {
         return output;
       };
 
-//! cast to vector<size> returns current output
+   //! cast to datatype returns current output
     datatype operator () ( void) const
       {
       return get_value();

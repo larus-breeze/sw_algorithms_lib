@@ -52,6 +52,8 @@
 #define DEFAULT_WIND_TC 	5.0f
 #define DEFAULT_WIND_AVG_TC 	30.0f
 #define NEGLECTABLE_WIND	0.5f
+#define GNSS_FIX_EVALUATION_DELAY 200 // 2s
+#define GNSS_FIX_USAGE_DELAY 	1000 // 10s
 
 // AHRS tuning parameters:
 // These parameters have been tuned for the flight-dynamics of gliders
@@ -61,7 +63,6 @@
 #define H_GAIN 			38.0f			//!< Attitude controller: horizontal gain
 #define M_H_GAIN 		6.0f			//!< Attitude controller: horizontal gain magnetic
 #define CROSS_GAIN 		0.05f		//!< Attitude controller: cross-product gain
-#define NAV_CORRECTION_LIMIT 	5.0f	//!< limit for "low AHRS correcting variable"
 #define HIGH_TURN_RATE 		4.0f*M_PI_F/180.0f	//!< turn rate high limit
 #define LOW_TURN_RATE  		0.5f*M_PI_F/180.0f	//!< turn rate low limit
 

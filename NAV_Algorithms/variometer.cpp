@@ -28,8 +28,6 @@
 
 #define ONE_DIV_BY_GRAVITY_TIMES_2 0.0509684f
 #define RECIP_GRAVITY 0.1094f
-#define GNSS_FIX_USAGE_DELAY 3000 // 30s
-#define GNSS_FIX_EVALUATION_DELAY 200 // 2s
 
 //! calculate variometer data, update @ 100 Hz
 void variometer_t::update_at_100Hz (
@@ -52,15 +50,13 @@ void variometer_t::update_at_100Hz (
 	GNSS_availability_counter = 0;
 
 #if USE_OLD_FASHIONED_PRESSURE_VARIO
-  vario_uncompensated_pressure = pressure_vario_differentiator.respond( negative_pressure_altitude);
+  float vario_uncompensated_pressure = pressure_vario_differentiator.respond( negative_pressure_altitude);
 #else
-  vario_uncompensated_pressure = KalmanVario_pressure.update (
+  float vario_uncompensated_pressure = KalmanVario_pressure.update (
       negative_pressure_altitude, ahrs_acceleration[DOWN]);
 #endif
-  speed_compensation_IAS = kinetic_energy_differentiator.respond (
-      IAS * IAS * ONE_DIV_BY_GRAVITY_TIMES_2);
-  vario_averager_pressure.respond (
-      speed_compensation_IAS - vario_uncompensated_pressure); // -> positive on positive energy gain
+  float speed_compensation_IAS = kinetic_energy_differentiator.respond ( IAS * IAS * ONE_DIV_BY_GRAVITY_TIMES_2);
+  vario_averager_pressure.respond ( speed_compensation_IAS - vario_uncompensated_pressure); // -> positive on positive energy gain
 
   // prepare GNSS vario data if we have a stable sat fix
   if ( GNSS_availability_counter > GNSS_FIX_EVALUATION_DELAY)
@@ -78,7 +74,7 @@ void variometer_t::update_at_100Hz (
       Kalman_v_a_observer_E.update ( gnss_velocity[EAST]  - speed_compensator_wind[EAST],  ahrs_acceleration[EAST]);
 
       // compute our kinetic energy in the air-system
-      specific_energy = (
+      float specific_energy = (
             SQR( gnss_velocity[NORTH] - speed_compensator_wind[NORTH])
 	  + SQR( gnss_velocity[EAST]  - speed_compensator_wind[EAST])
 	  + SQR( gnss_velocity[DOWN]))
@@ -113,30 +109,20 @@ void variometer_t::update_at_100Hz (
 
       // blending of three mechanisms for speed-compensation
       GNSS_INS_speedcomp_fusioner.respond( 0.3333333f * (speed_compensation_INS_GNSS_1 + speed_compensation_kalman_2 + speed_compensation_projected_4), speed_compensation_energy_3);
-//      GNSS_INS_speedcomp_fusioner.respond( 0.5 * (speed_compensation_INS_GNSS_1 + speed_compensation_kalman_2), speed_compensation_energy_3);
-    }
 
-  // soft switch between pressure-based emergency vario and generic GNSS vario
-  if ( GNSS_availability_counter < GNSS_FIX_USAGE_DELAY)
-    {
-      // workaround for no GNSS fix: maintain GNSS vario with pressure data
-      vario_uncompensated_GNSS = vario_uncompensated_pressure;
-      speed_compensation_GNSS = speed_compensation_IAS;
-      vario_averager_GNSS.respond ( speed_compensation_IAS - vario_uncompensated_pressure);
-    }
-  else
-    {
-      // use GNSS vario data for output
-      vario_uncompensated_GNSS = -KalmanVario_GNSS.get_x( KalmanVario_PVA_t::VARIO);
-      speed_compensation_GNSS = GNSS_INS_speedcomp_fusioner.get_value();
-//      speed_compensation_GNSS = 0.5 * (speed_compensation_INS_GNSS_1 + speed_compensation_kalman_2);
-//      speed_compensation_GNSS = 0.3333333f * (speed_compensation_INS_GNSS_1 + speed_compensation_kalman_2 + speed_compensation_projected_4);
-      vario_averager_GNSS.respond ( vario_uncompensated_GNSS + speed_compensation_GNSS);
+      // keep this as a reference
+      // GNSS_INS_speedcomp_fusioner.respond( 0.5 * (speed_compensation_INS_GNSS_1 + speed_compensation_kalman_2), speed_compensation_energy_3);
+
+      vario_averager_GNSS.respond ( GNSS_INS_speedcomp_fusioner.get_value() - KalmanVario_GNSS.get_x( KalmanVario_PVA_t::VARIO));
     }
 }
 
 void variometer_t::reset(float pressure_negative_altitude, float GNSS_negative_altitude)
 {
   KalmanVario_GNSS.reset( GNSS_negative_altitude, -9.81f);
+#if USE_OLD_FASHIONED_PRESSURE_VARIO
+  pressure_vario_differentiator.initialize( pressure_negative_altitude);
+#else
   KalmanVario_pressure.reset( pressure_negative_altitude, -9.81f);
+#endif
 }

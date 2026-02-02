@@ -70,67 +70,78 @@ typedef struct
 {
   measurement_data_t m;
   coordinates_t c;
-  uint32_t sensor_status;
   float3vector external_magnetometer_reading;
+  uint32_t sensor_status;
 } extended_observations_type;
 
 //! combination of all input and output data in one structure
 typedef struct
 {
-  extended_observations_type obs;
-  float IAS;
-  float TAS;
-  float groundspeed; //!< ground speed
-  float vario_uncompensated;
-  float vario;
-  float vario_pressure;
-  float speed_compensation_TAS;
-  float speed_compensation_GNSS;
-  float integrator_vario;
-  float3vector wind;
-  float3vector wind_average;
-  uint32_t flight_mode;
-  quaternion<float> q;
-  eulerangle<float> euler;
-  float effective_vertical_acceleration;
-  float turn_rate;
-  float slip_angle;
-  float pitch_angle;
-  float G_load;
-  float pressure_altitude;
-  float air_density;
-  float magnetic_disturbance;
-  float3vector nav_acceleration_gnss;
-  float3vector nav_induction_gnss;
+  extended_observations_type obs; 	//!< original recordings
+  float IAS;				//!< Indicated airspeed
+  float TAS;				//!< True airspeed
+  float ground_speed; 			//!< ground speed
+  float ground_track; 			//!< ground track / rad
+  float vario;				//!< variometer output
+  float vario_average;			//!< average variometer output
+  float3vector wind;			//!< instant wind
+  float3vector wind_average;		//!< average wind
+  uint32_t flight_mode;			//!< GROUND, STRAIGHT, TRANSITION, CIRCLING
+
+  quaternion<float> q;			//!< Attitude quaternion
+  eulerangle<float> euler;		//!< Attitude euler angles
+
+  float effective_vertical_acceleration;//!< Vertical acceleration w/o gravity
+  float turn_rate;			//!< Projected turn rate
+  float slip_angle;			//!< Slip angle from body-acceleration
+  float pitch_angle;			//!< Pitch-angle from bode acceleration
+  float G_load;				//!< G-Load absolute 3d
+  float pressure_altitude;		//!< Pressure altitude
+  float air_density;			//!< Air density observed
+  float magnetic_disturbance;		//!< Magnitude of magnetic error vector
+  float3vector nav_acceleration_gnss;	//!< Acceleration = velocity derivative
+  float3vector nav_induction;		//!< Induction in world frame observed
 
 #if DEVELOPMENT_ADDITIONS
-  float3vector nav_correction;
-  float3vector gyro_correction;
 
-  float3vector nav_acceleration_mag;
-  float3vector nav_induction_mag;
-  eulerangle<float> euler_magnetic;
-  quaternion<float> q_magnetic;
+  float vario_pressure;			//!< Pneumatic variometer uncompensated
+  float speed_compensation_TAS;		//!< Speed compensation form IAS
+  float vario_uncompensated_GNSS;	//!< Uncompensated variometer GNSS+INS
+  float speed_compensation_GNSS;	//!< Speed compensation GNSS+INS
 
-  float3vector body_acc;
-  float3vector body_gyro;
-  float HeadingDifferenceAhrsDgnss;
-  float QFF;
-  float satfix;
-  float inst_wind_N;
-  float inst_wind_E;
-  float headwind;
-  float crosswind;
-  float inst_wind_corrected_N;
-  float inst_wind_corrected_E;
-  float speed_compensation[3];
-  float cross_acc_correction;
-  float vario_wind_N;
-  float vario_wind_E;
-  float3vector body_induction;
-  float3vector body_induction_error;
-  float gyro_correction_power;
-  float3vector expected_nav_induction;
+  float3vector nav_correction;		//!< Attitude correction NAV signal rad/s
+  float3vector gyro_correction;		//!< Attitude correction BODY rad/s
+  float gyro_correction_power;		//!< Filtered magnitude of gyro correction signal
+  float cross_acc_correction;		//!< Attitude correction from acceleration
+
+  float3vector body_acc;		//!< Acceleration BODY frame
+  float3vector body_gyro;		//!< Gyro signal BODY frame
+  float QFF;				//!< Projected pressure at sea level
+  float satfix;				//!< Sat fix type NO, FIX, D-GNSS
+
+  float3vector instant_wind;		//!< Instant wind observation
+
+  float3vector body_induction;		//!< Body induction calibrated
+  float3vector body_induction_error;	//!< Induction error BODY
+  float3vector expected_nav_induction;	//!< NAV induction from NOAA model
+
+  // experimental additions below
+
+  float vario_wind_N;			//!< Wind used for vario compensation N
+  float vario_wind_E;			//!< Wind used for vario compensation E
+  float headwind;			//!< Headwind component when circling
+  float crosswind;			//!< Crosswind component when circling
+  float inst_wind_corrected_N;		//!< Wind corrected when circling N
+  float inst_wind_corrected_E;		//!< Wind corrected when circling E
+
+  quaternion<float> q_magnetic;		//!< Attitude from magetic corrected AHRS
+  eulerangle<float> euler_magnetic;	//!< Euler angles from mag AHRS
+  float HeadingDifferenceAhrsDgnss;	//!< Difference D-GNSS vs MAG heading
+  float3vector nav_acceleration_mag;	//!< NAV acceleration from mag AHRS
+  float3vector nav_induction_mag;	//!< NAV induction from mag AHRS
+
+  float speed_compensation[3];		//!< Speed compensator signals experimental
+
 #endif
 } output_data_t;
 

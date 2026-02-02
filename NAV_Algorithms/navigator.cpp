@@ -77,10 +77,11 @@ void navigator_t::update_GNSS_data (const coordinates_t &coordinates)
     {
       GNSS_velocity_3d = { 0 };
       GNSS_acceleration = { 0 };
-      GNSS_heading = 0.0f;
-      GNSS_negative_altitude = 0.0f;
-      GNSS_speed_accuracy = 0.0f;
-      GNSS_speed = 0;
+      GNSS_heading = ZERO;
+      GNSS_negative_altitude = ZERO;
+      GNSS_speed_accuracy = 1000.0f; // mark as REALLY bad
+      GNSS_speed = ZERO;
+      GNSS_groundtrack = ZERO;
       old_GNSS_timestamp_ms = INVALID; // mark as "invalid"
     }
   else
@@ -103,6 +104,7 @@ void navigator_t::update_GNSS_data (const coordinates_t &coordinates)
 	}
       GNSS_velocity_3d = coordinates.velocity;
       GNSS_speed = SQRT( SQR( coordinates.velocity[NORTH]) + SQR( coordinates.velocity[EAST]));
+      GNSS_groundtrack = ATAN2( coordinates.velocity[EAST], coordinates.velocity[NORTH]);
       GNSS_heading = coordinates.relPosHeading;
       GNSS_negative_altitude = -coordinates.GNSS_MSL_altitude;
       GNSS_speed_accuracy = coordinates.speed_acc;
@@ -116,9 +118,7 @@ bool navigator_t::update_at_10Hz ()
 {
   atmosphere.update_density( -GNSS_negative_altitude, GNSS_fix_type > 0);
 
-  wind_observer.process_at_10_Hz( ahrs);
-
-  vario_integrator.update (variometer.get_vario_GNSS(), // here because of the update rate 10Hz
+  vario_integrator.update (variometer.get_active_vario(), // here because of the update rate 10Hz
 			   ahrs.get_euler ().yaw,
 			   ahrs.get_circling_state ());
 
@@ -126,6 +126,8 @@ bool navigator_t::update_at_10Hz ()
 
   if( GNSS_fix_type > 0)
     {
+      wind_observer.process_at_10_Hz( ahrs);
+
       unsigned airborne_criteria_fulfilled = 0;
       if( abs( variometer.get_speed_compensation_GNSS()) > AIRBORNE_TRIGGER_SPEED_COMP)
 	++ airborne_criteria_fulfilled;
@@ -154,21 +156,17 @@ void navigator_t::report_data( output_data_t &d)
 {
     d.TAS 			= TAS_averager.get_output();
     d.IAS 			= IAS_averager.get_output();
-    d.groundspeed		= get_GNSS_speed();
+    d.ground_speed		= get_GNSS_speed();
 
     d.euler			= ahrs.get_euler();
     d.q				= ahrs.get_attitude();
 
-    d.vario			= variometer.get_vario_GNSS(); // todo pick one vario
-    d.vario_pressure		= variometer.get_vario_pressure();
-    d.integrator_vario		= vario_integrator.get_output();
-    d.vario_uncompensated 	= variometer.get_vario_uncompensated_GNSS();
+    d.vario			= variometer.get_active_vario(); // todo pick one vario
+    d.vario_average		= vario_integrator.get_output();
 
     d.wind 			= wind_observer.get_instant_value();
     d.wind_average		= wind_observer.get_average_value();
 
-    d.speed_compensation_TAS 	= variometer.get_speed_compensation_IAS();
-    d.speed_compensation_GNSS 	= variometer.get_speed_compensation_GNSS();
     d.effective_vertical_acceleration
 				= variometer.get_effective_vertical_acceleration();
 
@@ -184,11 +182,15 @@ void navigator_t::report_data( output_data_t &d)
     d.pressure_altitude		= - atmosphere.get_negative_pressure_altitude();
     d.magnetic_disturbance	= ahrs.getMagneticDisturbance();
     d.air_density		= atmosphere.get_density();
-    d.nav_induction_gnss 	= ahrs.get_nav_induction();
+    d.nav_induction 	= ahrs.get_nav_induction();
 
 #if DEVELOPMENT_ADDITIONS
+    d.vario_pressure		= variometer.get_vario_pressure();
+    d.speed_compensation_TAS 	= variometer.get_speed_compensation_IAS();
+    d.vario_uncompensated_GNSS 	= variometer.get_vario_uncompensated_GNSS();
+    d.speed_compensation_GNSS 	= variometer.get_speed_compensation_GNSS();
 
-    d.QFF			= atmosphere.get_extrapolated_sea_level_pressure();
+    d.QFF			= atmosphere.get_QFF();
     d.nav_correction		= ahrs.get_nav_correction();
     d.gyro_correction		= ahrs.get_gyro_correction();
     d.nav_acceleration_gnss 	= ahrs.get_nav_acceleration();
@@ -200,8 +202,7 @@ void navigator_t::report_data( output_data_t &d)
 
     d.HeadingDifferenceAhrsDgnss = ahrs.getHeadingDifferenceAhrsDgnss();
     d.satfix			= (float)(d.obs.c.sat_fix_type);
-    d.inst_wind_N		= wind_observer.get_measurement()[NORTH];
-    d.inst_wind_E		= wind_observer.get_measurement()[EAST];
+    d.instant_wind		= wind_observer.get_measurement();
     d.headwind 			= wind_observer.get_headwind();
     d.crosswind			= wind_observer.get_crosswind();
     d.inst_wind_corrected_N	= wind_observer.get_corrected_wind()[NORTH];

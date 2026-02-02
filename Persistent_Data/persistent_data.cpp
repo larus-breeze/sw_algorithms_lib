@@ -38,12 +38,14 @@ ROM persistent_data_t PERSISTENT_DATA[]=
 	{PITOT_SPAN, 	"Pitot_Span",		false,  1.0f, 0},	//! Pitot Span signed (around 1.0f)
 	{QNH_OFFSET, 	"QNH-delta",		false,  0.0f, 0},	//! Absolute pressure sensor offset signed / Pa
 
-	{VARIO_TC,	"Vario_TC",		false, 2.0f, 0}, 	//! Vario time constant unsigned s / ( 100.0f / 65536 )
-	{VARIO_INT_TC,	"Vario_Int_TC",		false, 30.0f, 0},	//! Vario integrator time constant unsigned s / ( 100.0f / 65536 )
-	{WIND_TC,	"Wind_TC",		false, 5.0f, 0}, 	//! Wind fast time constant unsigned s / ( 100.0f / 65536 )
-	{MEAN_WIND_TC,	"Mean_Wind_TC",		false, 30.0f, 0},	//! Wind slow time constant unsigned s / ( 100.0f / 65536 )
+	{MAG_AUTO_CALIB, "Mag_Auto_Calib",	false,  0.0f, 0},	//! Magnetic calibration automatic (legacy / compatibility)
+
+	{VARIO_TC,	"Vario_TC",		false, 2.0f, 0}, 	//! Vario time constant unsigned
+	{VARIO_INT_TC,	"Vario_Int_TC",		false, 30.0f, 0},	//! Vario integrator time constant
+	{WIND_TC,	"Wind_TC",		false, 5.0f, 0}, 	//! Wind fast time constant
+	{MEAN_WIND_TC,	"Mean_Wind_TC",		false, 30.0f, 0},	//! Wind slow time constant
 	{HORIZON,	"Horizon_active",	false, 1.0f, 0},	//! Horizon output is available
-	{VARIO_P_TC,	"Vario_P_TC",		false, 5.0f, 0}, 	//! Pneumatic Vario time constant unsigned s / ( 100.0f / 65536 )
+	{VARIO_P_TC,	"Vario_P_TC",		false, 3.0f, 0}, 	//! Pneumatic Vario time constant
 
 	{GNSS_CONFIGURATION, "GNSS_CONFIG",	false, 1.0f, 0},	//! type of GNSS system
 	{ANT_BASELENGTH, "ANT_BASELEN",		false, 1.0f, 0},	//! Slave DGNSS antenna baselength / mm
@@ -124,9 +126,6 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
 	EEPROM_value.i16 = (int16_t)value;
       break;
     case PITOT_SPAN:
-    case MAG_X_SCALE:
-    case MAG_Y_SCALE:
-    case MAG_Z_SCALE:
       if( read)
 	value = ( (float)(EEPROM_value.i16) / 32768.0f) + 1.0f;
       else
@@ -138,25 +137,6 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
 	    ivalue = -32768;
 	  EEPROM_value.i16 = (int16_t)ivalue;
 	}
-      break;
-    case MAG_STD_DEVIATION:
-      if( read)
-	value = (float)(EEPROM_value.u16) / 65536.0f * 1e-2f;
-      else
-	{
-	  if( value >= 0.009999f || value < 0.0f)
-	    EEPROM_value.u16 = 0xffff;
-	  else
-	    EEPROM_value.u16 = (uint16_t)(value * 1e2f * 65536.0f);
-	}
-      break;
-    case MAG_X_OFF:
-    case MAG_Y_OFF:
-    case MAG_Z_OFF:
-      if( read)
-	value = ( (float)(EEPROM_value.i16) / 3276.8f);
-      else
-	EEPROM_value.i16 = (int16_t)(value * 3276.8f);
       break;
     case ANT_BASELENGTH: // max +/- 32.768 m
     case ANT_SLAVE_DOWN:
