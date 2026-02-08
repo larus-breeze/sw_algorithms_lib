@@ -250,7 +250,7 @@ public:
 	    else
 	      {
 		printf ("val =");
-		for (unsigned i = 0; i < the_node->size - 1; ++i)
+		for ( int i = 0; i < the_node->size - 1; ++i)
 //		  printf( " %08x", * ((unsigned *) the_node + 1 + i));
 		  printf (" %10e", *((float32_t*) the_node + 1 + i));
 		printf ("\n");

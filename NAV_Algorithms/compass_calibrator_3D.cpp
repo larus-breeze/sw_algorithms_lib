@@ -288,76 +288,7 @@ bool compass_calibrator_3D_t::calculate( void)
   // final check
   quaternion <float> q_complete;
   q_complete = q1 * q2 * q3;
-  q_complete.normalize();
-  float3matrix m_complete;
-  q_complete.get_rotation_matrix( m_complete);
-
-  inverse_rotation_matrix.pData = (computation_float_type *)m_complete.e;
-  result = ARM_MAT_MULT( &inverse_rotation_matrix, &sensor_matrix , &pure_transfer_matrix);
-
-  e = q_complete;
-
-  // now we have detected the rotation part
-  printf("Rotation rpy = %f %f %f Degrees\n", e.roll * 180/M_PI, e.pitch * 180/M_PI, e.yaw * 180/M_PI);
-
-  // remove the rotation part from the sensor transfer matrix
-  quaternion <float>inverse_q;
-  inverse_q = q1.inverse();
-  float3matrix rot1;
-  inverse_q.get_rotation_matrix( rot1);
-
-  ARM_MATRIX_INSTANCE sensor_matrix;
-  sensor_matrix.numCols=3;
-  sensor_matrix.numRows=3;
-  sensor_matrix.pData = (computation_float_type *)m.e;
-
-  ARM_MATRIX_INSTANCE inverse_rotation_matrix;
-  inverse_rotation_matrix.numCols=3;
-  inverse_rotation_matrix.numRows=3;
-  inverse_rotation_matrix.pData = (computation_float_type *)rot1.e;
-
-  float3matrix  ptm;
-  ARM_MATRIX_INSTANCE pure_transfer_matrix;
-  pure_transfer_matrix.numCols=3;
-  pure_transfer_matrix.numRows=3;
-  pure_transfer_matrix.pData = (computation_float_type *)ptm.e;
-
-  arm_status result = ARM_MAT_MULT( &inverse_rotation_matrix, &sensor_matrix, &pure_transfer_matrix);
-
-  printf("Pure_sensor_Matrix = %f %f %f\n", ptm.e[0][0], ptm.e[0][1], ptm.e[0][2]);
-  printf("                     %f %f %f\n", ptm.e[1][0], ptm.e[1][1], ptm.e[1][2]);
-  printf("                     %f %f %f\n", ptm.e[2][0], ptm.e[2][1], ptm.e[2][2]);
-  printf("Offsets = %f %f %f\n", c[next_buffer][0][0], c[next_buffer][1][0], c[next_buffer][2][0]);
-
-  quaternion<float> q2;
-  q2.from_rotation_matrix( ptm);
-  e = q2;
-  printf("Residual rotation = %f %f %f Degrees\n\n",  e.roll * 180/M_PI, e.pitch * 180/M_PI, e.yaw * 180/M_PI);
-
-  // one more iteration to remove the residual rotation component from the pure transfer matrix
-
-  float3matrix rot2;
-  inverse_q = q2.inverse();
-  inverse_q.get_rotation_matrix( rot2);
-
-  float3matrix upsm;
-  sensor_matrix.pData = (computation_float_type *)upsm.e;
-  inverse_rotation_matrix.pData = (computation_float_type *)rot2.e;
-
-  result = ARM_MAT_MULT( &inverse_rotation_matrix, &pure_transfer_matrix, &sensor_matrix);
-
-  printf("Ultra-Pure_sensor_Matrix = %f %f %f\n", upsm.e[0][0], upsm.e[0][1], upsm.e[0][2]);
-  printf("                           %f %f %f\n", upsm.e[1][0], upsm.e[1][1], upsm.e[1][2]);
-  printf("                           %f %f %f\n", upsm.e[2][0], upsm.e[2][1], upsm.e[2][2]);
-
-  quaternion<float> q3;
-  q3.from_rotation_matrix( upsm);
-  e = q3;
-  printf("Residual rotation = %f %f %f Degrees\n\n",  e.roll * 180/M_PI, e.pitch * 180/M_PI, e.yaw * 180/M_PI);
-
-  // final check
-  quaternion <float> q_complete;
-  q_complete = q1 * q2 * q3;
+  q_complete.normalize(); // avoid numeric instability
   float3matrix m_complete;
   q_complete.get_rotation_matrix( m_complete);
 
@@ -366,7 +297,6 @@ bool compass_calibrator_3D_t::calculate( void)
 
   e = q_complete;
   printf("Final rotation = %f %f %f Degrees\n\n",  e.roll * 180/M_PI, e.pitch * 180/M_PI, e.yaw * 180/M_PI);
-
 
 #endif
 
