@@ -302,7 +302,7 @@ public:
 	      case 1: // direct data node
 		if (not short_node_is_consistent (*current_node))
 		  continue;
-		store_data (current_node->id, current_node->data & 0xff);
+		store_data (current_node->id, (uint8_t)(current_node->data & 0xff));
 		break;
 	      default: // data file
 		if (not long_node_is_consistent (current_node))
@@ -333,28 +333,28 @@ private:
 
   uint16_t check_and_pack_id_len_and_data( EEPROM_file_system_node the_node, uint8_t datum)
   {
-	uint16_t info = datum;		 // need 16bit data
-	uint16_t crc = CRC16( info, 0); // data crc
-	info = the_node.id + (the_node.size << 8);
-	crc = CRC16( info, crc); 	 // plus node crc
-	crc = (crc ^ (crc >> 8)) & 0xff;	 // fold crc into 8 bits
-	return datum | (crc << 8);
+    uint32_t info = datum;		 // need 16bit data
+    uint32_t crc = CRC16( (uint16_t)info, 0); // data crc
+    info = the_node.id + ((uint32_t)(the_node.size) << 8);
+    crc = CRC16( (uint16_t)info, (uint16_t)crc); 	 // plus node crc
+    crc = (crc ^ (crc >> 8)) & 0xff;	 // fold crc into 8 bits
+    return (uint16_t)(datum | (crc << 8));
   }
 
   bool short_node_is_consistent( EEPROM_file_system_node the_node)
   {
-    uint16_t crc = CRC16( the_node.data & 0xff, 0); // data crc
-    uint16_t info = the_node.id + (the_node.size << 8);
-    crc = CRC16( info, crc); 	     // plus node crc
+    uint32_t crc = CRC16( the_node.data & 0xff, 0); // data crc
+    uint32_t info = (uint32_t)(the_node.id) + (the_node.size << 8);
+    crc = CRC16( (uint16_t)info, (uint16_t)crc); 	     // plus node crc
     crc = (crc ^ (crc >> 8)) & 0xff; // fold crc into 8 bits
     return (the_node.data >> 8) == crc;
   }
 
   bool long_node_is_consistent( EEPROM_file_system_node * work)
   {
-    uint16_t crc = CRC16_blockcheck( (uint16_t *)work + 2, (work->size - 1) * 2);
-    uint16_t protected_id_and_size = work->id + ((work->size) << 8);
-    crc = CRC16( protected_id_and_size, crc);
+    uint32_t crc = CRC16_blockcheck( (uint16_t *)work + 2, (work->size - 1) * 2);
+    uint32_t protected_id_and_size = (uint32_t)(work->id) + ((work->size) << 8);
+    crc = CRC16( (uint16_t)protected_id_and_size, (uint16_t)crc);
 
     return work->data == crc;
   }
@@ -379,24 +379,20 @@ private:
       {
 	work = work->next();
 	if( work >= tail)
-	  {
-	    work = 0;
-	    break;
-	  }
+	  return 0;
       }
-
-    if( work >= tail)
-      work = 0;
 
     return work;
   }
 
   EEPROM_file_system_node * find_first_datum( EEPROM_file_system_node * start, EEPROM_file_system_node::ID_t id) const
   {
+    if( start == 0 || start < head || start >= free_space)
+      return 0;
     for( EEPROM_file_system_node * work = start; (work < free_space) && (work->size != 0) && (work->size != ERASED_FLASH_BYTE); work = work->next())
       {
         if( work->id == id)
-  	return work;
+          return work;
       }
     return 0;
   }
