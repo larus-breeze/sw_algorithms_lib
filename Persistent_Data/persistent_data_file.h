@@ -152,7 +152,7 @@ public:
 	    return true; // same information found
       }
 
-    EEPROM_file_system_node * next_entry = (EEPROM_file_system_node *)free_space;
+    EEPROM_file_system_node * next_entry = free_space;
 
     if( next_entry + data_size_words + 1 >= tail)
       return false; // no more room !

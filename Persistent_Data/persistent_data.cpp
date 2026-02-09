@@ -76,8 +76,8 @@ bool ensure_EEPROM_parameter_integrity( void)
     {
       if( true == read_EEPROM_value( parameter->id, dummy)) // parameter missing
 	{
-	  bool error = write_EEPROM_value( parameter->id, parameter->default_value);
-	  if( error)
+	  bool success = write_EEPROM_value( parameter->id, parameter->default_value);
+	  if( not success)
 	    return false;
 	}
       ++parameter;
