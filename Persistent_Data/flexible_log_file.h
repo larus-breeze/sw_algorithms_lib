@@ -48,6 +48,8 @@ public:
 
   bool append_record( record_type type, uint32_t * data, unsigned data_size=0);
 
+  static unsigned verify_record_get_size( uint32_t input);
+
 private:
   bool write_block( uint32_t * begin, uint32_t size_words);
   uint32_t *buffer;

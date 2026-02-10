@@ -45,3 +45,15 @@ bool flexible_log_file_t::write_block (uint32_t *p_data, uint32_t size_words)
     }
   return true;
 }
+
+unsigned flexible_log_file_t::verify_record_get_size( uint32_t block_identifier)
+{
+  uint32_t type = block_identifier & 0xff;
+  uint32_t size = (block_identifier & 0xffff) >> 8;
+  block_identifier |= (size << 8);
+  uint32_t crc_computed = CRC16( (uint16_t)block_identifier, CRC_SEED);
+  if( crc_computed != (block_identifier >> 16))
+    return 0; // wrong CRC !
+  else
+    return size;
+}
