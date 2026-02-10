@@ -17,7 +17,7 @@ bool flexible_log_file_t::append_record ( record_type type, uint32_t *data, unsi
   uint32_t crc = CRC16( (uint16_t)block_identifier, CRC_SEED);
   block_identifier |= (crc << 16);
 
-  write_block( &block_identifier, sizeof( block_identifier));
+  write_block( &block_identifier, 1);
   write_block( data, data_size_words);
   return true;
 }
@@ -49,9 +49,9 @@ bool flexible_log_file_t::write_block (uint32_t *p_data, uint32_t size_words)
 unsigned flexible_log_file_t::verify_record_get_size( uint32_t block_identifier)
 {
   uint32_t type = block_identifier & 0xff;
-  uint32_t size = (block_identifier & 0xffff) >> 8;
-  block_identifier |= (size << 8);
-  uint32_t crc_computed = CRC16( (uint16_t)block_identifier, CRC_SEED);
+  uint32_t size = (block_identifier & 0xff00) >> 8;
+  uint16_t info = (size << 8) | type;
+  uint32_t crc_computed = CRC16( info, CRC_SEED);
   if( crc_computed != (block_identifier >> 16))
     return 0; // wrong CRC !
   else
