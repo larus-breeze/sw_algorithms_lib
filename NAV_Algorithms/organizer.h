@@ -56,6 +56,7 @@ public:
 		  configuration (SENS_TILT_YAW));
     q.get_rotation_matrix (sensor_mapping);
 
+    setup_compass_calibrator_3d();
     navigator.tune();
   }
 
