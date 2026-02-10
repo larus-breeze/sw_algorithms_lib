@@ -320,6 +320,11 @@ public:
     return (void *)head;
   }
 
+  unsigned get_size( void) const
+  {
+    return (free_space - head) * sizeof( uint32_t);
+  }
+
 private:
   bool compare_words_block_binary( const uint32_t *one,  const uint32_t *two, unsigned size) const
   {
