@@ -13,9 +13,9 @@ bool flexible_log_file_t::append_record ( record_type type, uint32_t *data, unsi
 {
   uint32_t block_identifier = type;
   uint32_t size = data_size_words + 1;
-  block_identifier != size << 8;
+  block_identifier |= (size << 8);
   uint32_t crc = CRC16( (uint16_t)block_identifier, CRC_SEED);
-  block_identifier != crc << 16;
+  block_identifier |= (crc << 16);
 
   write_block( &block_identifier, sizeof( block_identifier));
   write_block( data, data_size_words);
