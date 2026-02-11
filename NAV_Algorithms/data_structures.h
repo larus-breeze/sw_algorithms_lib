@@ -61,7 +61,7 @@ typedef struct
 typedef struct
 {
   measurement_data_t m;
-  coordinates_t c;
+  D_GNSS_coordinates_t c;
   uint32_t sensor_status;
 } observations_type;
 
@@ -69,7 +69,7 @@ typedef struct
 typedef struct
 {
   measurement_data_t m;
-  coordinates_t c;
+  D_GNSS_coordinates_t c;
   float3vector external_magnetometer_reading;
   uint32_t sensor_status;
 } extended_observations_type;

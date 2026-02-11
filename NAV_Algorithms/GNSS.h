@@ -129,7 +129,7 @@ typedef struct
   uint16_t dummy;
 } legacy_coordinates_t;
 
-//! Contains all important data from the GNSS
+//! Contains all important data from the D-GNSS
 typedef struct
 {
   float3vector velocity;  	//!< NED / m/s
@@ -154,13 +154,38 @@ typedef struct
 
   int16_t geo_sep_dm; 	//!< (WGS ellipsoid height - elevation MSL) in 0.1m units
   uint16_t pDOP;	//!< Position dilution of precision 0.01 units
-} coordinates_t;
+} D_GNSS_coordinates_t;
+
+//! Contains all important data from the Single-GNSS
+typedef struct
+{
+  float3vector velocity;  	//!< NED / m/s
+  float	GNSS_MSL_altitude;  	//!< altitude above mean sea level
+  float speed_acc;		//!< speed accuracy m/s
+
+  double latitude;		//!< latitude / degrees
+  double longitude;		//!< longitude / degrees
+
+  uint8_t year;
+  uint8_t month;
+  uint8_t day;
+  uint8_t hour;
+
+  uint8_t minute;
+  uint8_t second;
+  uint8_t SATS_number;	//!< number of tracked satellites
+  uint8_t sat_fix_type;	//!< bit 0: SAT FIX, bit 1: SAT HEADING available
+  int32_t nano;		// nanoseconds offset to time above
+
+  int16_t geo_sep_dm; 	//!< (WGS ellipsoid height - elevation MSL) in 0.1m units
+  uint16_t pDOP;	//!< Position dilution of precision 0.01 units
+} GNSS_coordinates_t;
 
 //! Organizing the data transfer from a uBlox-GNSS receiver
 class GNSS_type
 {
 public:
-  GNSS_type (coordinates_t & coo);
+  GNSS_type (D_GNSS_coordinates_t & coo);
   GNSS_Result update( const uint8_t * data);
   GNSS_Result update_delta( const uint8_t * data);
   GNSS_Result update_combined( uint8_t * data);
@@ -188,7 +213,7 @@ public:
   }
 
 private:
-  coordinates_t &coordinates;
+  D_GNSS_coordinates_t &coordinates;
   FIX_TYPE fix_type;
   inline bool checkSumCheck ( const uint8_t *buffer, uint8_t length)
   {

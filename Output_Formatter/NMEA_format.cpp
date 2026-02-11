@@ -97,7 +97,7 @@ void angle_format ( double angle, char posc, char negc, char * &p, bool force_5_
   *p++ = pos ? posc : negc;
 }
 
-void format_GNSS_timestamp(const coordinates_t &coordinates, char * &p)
+void format_GNSS_timestamp(const D_GNSS_coordinates_t &coordinates, char * &p)
 {
   unsigned hundredth_seconds;
   if( coordinates.nano < 0)
@@ -120,7 +120,7 @@ void format_GNSS_timestamp(const coordinates_t &coordinates, char * &p)
 ROM char GPRMC[]="$GPRMC,";
 
 //! NMEA-format time, position, groundspeed, track data
-void format_RMC (const coordinates_t &coordinates, float ground_speed, float ground_track, char * &p)
+void format_RMC (const D_GNSS_coordinates_t &coordinates, float ground_speed, float ground_track, char * &p)
 {
   char * line_start = p;
   append_string( p, GPRMC);
@@ -159,7 +159,7 @@ void format_RMC (const coordinates_t &coordinates, float ground_speed, float gro
 ROM char GPGGA[]="$GPGGA,";
 
 //! NMEA-format position report, sat number and GEO separation
-void format_GGA( const coordinates_t &coordinates, char * &p)
+void format_GGA( const D_GNSS_coordinates_t &coordinates, char * &p)
 {
   char * line_start = p;
   append_string( p, GPGGA);

@@ -223,7 +223,7 @@ public:
        * to be called @ 50 .. 100 Hz (GNSS-dependent)
        * set new position fix etc.
        */
-  void update_GNSS_data( const coordinates_t &coordinates);
+  void update_GNSS_data( const D_GNSS_coordinates_t &coordinates);
 
   /**
    * @brief return aggregate flight observer

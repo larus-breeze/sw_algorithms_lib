@@ -153,7 +153,7 @@ public:
   }
 
   //! all that needs to be done when a new data set comes from the GNSS receiver
-  void update_GNSS_data( const coordinates_t &coordinates)
+  void update_GNSS_data( const D_GNSS_coordinates_t &coordinates)
   {
 
     navigator.update_GNSS_data( coordinates);
