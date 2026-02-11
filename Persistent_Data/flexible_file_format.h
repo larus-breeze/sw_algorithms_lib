@@ -20,7 +20,9 @@
     CRASH_LOG_REGISTERS = 40,	//!< processor register and exception data
     RTOS_TRACE_DATA = 41,	//!< Post-mortem snapshot of RTOS-events
     SYSTEM_STATE_VECTOR = 42,	//!< All significant state-vector variables
-    FLASH_DUMP_SECTION = 43	//!< raw FLASH section data (start-address, data ...)
+    FLASH_DUMP_SECTION = 43,	//!< raw FLASH section data (start-address, data ...)
+
+    EXTENDED_RECORD = 255	//!< long records with 32bit id and length
   };
 
 #endif /* PERSISTENT_DATA_FLEXIBLE_FILE_FORMAT_H_ */
