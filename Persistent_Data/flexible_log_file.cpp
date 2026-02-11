@@ -1,3 +1,4 @@
+#include "flexible_file_format.h"
 #include <flexible_log_file.h>
 #include "CRC16.h"
 
@@ -9,7 +10,7 @@ bool flexible_log_file_t::open (char *file_name)
   return true;
 }
 
-bool flexible_log_file_t::append_record ( record_type type, uint32_t *data, unsigned data_size_words)
+bool flexible_log_file_t::append_record ( flexible_log_file_record_type type, uint32_t *data, unsigned data_size_words)
 {
   uint32_t block_identifier = type;
   uint32_t size = data_size_words + 1;
