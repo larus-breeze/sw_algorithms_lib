@@ -6,7 +6,7 @@
 
 class flexible_log_file_t
 {
-  friend class flexible_log_file_stream_t;
+  friend class flexible_log_file_implementation_t;
 
 public:
 
