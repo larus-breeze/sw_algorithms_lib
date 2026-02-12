@@ -26,7 +26,8 @@ public:
   virtual bool open( char * file_name) = 0;
   virtual bool close( void) = 0;
 
-  static unsigned verify_record_get_size( uint32_t input);
+  static uint32_t verify_record_get_size( uint32_t input);
+  static uint32_t verify_extended_record_get_size( uint32_t record, uint32_t extended_id, uint32_t extended_size);
 
 private:
   enum {CRC_SEED = 0xfff1};
