@@ -14,9 +14,9 @@ bool flexible_log_file_t::append_record ( flexible_log_file_record_type type, ui
       uint32_t long_size = data_size_words + 3; // including node, extended id and size
 
       crc = CRC16( (uint16_t)long_identifier, CRC_SEED);
-      crc = CRC16( (uint16_t)(long_identifier >> 16), crc);
-      crc = CRC16( (uint16_t)(long_size), crc);
-      crc = CRC16( (uint16_t)(long_size >> 16), crc);
+      crc = CRC16( (uint16_t)(long_identifier >> 16), (uint16_t)crc);
+      crc = CRC16( (uint16_t)(long_size), (uint16_t)crc);
+      crc = CRC16( (uint16_t)(long_size >> 16), (uint16_t)crc);
 
       block_identifier |= (crc << 16);
 
