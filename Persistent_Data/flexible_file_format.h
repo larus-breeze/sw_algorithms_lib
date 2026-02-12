@@ -11,7 +11,7 @@
     RUNTIME_EVENT_MARKER = 13,	//!< significant event and optional explanation value
     SENSOR_STATUS = 14,		//!< 32 bits hardware- and software status
 
-    BASIC_SENSOR_DATA = 20 + 0x100, 	//!< IMU-data, pressures, temperature todo patch
+    BASIC_SENSOR_DATA = 20, 	//!< IMU-data, pressures, temperature todo patch
     EXTENDED_SENSOR_DATA = 21,	//!< basic data plus external magnetometer readings
 
     GNSS_DATA = 30,		//!< abstract GNSS receiver output
