@@ -28,7 +28,7 @@ enum PLARS_TYPES{
 
 //! combine all data to be output to the NMEA port
 void format_NMEA_string_fast( const state_vector_t &output_data, string_buffer_t &NMEA_buf, bool horizon_available);
-void format_NMEA_string_slow( const state_vector_t &output_data, string_buffer_t &NMEA_buf);
+void format_NMEA_string_slow( const measurement_data_t &m, const D_GNSS_coordinates_t &c, const state_vector_t &output_data, string_buffer_t &NMEA_buf);
 void format_PLARS ( float value, PLARS_TYPES type, char * &p) ;
 bool NMEA_checksum( const char *line);
 
