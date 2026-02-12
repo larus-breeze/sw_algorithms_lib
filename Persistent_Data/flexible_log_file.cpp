@@ -57,8 +57,8 @@ uint32_t flexible_log_file_t::verify_record_get_size( uint32_t block_identifier)
 
 uint32_t flexible_log_file_t::verify_extended_record_get_size ( uint32_t record, uint32_t extended_id, uint32_t extended_size)
 {
-  uint16_t crc = CRC16( (uint16_t)extended__id, CRC_SEED);
-  crc = CRC16( (uint16_t)(extended__id >> 16), crc);
+  uint16_t crc = CRC16( (uint16_t)extended_id, CRC_SEED);
+  crc = CRC16( (uint16_t)(extended_id >> 16), crc);
   crc = CRC16( (uint16_t)(extended_size), crc);
   crc = CRC16( (uint16_t)(extended_size >> 16), crc);
   if( record & 0xffff != 0xfff || crc != (record >> 16))
