@@ -152,7 +152,7 @@ bool navigator_t::update_at_10Hz ()
 }
 
 //! copy all navigator data into output_data structure
-void navigator_t::report_data( output_data_t &d)
+void navigator_t::report_data( state_vector_t &d)
 {
     d.TAS 			= TAS_averager.get_output();
     d.IAS 			= IAS_averager.get_output();
@@ -201,7 +201,6 @@ void navigator_t::report_data( output_data_t &d)
     d.nav_induction_mag 	= ahrs_magnetic.get_nav_induction();
 
     d.HeadingDifferenceAhrsDgnss = ahrs.getHeadingDifferenceAhrsDgnss();
-    d.satfix			= (float)(d.obs.c.sat_fix_type);
     d.instant_wind		= wind_observer.get_measurement();
     d.headwind 			= wind_observer.get_headwind();
     d.crosswind			= wind_observer.get_crosswind();

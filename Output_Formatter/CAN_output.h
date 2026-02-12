@@ -61,7 +61,7 @@
 #define  CMD_TUNE				0x3004
 #define  CMD_RESET_SENSOR			0x3005
 
-void CAN_output ( const output_data_t &x, bool horizon_activated);
+void CAN_output ( const measurement_data_t &m, const D_GNSS_coordinates_t &c, bool horizon_activated);
 void CAN_heartbeat( void);
 bool CAN_enqueue( const CANpacket &p, unsigned max_delay = 0xffffffff);
 

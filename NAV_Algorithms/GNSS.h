@@ -57,7 +57,7 @@ typedef struct
   int32_t height; 	// MSL height / mm
   uint32_t hAcc;	// horizontal accuracy / mm
   uint32_t vAcc;	// vertical accuracy / mm
-  int32_t velocity[3]; 	// NED velocity mm/s
+  int32_t speed[3]; 	// NED velocity mm/s
   uint32_t gSpeed; 	// Ground speed / mm/s
   uint32_t gTrack;	// track direction / 10^-5 deg
   uint32_t sAcc; 	// speed accuracy mm/s
@@ -103,7 +103,7 @@ typedef enum { GNSS_HAVE_FIX, GNSS_NO_FIX, GNSS_ERROR} GNSS_Result;
 typedef struct
 {
   float3vector position;  	//!< NED / meters
-  float3vector velocity;  	//!< NED / m/s
+  float3vector speed;  	//!< NED / m/s
   float3vector acceleration;  	//!< NED / m/s^2 (from GNSS velocity derivative)
   float  heading_motion;	//!< ground track in degrees
   float  speed_motion;		//!< ground speed m/s
@@ -132,39 +132,42 @@ typedef struct
 //! Contains all important data from the D-GNSS
 typedef struct
 {
-  float3vector velocity;  	//!< NED / m/s
+  double latitude;		//!< latitude / degrees
+  double longitude;		//!< longitude / degrees
   float	GNSS_MSL_altitude;  	//!< altitude above mean sea level
+
+  float3vector velocity;  	//!< NED / m/s
+  float speed_acc;		//!< speed accuracy m/s
+
+
+  uint8_t year;
+  uint8_t month;
+  uint8_t day;
+  uint8_t hour;
+
+  uint8_t minute;
+  uint8_t second;
+  uint8_t SATS_number;		//!< number of tracked satellites
+  uint8_t sat_fix_type;		//!< bit 0: SAT FIX, bit 1: SAT HEADING available
+  int32_t nano;			// nanoseconds offset to time above
+
+  int16_t geo_sep_dm; 		//!< (WGS ellipsoid height - elevation MSL) in 0.1m units
+  uint16_t pDOP;		//!< Position dilution of precision 0.01 units
+
   float3vector relPosNED;	//!< vector from primary to secondary GNSS antenna
   float relPosHeading;		//!< heading from D-GNSS
-  float speed_acc;		//!< speed accuracy m/s
-
-  double latitude;		//!< latitude / degrees
-  double longitude;		//!< longitude / degrees
-
-  uint8_t year;
-  uint8_t month;
-  uint8_t day;
-  uint8_t hour;
-
-  uint8_t minute;
-  uint8_t second;
-  uint8_t SATS_number;	//!< number of tracked satellites
-  uint8_t sat_fix_type;	//!< bit 0: SAT FIX, bit 1: SAT HEADING available
-  int32_t nano;		// nanoseconds offset to time above
-
-  int16_t geo_sep_dm; 	//!< (WGS ellipsoid height - elevation MSL) in 0.1m units
-  uint16_t pDOP;	//!< Position dilution of precision 0.01 units
 } D_GNSS_coordinates_t;
 
-//! Contains all important data from the Single-GNSS
+//! Contains all important data from the GNSS
 typedef struct
 {
-  float3vector velocity;  	//!< NED / m/s
-  float	GNSS_MSL_altitude;  	//!< altitude above mean sea level
-  float speed_acc;		//!< speed accuracy m/s
-
   double latitude;		//!< latitude / degrees
   double longitude;		//!< longitude / degrees
+  float	GNSS_MSL_altitude;  	//!< altitude above mean sea level
+
+  float3vector velocity;  	//!< NED / m/s
+  float speed_acc;		//!< speed accuracy m/s
+
 
   uint8_t year;
   uint8_t month;
@@ -173,12 +176,13 @@ typedef struct
 
   uint8_t minute;
   uint8_t second;
-  uint8_t SATS_number;	//!< number of tracked satellites
-  uint8_t sat_fix_type;	//!< bit 0: SAT FIX, bit 1: SAT HEADING available
-  int32_t nano;		// nanoseconds offset to time above
+  uint8_t SATS_number;		//!< number of tracked satellites
+  uint8_t sat_fix_type;		//!< bit 0: SAT FIX, bit 1: SAT HEADING available
+  int32_t nano;			// nanoseconds offset to time above
 
-  int16_t geo_sep_dm; 	//!< (WGS ellipsoid height - elevation MSL) in 0.1m units
-  uint16_t pDOP;	//!< Position dilution of precision 0.01 units
+  int16_t geo_sep_dm; 		//!< (WGS ellipsoid height - elevation MSL) in 0.1m units
+  uint16_t pDOP;		//!< Position dilution of precision 0.01 units
+
 } GNSS_coordinates_t;
 
 //! Organizing the data transfer from a uBlox-GNSS receiver

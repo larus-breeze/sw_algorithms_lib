@@ -371,7 +371,7 @@ bool NMEA_checksum( const char *line)
  }
 
 //! this procedure formats all our NMEA sequences
-void format_NMEA_string_fast( const output_data_t &output_data, string_buffer_t &NMEA_buf, bool horizon_available)
+void format_NMEA_string_fast( const state_vector_t &output_data, string_buffer_t &NMEA_buf, bool horizon_available)
 {
   char *next = NMEA_buf.string + NMEA_buf.length;
 
@@ -396,18 +396,18 @@ void format_NMEA_string_fast( const output_data_t &output_data, string_buffer_t 
 }
 
 //! this procedure formats all our NMEA sequences
-void format_NMEA_string_slow( const output_data_t &output_data, string_buffer_t &NMEA_buf)
+void format_NMEA_string_slow( const measurement_data_t &m, const D_GNSS_coordinates_t &c, const state_vector_t &output_data, string_buffer_t &NMEA_buf)
 {
   char *next = NMEA_buf.string + NMEA_buf.length;
 
   // NMEA-format time, position, groundspeed, track data
-  format_RMC ( output_data.obs.c, output_data.ground_speed, output_data.ground_track, next);
+  format_RMC ( c, output_data.ground_speed, output_data.ground_track, next);
 
   // NMEA-format position report, sat number and GEO separation
-  format_GGA ( output_data.obs.c, next);
+  format_GGA ( c, next);
 
   // battery_voltage
-  format_PLARB( output_data.obs.m.supply_voltage, next);
+  format_PLARB( m.supply_voltage, next);
 
   // air density
   format_PLARD( output_data.air_density, 'M', next);

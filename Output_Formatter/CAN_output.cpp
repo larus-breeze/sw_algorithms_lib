@@ -65,7 +65,7 @@ enum CAN_ID_SENSOR
 
 };
 
-void CAN_output ( const output_data_t &x, bool horizon_activated)
+void CAN_output ( const measurement_data_t &m, const D_GNSS_coordinates_t &c, state_vector_t &x, bool horizon_activated)
 {
   CANpacket p( 0x7ff, 8);
   if( horizon_activated)
@@ -111,7 +111,7 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
   CAN_send(p, 1);
 
   p.id=CAN_Id_Atmosphere;
-  p.data_f[0] = x.obs.m.static_pressure;
+  p.data_f[0] = m.static_pressure;
   p.data_f[1] = x.air_density;
   CAN_send(p, 1);
 
@@ -127,14 +127,14 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
 
   p.id=CAN_Id_Voltage_Circle;
   p.dlc=5;
-  p.data_f[0] = x.obs.m.supply_voltage;
+  p.data_f[0] = m.supply_voltage;
   p.data_b[4] = (uint8_t)(x.flight_mode);
   CAN_send(p, 1);
 
   p.id=CAN_Id_Sensor_Health;
   p.dlc=8;
   p.data_f[0] = x.magnetic_disturbance;
-  p.data_f[1] = x.obs.c.speed_acc;
+  p.data_f[1] = c.speed_acc;
   CAN_send(p, 1);
 
   p.id=CAN_Id_GPS_Date_Time;
@@ -142,21 +142,21 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
 
   ACQUIRE_GNSS_DATA_GUARD();
 
-  p.data_h[0] = x.obs.c.year + 2000; // GNSS reports only 2000 + x
-  p.data_b[2] = x.obs.c.month;
-  p.data_b[3] = x.obs.c.day;
-  p.data_b[4] = x.obs.c.hour;
-  p.data_b[5] = x.obs.c.minute;
-  p.data_b[6] = x.obs.c.second;
+  p.data_h[0] = c.year + 2000; // GNSS reports only 2000 + x
+  p.data_b[2] = c.month;
+  p.data_b[3] = c.day;
+  p.data_b[4] = c.hour;
+  p.data_b[5] = c.minute;
+  p.data_b[6] = c.second;
 
   {
     CANpacket q( CAN_Id_GPS_Lat, 8);
     // latitude handled in degrees internally
-    q.data_d = x.obs.c.latitude * M_PI / 180.0;
+    q.data_d = c.latitude * M_PI / 180.0;
 
     CANpacket r( CAN_Id_GPS_Lon, 8);
     // longitude handled in degrees internally
-    r.data_d = x.obs.c.longitude * M_PI / 180.0;
+    r.data_d = c.longitude * M_PI / 180.0;
 
     RELEASE_GNSS_DATA_GUARD();
 
@@ -167,8 +167,8 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
 
   p.id=CAN_Id_GPS_Alt;
   p.dlc=8;
-  p.data_f[0] = x.obs.c.GNSS_MSL_altitude;
-  p.data_f[1] = x.obs.c.geo_sep_dm * 0.1f; // dm -> m
+  p.data_f[0] = c.GNSS_MSL_altitude;
+  p.data_f[1] = c.geo_sep_dm * 0.1f; // dm -> m
   CAN_send(p, 1);
 
   p.id=CAN_Id_GPS_Trk_Spd;
@@ -179,8 +179,8 @@ void CAN_output ( const output_data_t &x, bool horizon_activated)
 
   p.id=CAN_Id_GPS_Sats;
   p.dlc=2;
-  p.data_b[0] = x.obs.c.SATS_number;
-  p.data_b[1] = x.obs.c.sat_fix_type;
+  p.data_b[0] = c.SATS_number;
+  p.data_b[1] = c.sat_fix_type;
   CAN_send(p, 1);
 
   p.id=CAN_Id_SystemState;

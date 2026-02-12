@@ -82,22 +82,22 @@ public:
   }
 
   //! attitude setup after getting the first set of acceleration an magnetic data
-  void initialize_after_first_measurement( output_data_t & output_data)
+  void initialize_after_first_measurement( const D_GNSS_coordinates_t &c, const measurement_data_t &m)
   {
-    if( output_data.obs.c.sat_fix_type > 0)
-      update_magnetic_induction_data( output_data.obs.c.latitude, output_data.obs.c.longitude);
+    if( c.sat_fix_type > 0)
+      update_magnetic_induction_data( c.latitude, c.longitude);
 
-    navigator.update_pressure( output_data.obs.m.static_pressure - QNH_offset);
-    navigator.initialize_QFF_density_metering( output_data.obs.c.GNSS_MSL_altitude);
+    navigator.update_pressure( m.static_pressure - QNH_offset);
+    navigator.initialize_QFF_density_metering( c.GNSS_MSL_altitude);
     navigator.reset_altitude ();
 
     // setup initial attitude
-    float3vector acc = sensor_mapping * output_data.obs.m.acc;
-    float3vector mag = sensor_mapping * output_data.obs.m.mag;
+    float3vector acc = sensor_mapping * m.acc;
+    float3vector mag = sensor_mapping * m.mag;
 
-    if (output_data.obs.c.sat_fix_type & SAT_HEADING)
+    if ( c.sat_fix_type & SAT_HEADING)
       {
-	navigator.set_attitude ( 0.0f, 0.0f, output_data.obs.c.relPosHeading); // todo use acc data some day ?
+	navigator.set_attitude ( 0.0f, 0.0f, c.relPosHeading);
       }
     else
       navigator.set_from_acc_mag( acc, mag); // initialize attitude from acceleration + compass
@@ -111,7 +111,7 @@ public:
   }
 
   //! the "SLOW" update of the observed properties
-  bool update_at_10Hz( output_data_t & output_data)
+  bool update_at_10Hz( const D_GNSS_coordinates_t &c, const measurement_data_t &m)
   {
     bool landing_detected_here = navigator.update_at_10Hz ();
 
@@ -122,11 +122,11 @@ public:
 	update_system_state_clear(GNSS_VELOCITY_ACCURACY_BAD);
 
 	// this stuff can only be done with good GNSS quality
-	navigator.feed_QFF_density_metering( output_data.obs.m.static_pressure - QNH_offset, output_data.obs.c.GNSS_MSL_altitude);
+	navigator.feed_QFF_density_metering( m.static_pressure - QNH_offset, c.GNSS_MSL_altitude);
 
 	if( ++magnetic_induction_update_counter > MAGNETIC_UPDATE_TIME_TENTH_SECS) // every 15 minutes
 	  {
-	    update_magnetic_induction_data( output_data.obs.c.latitude, output_data.obs.c.longitude);
+	    update_magnetic_induction_data( c.latitude, c.longitude);
 	    magnetic_induction_update_counter=0;
 	  }
       }
@@ -160,27 +160,19 @@ public:
   }
 
   //! the "FAST" update of the observed properties
-  void update_at_100_Hz( output_data_t & output_data)
+  void update_at_100_Hz( const measurement_data_t &m, uint32_t system_state, const float3vector &x_mag)
   {
-    output_data.obs.sensor_status = system_state;
-
     // rotate sensor coordinates into airframe coordinates
-    float3vector acc  = sensor_mapping * output_data.obs.m.acc;
-    float3vector gyro = sensor_mapping * output_data.obs.m.gyro;
+    float3vector acc  = sensor_mapping * m.acc;
+    float3vector gyro = sensor_mapping * m.gyro;
 
-    bool external_magnetometer_active = output_data.obs.sensor_status & EXTERNAL_MAGNETOMETER_AVAILABLE;
-    float3vector mag  = output_data.obs.m.mag;
-
-    float3vector x_mag  =
-	external_magnetometer_active
-	  ? output_data.obs.external_magnetometer_reading
-	  : float3vector(); // default constructor delivers all zeros
+    bool external_magnetometer_active = system_state & EXTERNAL_MAGNETOMETER_AVAILABLE;
 
     navigator.update_at_100Hz (
-	acc, mag, gyro,
+	acc, m.mag, gyro,
 	x_mag, external_magnetometer_active);
 
-#if DEVELOPMENT_ADDITIONS
+#if 0 // DEVELOPMENT_ADDITIONS todo fixme
     output_data.body_acc  = acc;
     output_data.body_gyro = gyro;
 #endif
@@ -192,7 +184,7 @@ public:
   }
 
 //! write the output data for the SIL environment
-  void report_data ( output_data_t &data)
+  void report_data ( state_vector_t &data)
   {
     navigator.report_data ( data);
   }

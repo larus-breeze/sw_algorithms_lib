@@ -12,7 +12,7 @@
     SENSOR_STATUS = 14,		//!< 32 bits hardware- and software status
 
     BASIC_SENSOR_DATA = 20, 	//!< IMU-data, pressures, temperature todo patch
-    EXTENDED_SENSOR_DATA = 21,	//!< basic data plus external magnetometer readings
+    MAGNETOMETER_DATA = 21,	//!< external magnetometer readings
 
     GNSS_DATA = 30,		//!< abstract GNSS receiver output
     D_GNSS_DATA = 31,		//!< abstract D-GNSS receiver output

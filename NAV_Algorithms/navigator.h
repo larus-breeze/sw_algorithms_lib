@@ -144,7 +144,7 @@ public:
     atmosphere.air_density_metering( pressure, MSL_altitude);
   }
 
-  void report_data( output_data_t &d);
+  void report_data( state_vector_t &d);
 
   void set_from_acc_mag ( const float3vector &acc, const float3vector &mag)
   {
