@@ -23,7 +23,7 @@ bool flexible_log_file_t::append_record ( flexible_log_file_record_type type, ui
       write_block( &block_identifier, 1);
       write_block( (uint32_t *)&long_identifier, 1);
       write_block( (uint32_t *)&long_size, 1);
-      write_block( data, long_size);
+      write_block( data, data_size_words);
     }
   else
     {
