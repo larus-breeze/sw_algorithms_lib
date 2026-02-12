@@ -21,8 +21,7 @@ public:
   {
   }
 
-  bool append_record( flexible_log_file_record_type, uint32_t * data, unsigned data_size=0);
-
+  bool append_record ( flexible_log_file_record_type type, uint32_t *data, uint32_t data_size_words);
   virtual bool open( char * file_name) = 0;
   virtual bool close( void) = 0;
 
