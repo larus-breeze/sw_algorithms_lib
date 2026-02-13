@@ -191,6 +191,7 @@ void navigator_t::report_data( state_vector_t &d)
     d.speed_compensation_GNSS 	= variometer.get_speed_compensation_GNSS();
 
     d.QFF			= atmosphere.get_QFF();
+    d.satfix			= GNSS_fix_type;
     d.nav_correction		= ahrs.get_nav_correction();
     d.gyro_correction		= ahrs.get_gyro_correction();
     d.nav_acceleration_gnss 	= ahrs.get_nav_acceleration();
