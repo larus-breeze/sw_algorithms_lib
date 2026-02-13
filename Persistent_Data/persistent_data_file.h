@@ -269,7 +269,7 @@ public:
 	return long_node_is_consistent( work);
   }
 
-  bool file_is_consistent(void)
+  bool is_consistent(void)
   {
     EEPROM_file_system_node * work;
     //check all nodes for consistency
