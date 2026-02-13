@@ -106,7 +106,7 @@ public:
 	if( work >= tail)
 	  return false;
     free_space = work;
-      return file_is_consistent();
+      return is_consistent();
   }
 
   EEPROM_file_system_node * find_datum( EEPROM_file_system_node::ID_t id)
