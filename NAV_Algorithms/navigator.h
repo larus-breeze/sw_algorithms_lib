@@ -101,6 +101,11 @@ public:
     GNSS_type = type;
   }
 
+  float get_pressure_altitude( void) const
+  {
+    return - atmosphere.get_negative_pressure_altitude();
+  }
+
   bool get_speed_accuracy_bad_status(void)
   {
     if (GNSS_type == GNSS_M9N)

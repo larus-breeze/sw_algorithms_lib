@@ -84,11 +84,16 @@ public:
   //! attitude setup after getting the first set of acceleration an magnetic data
   void initialize_after_first_measurement( const D_GNSS_coordinates_t &c, const measurement_data_t &m)
   {
-    if( c.sat_fix_type > 0)
-      update_magnetic_induction_data( c.latitude, c.longitude);
-
     navigator.update_pressure( m.static_pressure - QNH_offset);
-    navigator.initialize_QFF_density_metering( c.GNSS_MSL_altitude);
+
+    if( c.sat_fix_type > SAT_FIX_NONE)
+      {
+	update_magnetic_induction_data( c.latitude, c.longitude);
+	navigator.initialize_QFF_density_metering( c.GNSS_MSL_altitude);
+      }
+    else
+	navigator.initialize_QFF_density_metering( navigator.get_pressure_altitude() );
+
     navigator.reset_altitude ();
 
     // setup initial attitude
