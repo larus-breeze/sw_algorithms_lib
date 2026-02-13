@@ -106,7 +106,7 @@ public:
 	if( work >= tail)
 	  return false;
     free_space = work;
-      return is_consistent();
+      return file_is_consistent();
   }
 
   EEPROM_file_system_node * find_datum( EEPROM_file_system_node::ID_t id)
@@ -261,22 +261,22 @@ public:
 
 #endif
 
-  bool is_consistent(void)
+  static bool node_is_consistent( EEPROM_file_system_node * work)
+  {
+    if( work->size == 1) // we have found a direct-data-entry
+	return short_node_is_consistent( *work);
+    else
+	return long_node_is_consistent( work);
+  }
+
+  bool file_is_consistent(void)
   {
     EEPROM_file_system_node * work;
     //check all nodes for consistency
     for( work = head; (work < free_space) && (*(uint32_t *)work != 0xffffffff); work = work->next())
       {
-	if( work->size == 1) // we have found a direct-data-entry
-	  {
-	    if( not short_node_is_consistent( *work))
-	      return false; // invalid data pattern
-	  }
-	else
-	  {
-	    if( not long_node_is_consistent( work))
-	      return false; // invalid data pattern
-	  }
+	if( not node_is_consistent( work))
+	    return false;
       }
 
     for( uint32_t * p = (uint32_t *)work; p < (uint32_t *)tail; ++p)
@@ -346,7 +346,7 @@ private:
 	return datum | (crc << 8);
   }
 
-  bool short_node_is_consistent( EEPROM_file_system_node the_node)
+  static bool short_node_is_consistent( EEPROM_file_system_node the_node)
   {
     uint16_t crc = CRC16( the_node.data & 0xff, 0); // data crc
     uint16_t info = the_node.id + (the_node.size << 8);
@@ -355,7 +355,7 @@ private:
     return (the_node.data >> 8) == crc;
   }
 
-  bool long_node_is_consistent( EEPROM_file_system_node * work)
+  static bool long_node_is_consistent( EEPROM_file_system_node * work)
   {
     uint16_t crc = CRC16_blockcheck( (uint16_t *)work + 2, (work->size - 1) * 2);
     uint16_t protected_id_and_size = work->id + ((work->size) << 8);
