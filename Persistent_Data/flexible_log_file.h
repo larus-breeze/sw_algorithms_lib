@@ -9,6 +9,7 @@ class flexible_log_file_t
   friend class flexible_log_file_implementation_t;
 
 public:
+  enum{ FLEXIBLE_LOG_FILE_FORMAT_VERSION = 1};
 
   flexible_log_file_t ( uint32_t * buf, unsigned size_words)
   : buffer( buf),
