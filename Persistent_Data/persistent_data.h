@@ -49,7 +49,8 @@ enum GNSS_configration_t
 enum EEPROM_PARAMETER_FILE_ID
 {
   MAG_SENSOR_XFER_MATRIX=50,	// 4 input 3 output channels : 12 floats
-  EXT_MAG_SENSOR_XFER_MATRIX	// 4 input 3 output channels : 12 floats
+  EXT_MAG_SENSOR_XFER_MATRIX,	// 4 input 3 output channels : 12 floats
+  LOWEST_UNUSED_EEPROM_ID	// end marker
 } ;
 
 enum EEPROM_PARAMETER_ID
