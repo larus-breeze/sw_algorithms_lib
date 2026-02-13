@@ -99,7 +99,7 @@ typedef struct
   float3vector body_acc;		//!< Acceleration BODY frame
   float3vector body_gyro;		//!< Gyro signal BODY frame
   float QFF;				//!< Projected pressure at sea level
-
+  float satfix;
   float3vector instant_wind;		//!< Instant wind observation
 
   float3vector body_induction;		//!< Body induction calibrated
