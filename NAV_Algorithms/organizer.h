@@ -177,7 +177,7 @@ public:
 	acc, m.mag, gyro,
 	x_mag, external_magnetometer_active);
 
-#if 0 // DEVELOPMENT_ADDITIONS todo fixme
+#if DEVELOPMENT_ADDITIONS
     output_data.body_acc  = acc;
     output_data.body_gyro = gyro;
 #endif
