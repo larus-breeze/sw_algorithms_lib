@@ -4,6 +4,8 @@
 #include "stdint.h"
 #include "flexible_file_format.h" // record_type definition
 
+extern bool write_block( uint32_t * begin, uint32_t size_words);
+
 class flexible_log_file_t
 {
   friend class flexible_log_file_implementation_t;
@@ -31,8 +33,6 @@ public:
 
 private:
   enum {CRC_SEED = 0xfff1};
-
-  virtual bool write_block( uint32_t * begin, uint32_t size_words) = 0;
 
   uint32_t *buffer;
   uint32_t *buffer_end;
