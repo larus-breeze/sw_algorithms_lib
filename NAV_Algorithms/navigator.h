@@ -101,6 +101,11 @@ public:
     GNSS_type = type;
   }
 
+  float get_pressure_altitude( void) const
+  {
+    return - atmosphere.get_negative_pressure_altitude();
+  }
+
   bool get_speed_accuracy_bad_status(void)
   {
     if (GNSS_type == GNSS_M9N)
@@ -144,7 +149,7 @@ public:
     atmosphere.air_density_metering( pressure, MSL_altitude);
   }
 
-  void report_data( output_data_t &d);
+  void report_data( state_vector_t &d);
 
   void set_from_acc_mag ( const float3vector &acc, const float3vector &mag)
   {
@@ -223,7 +228,7 @@ public:
        * to be called @ 50 .. 100 Hz (GNSS-dependent)
        * set new position fix etc.
        */
-  void update_GNSS_data( const coordinates_t &coordinates);
+  void update_GNSS_data( const D_GNSS_coordinates_t &coordinates);
 
   /**
    * @brief return aggregate flight observer

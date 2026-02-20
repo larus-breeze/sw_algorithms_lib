@@ -57,27 +57,9 @@ typedef struct
   legacy_coordinates_t c;
 } legacy_observations_type;
 
-//! this structure contains all the observations from sensors and GNSS
-typedef struct
-{
-  measurement_data_t m;
-  coordinates_t c;
-  uint32_t sensor_status;
-} observations_type;
-
-//! this structure contains all the observations plus external magnetometer data
-typedef struct
-{
-  measurement_data_t m;
-  coordinates_t c;
-  float3vector external_magnetometer_reading;
-  uint32_t sensor_status;
-} extended_observations_type;
-
 //! combination of all input and output data in one structure
 typedef struct
 {
-  extended_observations_type obs; 	//!< original recordings
   float IAS;				//!< Indicated airspeed
   float TAS;				//!< True airspeed
   float ground_speed; 			//!< ground speed
@@ -117,8 +99,7 @@ typedef struct
   float3vector body_acc;		//!< Acceleration BODY frame
   float3vector body_gyro;		//!< Gyro signal BODY frame
   float QFF;				//!< Projected pressure at sea level
-  float satfix;				//!< Sat fix type NO, FIX, D-GNSS
-
+  float satfix;
   float3vector instant_wind;		//!< Instant wind observation
 
   float3vector body_induction;		//!< Body induction calibrated
@@ -143,7 +124,7 @@ typedef struct
   float speed_compensation[3];		//!< Speed compensator signals experimental
 
 #endif
-} output_data_t;
+} state_vector_t;
 
 #pragma pack(pop)
 

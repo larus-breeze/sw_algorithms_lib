@@ -97,7 +97,7 @@ void angle_format ( double angle, char posc, char negc, char * &p, bool force_5_
   *p++ = pos ? posc : negc;
 }
 
-void format_GNSS_timestamp(const coordinates_t &coordinates, char * &p)
+void format_GNSS_timestamp(const D_GNSS_coordinates_t &coordinates, char * &p)
 {
   unsigned hundredth_seconds;
   if( coordinates.nano < 0)
@@ -120,7 +120,7 @@ void format_GNSS_timestamp(const coordinates_t &coordinates, char * &p)
 ROM char GPRMC[]="$GPRMC,";
 
 //! NMEA-format time, position, groundspeed, track data
-void format_RMC (const coordinates_t &coordinates, float ground_speed, float ground_track, char * &p)
+void format_RMC (const D_GNSS_coordinates_t &coordinates, float ground_speed, float ground_track, char * &p)
 {
   char * line_start = p;
   append_string( p, GPRMC);
@@ -159,7 +159,7 @@ void format_RMC (const coordinates_t &coordinates, float ground_speed, float gro
 ROM char GPGGA[]="$GPGGA,";
 
 //! NMEA-format position report, sat number and GEO separation
-void format_GGA( const coordinates_t &coordinates, char * &p)
+void format_GGA( const D_GNSS_coordinates_t &coordinates, char * &p)
 {
   char * line_start = p;
   append_string( p, GPGGA);
@@ -371,7 +371,7 @@ bool NMEA_checksum( const char *line)
  }
 
 //! this procedure formats all our NMEA sequences
-void format_NMEA_string_fast( const output_data_t &output_data, string_buffer_t &NMEA_buf, bool horizon_available)
+void format_NMEA_string_fast( const state_vector_t &output_data, string_buffer_t &NMEA_buf, bool horizon_available)
 {
   char *next = NMEA_buf.string + NMEA_buf.length;
 
@@ -396,18 +396,18 @@ void format_NMEA_string_fast( const output_data_t &output_data, string_buffer_t 
 }
 
 //! this procedure formats all our NMEA sequences
-void format_NMEA_string_slow( const output_data_t &output_data, string_buffer_t &NMEA_buf)
+void format_NMEA_string_slow( const measurement_data_t &m, const D_GNSS_coordinates_t &c, const state_vector_t &output_data, string_buffer_t &NMEA_buf)
 {
   char *next = NMEA_buf.string + NMEA_buf.length;
 
   // NMEA-format time, position, groundspeed, track data
-  format_RMC ( output_data.obs.c, output_data.ground_speed, output_data.ground_track, next);
+  format_RMC ( c, output_data.ground_speed, output_data.ground_track, next);
 
   // NMEA-format position report, sat number and GEO separation
-  format_GGA ( output_data.obs.c, next);
+  format_GGA ( c, next);
 
   // battery_voltage
-  format_PLARB( output_data.obs.m.supply_voltage, next);
+  format_PLARB( m.supply_voltage, next);
 
   // air density
   format_PLARD( output_data.air_density, 'M', next);

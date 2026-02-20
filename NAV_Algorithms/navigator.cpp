@@ -69,7 +69,7 @@ void navigator_t::update_at_100Hz (
       );
 }
 
-void navigator_t::update_GNSS_data (const coordinates_t &coordinates)
+void navigator_t::update_GNSS_data (const D_GNSS_coordinates_t &coordinates)
 {
   GNSS_fix_type = coordinates.sat_fix_type;
 
@@ -152,7 +152,7 @@ bool navigator_t::update_at_10Hz ()
 }
 
 //! copy all navigator data into output_data structure
-void navigator_t::report_data( output_data_t &d)
+void navigator_t::report_data( state_vector_t &d)
 {
     d.TAS 			= TAS_averager.get_output();
     d.IAS 			= IAS_averager.get_output();
@@ -191,6 +191,7 @@ void navigator_t::report_data( output_data_t &d)
     d.speed_compensation_GNSS 	= variometer.get_speed_compensation_GNSS();
 
     d.QFF			= atmosphere.get_QFF();
+    d.satfix			= GNSS_fix_type;
     d.nav_correction		= ahrs.get_nav_correction();
     d.gyro_correction		= ahrs.get_gyro_correction();
     d.nav_acceleration_gnss 	= ahrs.get_nav_acceleration();
@@ -201,7 +202,6 @@ void navigator_t::report_data( output_data_t &d)
     d.nav_induction_mag 	= ahrs_magnetic.get_nav_induction();
 
     d.HeadingDifferenceAhrsDgnss = ahrs.getHeadingDifferenceAhrsDgnss();
-    d.satfix			= (float)(d.obs.c.sat_fix_type);
     d.instant_wind		= wind_observer.get_measurement();
     d.headwind 			= wind_observer.get_headwind();
     d.crosswind			= wind_observer.get_crosswind();
