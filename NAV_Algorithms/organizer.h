@@ -176,11 +176,6 @@ public:
     navigator.update_at_100Hz (
 	acc, m.mag, gyro,
 	x_mag, external_magnetometer_active);
-
-#if DEVELOPMENT_ADDITIONS
-    output_data.body_acc  = acc;
-    output_data.body_gyro = gyro;
-#endif
   }
 
   void cleanup_after_landing( void)
