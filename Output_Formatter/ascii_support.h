@@ -43,8 +43,6 @@ extern "C"
 
 char* ftoa( char* Buffer, float Value);
 
-float my_atof(const char *s);
-
 //! basically: kind of strcat returning the pointer to the string-end
 inline void append_string( char * &target, const char *source)
 {
