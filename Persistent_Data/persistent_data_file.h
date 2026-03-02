@@ -67,7 +67,9 @@ public:
     free_space( begin),
     tail( behind_end)
   {
-    free_space = find_end();
+    // initialize ALL registry entries
+    for( unsigned i=0; i < size; ++i)
+      registry[i] = 0;
   }
 
   bool in_use( void)
@@ -103,8 +105,15 @@ public:
     head 	= (EEPROM_file_system_node * )begin;
     tail	= (EEPROM_file_system_node * )behind_end;
 
+    // initialize ALL registry entries
+    for( unsigned i=0; i < size; ++i)
+      registry[i] = 0;
+
+    // correctly set used entries
     for( EEPROM_file_system_node * node = head; node->id < size; node=node->next())
       registry[node->id] = node;
+
+    free_space = find_current_free_space();
 
     return is_consistent();
   }
@@ -169,7 +178,6 @@ public:
 
 	FLASH_write( (uint32_t *)node, (uint32_t *)&temp_node, 1);
 	registry[id] = node;
-	++free_space;
       }
     else // : bunch of 32bit data
       {
@@ -179,7 +187,6 @@ public:
 	FLASH_write( (uint32_t *)node, (uint32_t *)&temp_node, 1);
 	FLASH_write( (uint32_t *)(node + 1), (uint32_t *)data, data_size_words);
 	registry[id] = node;
-	free_space += temp_node.size;
       }
 
     free_space += data_size_words + 1;
@@ -282,7 +289,7 @@ public:
 	    return false;
       }
 
-    for( uint32_t * p = (uint32_t *)tail; p < (uint32_t *)free_space; ++p)
+    for( uint32_t * p = (uint32_t *)free_space; p < (uint32_t *)tail; ++p)
       if( *p != 0xffffffff)
 	return false;
 
@@ -292,7 +299,7 @@ public:
   void import_all_data (const EEPROM_file_system &source)
   {
     EEPROM_file_system_node *current_node;
-    for (EEPROM_file_system_node::ID_t id = 1; id < ERASED_FLASH_BYTE; ++id)
+    for (EEPROM_file_system_node::ID_t id = 1; id < LOWEST_UNUSED_EEPROM_ID; ++id)
       {
 	current_node = registry[ id];
 	if (current_node != 0)
@@ -367,7 +374,7 @@ private:
     return work->data == crc;
   }
 
-  EEPROM_file_system_node * find_end( void)
+  EEPROM_file_system_node * find_current_free_space( void)
   {
     EEPROM_file_system_node * work = head;
 
