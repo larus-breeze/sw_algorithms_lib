@@ -94,7 +94,8 @@ public:
     head 	= (EEPROM_file_system_node * )begin;
     tail	= (EEPROM_file_system_node * )behind_end;
     free_space = head;
-    registry = {0};
+    for (unsigned i=0; i< size; ++i)
+      registry[i] = 0;
   }
 
   bool set_memory_to_existing_data( uint32_t *begin, uint32_t *behind_end)
@@ -272,13 +273,12 @@ public:
 	return long_node_is_consistent( work);
   }
 
+  //! check all active nodes for consistency
   bool is_consistent(void)
   {
-    EEPROM_file_system_node * work;
-    //check all active nodes for consistency
     for( EEPROM_file_system_node::ID_t id = 0; id < size; ++id)
       {
-	if( not node_is_consistent( registry[id]))
+	if( (registry[id] != 0) and (not node_is_consistent( registry[id])))
 	    return false;
       }
 
