@@ -378,12 +378,8 @@ private:
   {
     EEPROM_file_system_node * work = head;
 
-    while( (work < free_space) && (work->size != 0xff) && (work->size != 0x00))
-      {
+    while( (work->size != 0xff) && (work->size != 0x00))
 	work = work->next();
-	if( work >= free_space)
-	  return 0;
-      }
 
     return work;
   }
