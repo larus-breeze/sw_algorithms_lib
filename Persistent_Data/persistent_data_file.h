@@ -2,7 +2,7 @@
  * @file		persistent_data_file.h
  * @brief		tiny file system for configuration data
  * @author		Dr. Klaus Schaefer
- * @copyright 		Copyright 2021 Dr. Klaus Schaefer. All rights reserved.
+ * @copyright 		Copyright 2026 Dr. Klaus Schaefer. All rights reserved.
  * @license 		This project is released under the GNU Public License GPL-3.0
 
     <Larus Flight Sensor Firmware>
@@ -59,7 +59,7 @@ public:
   uint16_t data; // direct 8bit | (checksum << 8) OR crc16 of 32bit data file
 };
 
-class EEPROM_file_system
+template <unsigned size > class EEPROM_file_system
 {
 public:
   EEPROM_file_system( EEPROM_file_system_node * begin=0, EEPROM_file_system_node * behind_end=0)
@@ -67,7 +67,9 @@ public:
     free_space( begin),
     tail( behind_end)
   {
-    free_space = find_end();
+    // initialize ALL registry entries
+    for( unsigned i=0; i < size; ++i)
+      registry[i] = 0;
   }
 
   bool in_use( void)
@@ -94,6 +96,8 @@ public:
     head 	= (EEPROM_file_system_node * )begin;
     tail	= (EEPROM_file_system_node * )behind_end;
     free_space = head;
+    for (unsigned i=0; i< size; ++i)
+      registry[i] = 0;
   }
 
   bool set_memory_to_existing_data( uint32_t *begin, uint32_t *behind_end)
@@ -101,23 +105,28 @@ public:
     head 	= (EEPROM_file_system_node * )begin;
     tail	= (EEPROM_file_system_node * )behind_end;
 
-    EEPROM_file_system_node * work;
-    for( work = head; work->id != ERASED_FLASH_BYTE; work = work->next())
-	if( work >= tail)
-	  return false;
-    free_space = work;
-      return is_consistent();
+    // initialize ALL registry entries
+    for( unsigned i=0; i < size; ++i)
+      registry[i] = 0;
+
+    // correctly set used entries
+    for( EEPROM_file_system_node * node = head; node->id < size; node=node->next())
+      registry[node->id] = node;
+
+    free_space = find_current_free_space();
+
+    return is_consistent();
   }
 
   EEPROM_file_system_node * find_datum( EEPROM_file_system_node::ID_t id)
   {
-    return find_last_datum( head, id);
+    return registry[id]; // may be zero
   }
 
-  uint32_t * find_data( EEPROM_file_system_node::ID_t id, unsigned data_size)
+  EEPROM_file_system_node * find_data_node( EEPROM_file_system_node::ID_t id, unsigned data_size)
   {
       unsigned size_including_node = data_size + 1; // size including node itself
-      EEPROM_file_system_node * candidate = find_last_datum( head, id);
+      EEPROM_file_system_node * candidate = registry[ id];
       if( candidate == 0 || size_including_node != candidate->size)
         return 0;
 
@@ -126,36 +135,36 @@ public:
       uint16_t protected_id_and_size = candidate->id + ((candidate->size) << 8);
       crc = CRC16( protected_id_and_size, crc);
 
-      if( candidate->data != crc)
-        return 0;
-      return from;
+      return ( candidate->data == crc) ? candidate : 0;
   }
 
-  bool store_data( EEPROM_file_system_node::ID_t id, unsigned data_size_words, const void * data)
+  EEPROM_file_system_node * store_data( EEPROM_file_system_node::ID_t id, unsigned data_size_words, const void * data)
   {
     LOCK_SECTION();
+
+    EEPROM_file_system_node * node;
 
     // at first: check if this information is already stored identically
     if( data_size_words == EEPROM_file_system_node::DIRECT_8_BIT)
       {
 	uint8_t data_read;
-	bool ok = retrieve_data( id, data_read);
-	if( ok && data_read == *(uint8_t *)data)
-	  return true;
+	node = retrieve_data( id, data_read);
+	if( (node != 0) && data_read == *(uint8_t *)data)
+	  return node;
       }
     else
       {
 
-	uint32_t * place_in_file = find_data( id, data_size_words);
-	if( place_in_file != 0)
-	  if( compare_words_block_binary( (uint32_t *)data, place_in_file, data_size_words))
-	    return true; // same information found
+	node = find_data_node( id, data_size_words);
+	if( node != 0)
+	  if( compare_words_block_binary( (uint32_t *)data, (uint32_t *)( node+1), data_size_words))
+	    return node; // same information found
       }
 
-    EEPROM_file_system_node * next_entry = free_space;
+    node = free_space;
 
-    if( next_entry + data_size_words + 1 >= tail)
-      return false; // no more room !
+    if( node + data_size_words + 1 >= tail)
+      return 0; // no more room !
 
     EEPROM_file_system_node temp_node;
     temp_node.id = id;
@@ -167,19 +176,21 @@ public:
 	uint16_t checked_datum = *(uint8_t *)data; 	// take only 8 bits
 	temp_node.data = check_and_pack_id_len_and_data( temp_node, checked_datum);
 
-	FLASH_write( (uint32_t *)next_entry, (uint32_t *)&temp_node, 1);
+	FLASH_write( (uint32_t *)node, (uint32_t *)&temp_node, 1);
+	registry[id] = node;
       }
     else // : bunch of 32bit data
       {
 	uint16_t crc = CRC16_blockcheck( (uint16_t *)data,  data_size_words * 2);
 	uint16_t protected_id_and_size = temp_node.id + ((temp_node.size) << 8);
 	temp_node.data = CRC16( protected_id_and_size, crc);
-	FLASH_write( (uint32_t *)next_entry, (uint32_t *)&temp_node, 1);
-	FLASH_write( (uint32_t *)(next_entry + 1), (uint32_t *)data, data_size_words);
+	FLASH_write( (uint32_t *)node, (uint32_t *)&temp_node, 1);
+	FLASH_write( (uint32_t *)(node + 1), (uint32_t *)data, data_size_words);
+	registry[id] = node;
       }
 
     free_space += data_size_words + 1;
-    return true;
+    return node;
   }
 
   bool store_data( EEPROM_file_system_node::ID_t id, const uint8_t data)
@@ -193,7 +204,7 @@ public:
 
     uint32_t *dest = (uint32_t *)target;
     unsigned size_including_node = data_size + 1; // size including node itself
-    EEPROM_file_system_node * candidate = find_last_datum( head, id);
+    EEPROM_file_system_node * candidate = registry[ id];
     if( candidate == 0 || size_including_node != candidate->size)
       return false;
 
@@ -215,22 +226,22 @@ public:
     return true;
   }
 
-  bool retrieve_data( EEPROM_file_system_node::ID_t id, uint8_t & target)
+  EEPROM_file_system_node * retrieve_data( EEPROM_file_system_node::ID_t id, uint8_t & target)
   {
     LOCK_SECTION();
 
-    EEPROM_file_system_node * my_node = find_last_datum( head, id);
+    EEPROM_file_system_node * my_node = registry[ id];
     if( my_node == 0)
-      return false;
+      return 0;
 
     if( my_node->size != 1)
-      return false;
+      return 0;
 
     if( not short_node_is_consistent(*my_node))
-      return false;
+      return 0;
 
     target = my_node->data & 0xff;
-    return true;
+    return my_node;
   }
 
 #ifdef DEBUG
@@ -238,9 +249,9 @@ public:
   void dump_all_entries (void)
   {
     EEPROM_file_system_node *the_node;
-    for (EEPROM_file_system_node::ID_t id = 1; id < 255; ++id)
+    for (EEPROM_file_system_node::ID_t id = 1; id < size; ++id)
       {
-	the_node = find_last_datum (head, id);
+	the_node = registry[ id];
 	if (the_node != 0)
 	  {
 	    printf ("ID: %d ", the_node->id);
@@ -269,17 +280,16 @@ public:
 	return long_node_is_consistent( work);
   }
 
+  //! check all active nodes for consistency
   bool is_consistent(void)
   {
-    EEPROM_file_system_node * work;
-    //check all nodes for consistency
-    for( work = head; (work < free_space) && (*(uint32_t *)work != 0xffffffff); work = work->next())
+    for( EEPROM_file_system_node::ID_t id = 0; id < size; ++id)
       {
-	if( not node_is_consistent( work))
+	if( (registry[id] != 0) and (not node_is_consistent( registry[id])))
 	    return false;
       }
 
-    for( uint32_t * p = (uint32_t *)work; p < (uint32_t *)tail; ++p)
+    for( uint32_t * p = (uint32_t *)free_space; p < (uint32_t *)tail; ++p)
       if( *p != 0xffffffff)
 	return false;
 
@@ -289,9 +299,9 @@ public:
   void import_all_data (const EEPROM_file_system &source)
   {
     EEPROM_file_system_node *current_node;
-    for (EEPROM_file_system_node::ID_t id = 1; id < ERASED_FLASH_BYTE; ++id)
+    for (EEPROM_file_system_node::ID_t id = 1; id < LOWEST_UNUSED_EEPROM_ID; ++id)
       {
-	current_node = source.find_last_datum ( source.head, id);
+	current_node = registry[ id];
 	if (current_node != 0)
 	  {
 	    switch (current_node->size)
@@ -326,9 +336,9 @@ public:
   }
 
 private:
-  bool compare_words_block_binary( const uint32_t *one,  const uint32_t *two, unsigned size) const
+  bool compare_words_block_binary( const uint32_t *one,  const uint32_t *two, unsigned length) const
   {
-    while( size--)
+    while( length--)
       {
       if( *one++ != *two++)
 	return false;
@@ -354,8 +364,8 @@ private:
     crc = (crc ^ (crc >> 8)) & 0xff; // fold crc into 8 bits
     return (the_node.data >> 8) == crc;
   }
-
   static bool long_node_is_consistent( EEPROM_file_system_node * work)
+
   {
     uint32_t crc = CRC16_blockcheck( (uint16_t *)work + 2, (work->size - 1) * 2);
     uint32_t protected_id_and_size = (uint32_t)(work->id) + ((work->size) << 8);
@@ -364,28 +374,12 @@ private:
     return work->data == crc;
   }
 
-  EEPROM_file_system_node * find_last_datum( EEPROM_file_system_node * start, EEPROM_file_system_node::ID_t id=ERASED_FLASH_BYTE) const
-  {
-    EEPROM_file_system_node * thisone = find_first_datum( start, id);
-    EEPROM_file_system_node * candidate=0;
-    while( thisone != 0)
-     {
-       candidate = thisone;
-       thisone = find_first_datum( candidate->next(), id);
-     }
-    return candidate;
-  }
-
-  EEPROM_file_system_node * find_end( void)
+  EEPROM_file_system_node * find_current_free_space( void)
   {
     EEPROM_file_system_node * work = head;
 
-    while( (work < free_space) && (work->size != 0xff) && (work->size != 0x00))
-      {
+    while( (work->size != 0xff) && (work->size != 0x00))
 	work = work->next();
-	if( work >= tail)
-	  return 0;
-      }
 
     return work;
   }
@@ -405,8 +399,7 @@ private:
   EEPROM_file_system_node * head;
   EEPROM_file_system_node * free_space;
   EEPROM_file_system_node * tail;
+  EEPROM_file_system_node * registry[size];
 };
-
-extern EEPROM_file_system permanent_data_file;
 
 #endif /* NAV_ALGORITHMS_PERSISTENT_DATA_FILE_H_ */

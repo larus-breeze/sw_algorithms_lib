@@ -29,7 +29,7 @@
 #include "embedded_memory.h"
 #include "NAV_tuning_parameters.h"
 #include "compass_calibrator_3D.h"
-#include "persistent_data_file.h"
+#include "abstract_EEPROM_storage.h"
 
 #if USE_HARDWARE_EEPROM	== 0
 #include "EEPROM_emulation.h"
