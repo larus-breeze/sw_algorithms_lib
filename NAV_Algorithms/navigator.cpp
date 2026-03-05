@@ -81,7 +81,7 @@ void navigator_t::update_GNSS_data (const D_GNSS_coordinates_t &coordinates)
       GNSS_negative_altitude = ZERO;
       GNSS_speed_accuracy = 1000.0f; // mark as REALLY bad
       GNSS_speed = ZERO;
-      GNSS_groundtrack = ZERO;
+      GNSS_track = ZERO;
       old_GNSS_timestamp_ms = INVALID; // mark as "invalid"
     }
   else
@@ -104,7 +104,7 @@ void navigator_t::update_GNSS_data (const D_GNSS_coordinates_t &coordinates)
 	}
       GNSS_velocity_3d = coordinates.velocity;
       GNSS_speed = SQRT( SQR( coordinates.velocity[NORTH]) + SQR( coordinates.velocity[EAST]));
-      GNSS_groundtrack = ATAN2( coordinates.velocity[EAST], coordinates.velocity[NORTH]);
+      GNSS_track = ATAN2( coordinates.velocity[EAST], coordinates.velocity[NORTH]);
       GNSS_heading = coordinates.relPosHeading;
       GNSS_negative_altitude = -coordinates.GNSS_MSL_altitude;
       GNSS_speed_accuracy = coordinates.speed_acc;
@@ -157,6 +157,7 @@ void navigator_t::report_data( state_vector_t &d)
     d.TAS 			= TAS_averager.get_output();
     d.IAS 			= IAS_averager.get_output();
     d.ground_speed		= get_GNSS_speed();
+    d.ground_track		= get_GNSS_track();
 
     d.euler			= ahrs.get_euler();
     d.q				= ahrs.get_attitude();

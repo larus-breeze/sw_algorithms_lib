@@ -57,7 +57,7 @@ public:
 	 old_GNSS_timestamp_ms(0),
 	 GNSS_velocity_3d(),
 	 GNSS_speed(0),
-	 GNSS_groundtrack(0),
+	 GNSS_track(0),
 	 GNSS_speed_accuracy(),
 	 GNSS_acceleration(),
 	 GNSS_heading(),
@@ -137,6 +137,11 @@ public:
   float get_GNSS_speed( void) const
   {
     return GNSS_speed;
+  }
+
+  float get_GNSS_track( void) const
+  {
+    return GNSS_track;
   }
 
   void initialize_QFF_density_metering( float MSL_altitude)
@@ -269,7 +274,7 @@ private:
   int32_t 	old_GNSS_timestamp_ms;
   float3vector 	GNSS_velocity_3d; 	//!< 3-dim velocity
   float		GNSS_speed; 		//!< absolute speed over ground
-  float 	GNSS_groundtrack;	//!< true ground track
+  float 	GNSS_track;		//!< true ground track
   float		GNSS_speed_accuracy; 	//!< observing gnss quality for reporting
   float3vector 	GNSS_acceleration;
   float 	GNSS_heading;
