@@ -301,7 +301,7 @@ public:
     EEPROM_file_system_node *current_node;
     for (EEPROM_file_system_node::ID_t id = 1; id < LOWEST_UNUSED_EEPROM_ID; ++id)
       {
-	current_node = registry[ id];
+	current_node = source.registry[ id];
 	if (current_node != 0)
 	  {
 	    switch (current_node->size)
