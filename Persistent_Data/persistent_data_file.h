@@ -254,7 +254,7 @@ public:
 	the_node = registry[ id];
 	if (the_node != 0)
 	  {
-	    printf ("ID: %d ", the_node->id);
+	    printf ("ID: %d sz: %d ", the_node->id, the_node->size);
 
 	    if (the_node->size == 1)
 	      printf ("val = %02x\n", the_node->data & 0xff);
