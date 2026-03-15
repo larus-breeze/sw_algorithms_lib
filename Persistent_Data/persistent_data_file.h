@@ -254,7 +254,7 @@ public:
 	the_node = registry[ id];
 	if (the_node != 0)
 	  {
-	    printf ("ID: %d ", the_node->id);
+	    printf ("ID: %d sz: %d ", the_node->id, the_node->size);
 
 	    if (the_node->size == 1)
 	      printf ("val = %02x\n", the_node->data & 0xff);
@@ -301,7 +301,7 @@ public:
     EEPROM_file_system_node *current_node;
     for (EEPROM_file_system_node::ID_t id = 1; id < LOWEST_UNUSED_EEPROM_ID; ++id)
       {
-	current_node = registry[ id];
+	current_node = source.registry[ id];
 	if (current_node != 0)
 	  {
 	    switch (current_node->size)
