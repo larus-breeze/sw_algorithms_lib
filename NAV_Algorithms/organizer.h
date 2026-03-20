@@ -90,11 +90,14 @@ public:
       {
 	update_magnetic_induction_data( c.latitude, c.longitude);
 	navigator.initialize_QFF_density_metering( c.GNSS_MSL_altitude);
+	navigator.reset_altitude ( c.GNSS_MSL_altitude);
       }
     else
+      {
 	navigator.initialize_QFF_density_metering( navigator.get_pressure_altitude() );
+	navigator.reset_altitude ( navigator.get_pressure_altitude()); // we do not have a GNSS altitude
+      }
 
-    navigator.reset_altitude ();
 
     // setup initial attitude
     float3vector acc = sensor_mapping * m.acc;

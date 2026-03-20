@@ -177,9 +177,9 @@ public:
     air_pressure_resampler_100Hz_10Hz.respond(pressure);
   }
 
-  void reset_altitude( void)
+  void reset_altitude( float GNSS_altitude)
   {
-    variometer.reset( atmosphere.get_negative_pressure_altitude(), GNSS_negative_altitude);
+    variometer.reset( atmosphere.get_negative_pressure_altitude(), - GNSS_altitude);
   }
   /**
    * @brief update pitot pressure
