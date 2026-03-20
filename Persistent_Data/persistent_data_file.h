@@ -120,7 +120,7 @@ public:
 
   EEPROM_file_system_node * find_datum( EEPROM_file_system_node::ID_t id)
   {
-    ASSERT( id > 0);
+    ASSERT( id > 0); // zero itself unused
     ASSERT( id < size);
     return registry[id]; // may be zero
   }
