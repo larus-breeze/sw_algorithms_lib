@@ -224,6 +224,7 @@ bool compass_calibrator_3D_t::calculate( void)
 
   quaternion<float> q1;
   q1.from_rotation_matrix(m);
+  q1.normalize();
   eulerangle<float > e;
   e = q1;
 
