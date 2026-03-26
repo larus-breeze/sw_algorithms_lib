@@ -100,6 +100,13 @@ public:
       registry[i] = 0;
   }
 
+  void setup_registry( void)
+  {
+    // correctly set used entries
+    for( EEPROM_file_system_node * node = head; node->id < size; node=node->next())
+      registry[node->id] = node;
+  }
+
   bool set_memory_to_existing_data( uint32_t *begin, uint32_t *behind_end)
   {
     head 	= (EEPROM_file_system_node * )begin;
@@ -109,9 +116,7 @@ public:
     for( unsigned i=0; i < size; ++i)
       registry[i] = 0;
 
-    // correctly set used entries
-    for( EEPROM_file_system_node * node = head; node->id < size; node=node->next())
-      registry[node->id] = node;
+    setup_registry();
 
     free_space = find_current_free_space();
 
@@ -335,6 +340,11 @@ public:
   unsigned get_size( void) const
   {
     return (free_space - head) * sizeof( uint32_t);
+  }
+
+  void set_free_space( void)
+  {
+    free_space = find_current_free_space();
   }
 
 private:
