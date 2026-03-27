@@ -189,3 +189,64 @@ void format_integer( char * &s, int32_t value)
     }
   *s=0;
 }
+
+inline bool is_digit(char c)
+{
+  return c >= '0' && c <= '9';
+}
+
+float my_atof(const char* s)
+{
+    int sign = 1;
+    if (*s == '+' || *s == '-')
+      {
+        if (*s == '-') sign = -1;
+        ++s;
+      }
+
+    float v = 0.0f;
+    while (is_digit(*s))
+      {
+        v = v * 10.0 + (*s - '0');
+        ++s;
+      }
+
+    if (*s == '.')
+      {
+        double p = 0.1;
+        ++s;
+        while (is_digit(*s))
+          {
+            v += (*s - '0') * p;
+            p *= 0.1;
+            ++s;
+          }
+      }
+
+    if (*s == 'e' || *s == 'E')
+      {
+            ++s;
+            int es = 1;
+            if (*s == '+' || *s == '-')
+              {
+                if (*s == '-') es = -1;
+                ++s;
+              }
+
+            int e = 0;
+            while (is_digit(*s))
+              {
+                e = e * 10 + (*s - '0');
+                ++s;
+              }
+
+            float scale = 1.0f;
+            e *= es;
+            while (e > 0) { scale *= 10.0; --e; }
+            while (e < 0) { scale *= 0.1; ++e; }
+            v *= scale;
+        }
+
+    return sign * v;
+}
+

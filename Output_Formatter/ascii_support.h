@@ -29,6 +29,7 @@
 
 char * my_itoa( char * target, int value);
 char * my_ftoa( char * target, float value);
+float my_atof(const char* s);
 
 #ifdef __cplusplus
 
