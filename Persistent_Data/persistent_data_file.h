@@ -202,9 +202,9 @@ public:
     return node;
   }
 
-  bool store_data( EEPROM_file_system_node::ID_t id, const uint8_t data)
+  bool store_data( EEPROM_file_system_node::ID_t id, const uint8_t data, bool synchronized = true)
   {
-    return store_data( id, EEPROM_file_system_node::DIRECT_8_BIT, &data);
+    return store_data( id, EEPROM_file_system_node::DIRECT_8_BIT, &data, synchronized);
   }
 
   bool retrieve_data( EEPROM_file_system_node::ID_t id, unsigned data_size, void * target)
@@ -305,7 +305,7 @@ public:
     return true;
   }
 
-  void import_all_data (const EEPROM_file_system &source, bool synchronous = true)
+  void import_all_data (const EEPROM_file_system &source, bool synchronized = true)
   {
     EEPROM_file_system_node *current_node;
     for (EEPROM_file_system_node::ID_t id = 1; id < LOWEST_UNUSED_EEPROM_ID; ++id)
@@ -321,13 +321,13 @@ public:
 	      case 1: // direct data node
 		if (not short_node_is_consistent (*current_node))
 		  continue;
-		store_data (current_node->id, (uint8_t)(current_node->data & 0xff, synchronous));
+		store_data (current_node->id, (uint8_t)(current_node->data & 0xff), synchronized);
 		break;
 	      default: // data file
 		if (not long_node_is_consistent (current_node))
 		  continue;
 		store_data (current_node->id, current_node->size-1,
-			    (void*) (current_node + 1), synchronous);
+			    (void*) (current_node + 1), synchronized);
 		break;
 	      }
 	  }
