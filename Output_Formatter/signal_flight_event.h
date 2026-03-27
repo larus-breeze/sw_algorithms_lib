@@ -3,8 +3,6 @@
 
 #include "FreeRTOS_wrapper.h"
 
-extern Queue <uint32_t> flight_event_queue;
-
 enum event
 {
   NO_EVENT,
@@ -16,9 +14,6 @@ enum event
   EEPROM_CONFIGURATION_CHANGED,
 };
 
-inline void signal_event( uint32_t event)
-{
-  flight_event_queue.send_from_ISR(event);
-}
+void signal_logger_event( uint32_t event);
 
 #endif /* SIGNAL_FLIGHT_EVENT_H_ */
