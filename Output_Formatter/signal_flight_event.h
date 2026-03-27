@@ -1,8 +1,6 @@
 #ifndef SIGNAL_FLIGHT_EVENT_H_
 #define SIGNAL_FLIGHT_EVENT_H_
 
-#include "FreeRTOS_wrapper.h"
-
 enum event
 {
   NO_EVENT,
