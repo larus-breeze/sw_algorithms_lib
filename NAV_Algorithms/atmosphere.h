@@ -30,6 +30,7 @@
 #include <air_density_observer.h>
 #include "NAV_tuning_parameters.h"
 #include "system_configuration.h"
+#include "signal_flight_event.h"
 
 #define RECIP_STD_DENSITY_TIMES_2 1.632f
 
@@ -140,6 +141,8 @@ public:
 	    first_result = result; // remember and wait for better statistics
 	    // honorize trend for the moment
 	    density_correction = (1.0f + result.density_correction) * 0.5f;
+
+	    signal_logger_event( AIR_DENSITY_MODIFIED | 0x100);
 	    break;
 	  case 2:
 	    // use variance-weighed sum of both measurements
@@ -148,12 +151,15 @@ public:
 		+ result.density_correction / result.density_variance)
 		/ (1.0f / first_result.density_variance
 		    + 1.0f / result.density_variance);
+
+	    signal_logger_event( AIR_DENSITY_MODIFIED | 0x200);
 	    break;
 	  default:
 	    // use IIR-filtered weighed sum of measurements
 	    density_correction = density_factor_weighed_sum / weight_sum;
-	    break;
 
+	    signal_logger_event( AIR_DENSITY_MODIFIED | 0x300);
+	    break;
 	  }
       }
   }
