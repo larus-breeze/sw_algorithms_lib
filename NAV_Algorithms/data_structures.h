@@ -68,7 +68,7 @@ typedef struct
   float vario_average;			//!< average variometer output
   float3vector wind;			//!< instant wind
   float3vector wind_average;		//!< average wind
-  uint32_t flight_mode;			//!< GROUND, STRAIGHT, TRANSITION, CIRCLING
+  float flight_mode;			//!< GROUND, STRAIGHT, TRANSITION, CIRCLING
 
   quaternion<float> q;			//!< Attitude quaternion
   eulerangle<float> euler;		//!< Attitude euler angles
