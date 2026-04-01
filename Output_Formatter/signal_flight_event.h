@@ -10,7 +10,8 @@ enum event
   AIR_DENSITY_MODIFIED,
 
   EEPROM_CONFIGURATION_CHANGED,
-  CAN_COMMAND_RECEIVED
+  CAN_COMMAND_RECEIVED,
+  DEBUGGER_DATA
 };
 
 void signal_logger_event( uint32_t event);
