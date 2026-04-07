@@ -321,7 +321,7 @@ void format_PLARS ( float value, PLARS_TYPES option, char * &p)
   enum PLARS_TYPES type = option;
 
   switch (type) {
-    case MC:   //MC MacCready m/s (0.0 - 9.9)
+    case MC:   //MC MacCready m/s (0.0 - 5.0)
       append_string( p, PLARS_MC);
       to_ascii_n_decimals( value, 1, p);
       break;
@@ -336,9 +336,9 @@ void format_PLARS ( float value, PLARS_TYPES option, char * &p)
       append_string( p, PLARS_BUGS);
       to_ascii_n_decimals( value, 2, p);
         break;
-    case QNH:  //QNH QNH in hPa
+    case QNH:  //QNH in Pa
       append_string( p, PLARS_QNH);
-      to_ascii_n_decimals( value, 2, p);
+      to_ascii_n_decimals( value  * 0.01f, 2, p); // Pa -> hPa
         break;
     case CIR: //1 == Circling or 0 == Cruising
       append_string( p, PLARS_CIR);
