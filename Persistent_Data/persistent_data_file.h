@@ -40,7 +40,7 @@
 #define ERASED_FLASH_BYTE 0xff
 
 //!< generic call to write permanent data
-void FLASH_write( uint32_t * dest, uint32_t * source, unsigned n_words);
+void FLASH_write( uint32_t * dest, uint32_t * source, unsigned n_words, bool synchronized = true);
 
 class EEPROM_file_system_node
 {
@@ -100,6 +100,13 @@ public:
       registry[i] = 0;
   }
 
+  void setup_registry( void)
+  {
+    // correctly set used entries
+    for( EEPROM_file_system_node * node = head; node->id < size; node=node->next())
+      registry[node->id] = node;
+  }
+
   bool set_memory_to_existing_data( uint32_t *begin, uint32_t *behind_end)
   {
     head 	= (EEPROM_file_system_node * )begin;
@@ -109,9 +116,7 @@ public:
     for( unsigned i=0; i < size; ++i)
       registry[i] = 0;
 
-    // correctly set used entries
-    for( EEPROM_file_system_node * node = head; node->id < size; node=node->next())
-      registry[node->id] = node;
+    setup_registry();
 
     free_space = find_current_free_space();
 
@@ -120,8 +125,8 @@ public:
 
   EEPROM_file_system_node * find_datum( EEPROM_file_system_node::ID_t id)
   {
-    ASSERT( id > 0); // zero itself unused
-    ASSERT( id < size);
+    assert( id > 0); // zero itself unused
+    assert( id < size);
     return registry[id]; // may be zero
   }
 
@@ -140,9 +145,11 @@ public:
       return ( candidate->data == crc) ? candidate : 0;
   }
 
-  EEPROM_file_system_node * store_data( EEPROM_file_system_node::ID_t id, unsigned data_size_words, const void * data)
+  EEPROM_file_system_node * store_data( EEPROM_file_system_node::ID_t id, unsigned data_size_words, const void * data, bool synchronized = true)
   {
-    LOCK_SECTION();
+    if( synchronized)
+      LOCK_SECTION();
+
 
     EEPROM_file_system_node * node;
 
@@ -178,7 +185,7 @@ public:
 	uint16_t checked_datum = *(uint8_t *)data; 	// take only 8 bits
 	temp_node.data = check_and_pack_id_len_and_data( temp_node, checked_datum);
 
-	FLASH_write( (uint32_t *)node, (uint32_t *)&temp_node, 1);
+	FLASH_write( (uint32_t *)node, (uint32_t *)&temp_node, 1, synchronized);
 	registry[id] = node;
       }
     else // : bunch of 32bit data
@@ -186,8 +193,8 @@ public:
 	uint16_t crc = CRC16_blockcheck( (uint16_t *)data,  data_size_words * 2);
 	uint16_t protected_id_and_size = temp_node.id + ((temp_node.size) << 8);
 	temp_node.data = CRC16( protected_id_and_size, crc);
-	FLASH_write( (uint32_t *)node, (uint32_t *)&temp_node, 1);
-	FLASH_write( (uint32_t *)(node + 1), (uint32_t *)data, data_size_words);
+	FLASH_write( (uint32_t *)node, (uint32_t *)&temp_node, 1, synchronized);
+	FLASH_write( (uint32_t *)(node + 1), (uint32_t *)data, data_size_words, synchronized);
 	registry[id] = node;
       }
 
@@ -195,9 +202,9 @@ public:
     return node;
   }
 
-  bool store_data( EEPROM_file_system_node::ID_t id, const uint8_t data)
+  bool store_data( EEPROM_file_system_node::ID_t id, const uint8_t data, bool synchronized = true)
   {
-    return store_data( id, EEPROM_file_system_node::DIRECT_8_BIT, &data);
+    return store_data( id, EEPROM_file_system_node::DIRECT_8_BIT, &data, synchronized);
   }
 
   bool retrieve_data( EEPROM_file_system_node::ID_t id, unsigned data_size, void * target)
@@ -298,7 +305,7 @@ public:
     return true;
   }
 
-  void import_all_data (const EEPROM_file_system &source)
+  void import_all_data (const EEPROM_file_system &source, bool synchronized = true)
   {
     EEPROM_file_system_node *current_node;
     for (EEPROM_file_system_node::ID_t id = 1; id < LOWEST_UNUSED_EEPROM_ID; ++id)
@@ -314,13 +321,13 @@ public:
 	      case 1: // direct data node
 		if (not short_node_is_consistent (*current_node))
 		  continue;
-		store_data (current_node->id, (uint8_t)(current_node->data & 0xff));
+		store_data (current_node->id, (uint8_t)(current_node->data & 0xff), synchronized);
 		break;
 	      default: // data file
 		if (not long_node_is_consistent (current_node))
 		  continue;
 		store_data (current_node->id, current_node->size-1,
-			    (void*) (current_node + 1));
+			    (void*) (current_node + 1), synchronized);
 		break;
 	      }
 	  }
@@ -335,6 +342,11 @@ public:
   unsigned get_size( void) const
   {
     return (free_space - head) * sizeof( uint32_t);
+  }
+
+  void set_free_space( void)
+  {
+    free_space = find_current_free_space();
   }
 
 private:

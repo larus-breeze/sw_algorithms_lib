@@ -43,12 +43,17 @@ public:
       magnetic_induction_update_counter(0)
   {}
 
-//! initialization of the AHRS taking configuration data
-  void initialize_before_measurement( void)
+  void tune_pressure_gauges( void)
   {
     pitot_offset= configuration (PITOT_OFFSET);
     pitot_span 	= configuration (PITOT_SPAN);
     QNH_offset	= configuration (QNH_OFFSET);
+  }
+
+//! initialization of the AHRS taking configuration data
+  void initialize_before_measurement( void)
+  {
+    tune_pressure_gauges();
 
     quaternion<float> q;
     q.from_euler (configuration (SENS_TILT_ROLL),
@@ -57,6 +62,11 @@ public:
     q.get_rotation_matrix (sensor_mapping);
 
     setup_compass_calibrator_3d();
+    navigator.tune();
+  }
+
+  void tune_filters( void)
+  {
     navigator.tune();
   }
 

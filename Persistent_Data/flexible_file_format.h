@@ -10,6 +10,7 @@
     EEPROM_FILE_RECORD = 12,	//!< single persistent EEPROM data record (on any change)
     RUNTIME_EVENT_MARKER = 13,	//!< significant event and optional explanation value
     SENSOR_STATUS = 14,		//!< 32 bits hardware- and software status
+    FLIGHT_EVENT = 15,
 
     BASIC_SENSOR_DATA = 20, 	//!< IMU-data, pressures, temperature
     MAGNETOMETER_DATA = 21,	//!< external magnetometer readings
