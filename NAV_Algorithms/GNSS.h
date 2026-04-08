@@ -156,6 +156,11 @@ typedef struct
 
   float3vector relPosNED;	//!< vector from primary to secondary GNSS antenna
   float relPosHeading;		//!< heading from D-GNSS
+  float relPosAccN;		//!< D-GNSS baseline accuracy North / m
+  float relPosAccE;		//!< D-GNSS baseline accuracy East / m
+  float relPosAccD;		//!< D-GNSS baseline accuracy Down / m
+  float relPosAccLen;		//!< D-GNSS baseline length accuracy / m
+  float relPosHeadingAcc;	//!< D-GNSS heading accuracy / rad
 } D_GNSS_coordinates_t;
 
 //! Contains all important data from the GNSS

@@ -57,6 +57,8 @@ enum CAN_ID_SENSOR
   CAN_Id_GPS_Alt	= 0x143,    //!< float MSL altitude, float geo separation
   CAN_Id_GPS_Trk_Spd	= 0x144,    //!< float ground track, float groundspeed / m/s
   CAN_Id_GPS_Sats	= 0x145,    //!< uin8_t No of Sats, (uint8_t)bool SAT FIX type
+  CAN_Id_GPS_Accuracy	= 0x146,    //!< float horizontal accuracy length / m, float heading accuracy / rad
+  CAN_Id_GPS_Heading	= 0x147,    //!< float D-GNSS heading / rad
 
   CAN_Id_Heartbeat_Sens	= 0x520,
   CAN_Id_Identify_Sensor = 0x521,
@@ -181,6 +183,17 @@ void CAN_output ( const measurement_data_t &m, const D_GNSS_coordinates_t &c, st
   p.dlc=2;
   p.data_b[0] = c.SATS_number;
   p.data_b[1] = c.sat_fix_type;
+  CAN_send(p, 1);
+
+  p.id=CAN_Id_GPS_Accuracy;
+  p.dlc=8;
+  p.data_f[0] = c.relPosAccLen;
+  p.data_f[1] = c.relPosHeadingAcc;
+  CAN_send(p, 1);
+
+  p.id=CAN_Id_GPS_Heading;
+  p.dlc=4;
+  p.data_f[0] = c.relPosHeading;
   CAN_send(p, 1);
 
   p.id=CAN_Id_SystemState;
