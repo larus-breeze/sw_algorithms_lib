@@ -33,6 +33,9 @@ void navigator_t::update_at_100Hz (
     const float3vector &gyro,
     const float3vector &x_mag, bool x_mag_valid)
 {
+  body_acceleration = acc;
+  body_gyro = gyro;
+
   ahrs.update(
       gyro, acc,
       mag,
@@ -201,6 +204,9 @@ void navigator_t::report_data( state_vector_t &d)
     d.q_magnetic		= ahrs_magnetic.get_attitude();
     d.nav_acceleration_mag 	= ahrs_magnetic.get_nav_acceleration();
     d.nav_induction_mag 	= ahrs_magnetic.get_nav_induction();
+
+    d.body_acc 			= get_body_acceleration();
+    d.body_gyro 		= get_body_gyro();
 
     d.HeadingDifferenceAhrsDgnss = ahrs.getHeadingDifferenceAhrsDgnss();
     d.instant_wind		= wind_observer.get_measurement();

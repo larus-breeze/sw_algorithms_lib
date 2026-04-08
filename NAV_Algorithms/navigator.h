@@ -42,7 +42,9 @@ class navigator_t
 {
 public:
   navigator_t (void)
-	:ahrs (0.01f),
+      : body_acceleration(float3vector()),
+	body_gyro(float3vector()),
+	ahrs (0.01f),
 #if DEVELOPMENT_ADDITIONS
 	 ahrs_magnetic (0.01f),
 #endif
@@ -256,7 +258,20 @@ public:
     ahrs.write_calibration_into_EEPROM();
   }
 
+  const float3vector & get_body_acceleration( void) const
+  {
+    return body_acceleration;
+  }
+
+  const float3vector & get_body_gyro( void) const
+  {
+    return body_gyro;
+  }
+
+
 private:
+  float3vector body_acceleration;
+  float3vector body_gyro;
   AHRS_type	ahrs;
 #if DEVELOPMENT_ADDITIONS
   AHRS_type	ahrs_magnetic;
