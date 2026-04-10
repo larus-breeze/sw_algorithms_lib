@@ -57,7 +57,6 @@ AHRS_type::attitude_setup (
   down.normalize ();
 
   north = calibrated_induction; // deviation neglected here
-  north.negate();
   north.normalize ();
 
   // setup world coordinate system
