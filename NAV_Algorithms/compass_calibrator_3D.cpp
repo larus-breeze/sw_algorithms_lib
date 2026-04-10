@@ -262,6 +262,7 @@ bool compass_calibrator_3D_t::calculate( void)
 
   quaternion<float> q2;
   q2.from_rotation_matrix( ptm);
+  q2.normalize();
   e = q2;
   printf("Residual rotation = %f %f %f Degrees\n\n",  e.roll * 180/M_PI, e.pitch * 180/M_PI, e.yaw * 180/M_PI);
 
@@ -283,6 +284,7 @@ bool compass_calibrator_3D_t::calculate( void)
 
   quaternion<float> q3;
   q3.from_rotation_matrix( upsm);
+  q3.normalize();
   e = q3;
   printf("Residual rotation = %f %f %f Degrees\n\n",  e.roll * 180/M_PI, e.pitch * 180/M_PI, e.yaw * 180/M_PI);
 

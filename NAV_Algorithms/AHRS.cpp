@@ -177,7 +177,7 @@ void AHRS_type::update (
 	  heading_source = D_GNSS;
 	  heading_source_changed = true;
 	}
-      update_diff_GNSS (gyro, acc, mag, external_mag, external_mag_valid, GNSS_acceleration, GNSS_heading);
+      update_diff_GNSS (gyro, acc, GNSS_acceleration, GNSS_heading);
     }
   else
     {
@@ -186,7 +186,8 @@ void AHRS_type::update (
 	  heading_source = MAGNETIC;
 	  heading_source_changed = true;
 	}
-      update_compass(gyro, acc, mag,  external_mag, external_mag_valid, GNSS_acceleration);
+      update_compass(gyro, acc, GNSS_acceleration);
+//      update_experimental(gyro, acc, GNSS_acceleration);
     }
 }
 
@@ -230,9 +231,6 @@ AHRS_type::update_attitude ( const float3vector &acc,
 void AHRS_type::update_diff_GNSS (
   const float3vector &gyro,
   const float3vector &acc,
-  const float3vector &measured_induction,
-  const float3vector &measured_external_induction,
-  bool ext_induction_valid,
   const float3vector &GNSS_acceleration,
   float GNSS_heading)
 {
@@ -315,9 +313,6 @@ void AHRS_type::update_diff_GNSS (
 void AHRS_type::update_compass (
   const float3vector &gyro,
   const float3vector &acc,
-  const float3vector &induction,
-  const float3vector &external_induction,
-  bool external_mag_valid,
   const float3vector &GNSS_acceleration)
 {
   float3vector nav_acceleration = body2nav * acc;
@@ -392,6 +387,47 @@ void AHRS_type::update_compass (
 #endif
 
   gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
+  gyro_correction_power = SQR( gyro_correction[0]) + SQR( gyro_correction[1]) +SQR( gyro_correction[2]);
+
+  // feed quaternion update with corrected sensor readings
+  update_attitude (acc, gyro + gyro_correction, body_induction);
+}
+
+/**
+ * @brief  update attitude from IMU data and magnetometer
+ */
+void AHRS_type::update_experimental (
+  const float3vector &gyro,
+  const float3vector &acc,
+  const float3vector &GNSS_acceleration)
+{
+  float3vector nav_acceleration = body2nav * acc;
+  float3vector nav_induction = body2nav * body_induction;
+
+  nav_acceleration = GNSS_delay_compensation.respond(nav_acceleration);
+
+  float3vector mag_difference = expected_nav_induction - nav_induction;
+
+  float3vector acc_difference;
+  acc_difference[ NORTH] = GNSS_acceleration[NORTH] - nav_acceleration[NORTH];
+  acc_difference[ EAST] =  GNSS_acceleration[EAST] - nav_acceleration[EAST];
+
+  float3vector gravity;
+  gravity[DOWN] = -9.81f;
+  nav_correction = gravity.vector_multiply(acc_difference);
+  nav_correction = nav_correction * 0.102f; // divide by 9.81
+  nav_correction += expected_nav_induction.vector_multiply(mag_difference);
+
+  cross_acc_correction = // vector cross product GNSS-acc und INS-acc -> heading error
+	   + nav_acceleration[NORTH] * GNSS_acceleration[EAST]
+	   - nav_acceleration[EAST]  * GNSS_acceleration[NORTH];
+  nav_correction[DOWN] += cross_acc_correction * 0.005;
+
+
+  gyro_correction = body2nav.reverse_map (nav_correction);
+  gyro_integrator += gyro_correction; // update integrator
+
+  gyro_correction = gyro_correction * 0.3f + gyro_integrator * 0.00004f;
   gyro_correction_power = SQR( gyro_correction[0]) + SQR( gyro_correction[1]) +SQR( gyro_correction[2]);
 
   // feed quaternion update with corrected sensor readings

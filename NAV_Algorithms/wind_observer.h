@@ -35,12 +35,12 @@
 class wind_oberserver_t
 {
 public:
-  wind_oberserver_t()
+  wind_oberserver_t(float wind_average_TC)
     :wind_resampler_100_10Hz(0.04f),
      instant_wind_averager( configuration( WIND_TC)  < 0.25f
      ? configuration( WIND_TC)
      : (FAST_SAMPLING_TIME / configuration( WIND_TC) ) ),
-    wind_average_observer( SLOW_SAMPLING_TIME / 30.0f), // hard-coded, not changeable
+    wind_average_observer( wind_average_TC), // hard-coded, not changeable
     relative_wind_observer( configuration( MEAN_WIND_TC) < 0.25f
      ? configuration( MEAN_WIND_TC) * 10.0f
      : (SLOW_SAMPLING_TIME / configuration( MEAN_WIND_TC) ) ),

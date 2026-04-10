@@ -202,21 +202,21 @@ public:
   }
 
   //! update the AHRS taking magnetic compass data as a reference
+  void update_experimental (
+    const float3vector &gyro,
+    const float3vector &acc,
+    const float3vector &GNSS_acceleration);
+
+  //! update the AHRS taking magnetic compass data as a reference
   void update_compass (
     const float3vector &gyro,
     const float3vector &acc,
-    const float3vector &induction,
-    const float3vector &external_induction,
-    bool external_mag_valid,
     const float3vector &GNSS_acceleration);
 
   //! update the AHRS taking D-GNSS compass data as a reference
   void update_diff_GNSS (
       const float3vector &gyro,
       const float3vector &acc,
-      const float3vector &induction,
-      const float3vector &external_induction,
-      bool external_induction_valid,
       const float3vector &GNSS_acceleration,
       float GNSS_heading);
 

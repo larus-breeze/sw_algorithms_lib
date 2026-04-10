@@ -42,13 +42,16 @@ class navigator_t
 {
 public:
   navigator_t (void)
-	:ahrs (0.01f),
+      : body_acceleration(float3vector()),
+	body_gyro(float3vector()),
+	ahrs (0.01f),
 #if DEVELOPMENT_ADDITIONS
 	 ahrs_magnetic (0.01f),
 #endif
 	 atmosphere (101325.0f),
 	 variometer(),
-	 wind_observer(),
+	 internal_wind_observer( SLOW_SAMPLING_TIME / 30.0f),
+	 user_wind_observer( SLOW_SAMPLING_TIME / configuration( MEAN_WIND_TC) ),
 	 airborne_detector(),
 	 air_pressure_resampler_100Hz_10Hz(0.025f), // = 2.5 Hz @ 100Hz
 	 pitot_pressure(0.0f),
@@ -73,7 +76,7 @@ public:
   {
     variometer.tune();
     vario_integrator.tune( FAST_SAMPLING_TIME / configuration( VARIO_INT_TC) );
-    wind_observer.tune();
+    user_wind_observer.tune();
     ahrs.tune();
 #if DEVELOPMENT_ADDITIONS
     ahrs_magnetic.tune();
@@ -256,14 +259,28 @@ public:
     ahrs.write_calibration_into_EEPROM();
   }
 
+  const float3vector & get_body_acceleration( void) const
+  {
+    return body_acceleration;
+  }
+
+  const float3vector & get_body_gyro( void) const
+  {
+    return body_gyro;
+  }
+
+
 private:
+  float3vector body_acceleration;
+  float3vector body_gyro;
   AHRS_type	ahrs;
 #if DEVELOPMENT_ADDITIONS
   AHRS_type	ahrs_magnetic;
 #endif
   atmosphere_t 	atmosphere;
   variometer_t 	variometer;
-  wind_oberserver_t wind_observer;
+  wind_oberserver_t internal_wind_observer;
+  wind_oberserver_t user_wind_observer;
   airborne_detector_t	airborne_detector;
 
   pt2<float,float> air_pressure_resampler_100Hz_10Hz;
