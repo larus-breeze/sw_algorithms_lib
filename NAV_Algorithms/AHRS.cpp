@@ -186,8 +186,8 @@ void AHRS_type::update (
 	  heading_source = MAGNETIC;
 	  heading_source_changed = true;
 	}
-//      update_compass(gyro, acc, GNSS_acceleration);
-      update_experimental(gyro, acc, GNSS_acceleration);
+      update_compass(gyro, acc, GNSS_acceleration);
+//      update_experimental(gyro, acc, GNSS_acceleration);
     }
 }
 
@@ -417,6 +417,12 @@ void AHRS_type::update_experimental (
   nav_correction = gravity.vector_multiply(acc_difference);
   nav_correction = nav_correction * 0.102f; // divide by 9.81
   nav_correction += expected_nav_induction.vector_multiply(mag_difference);
+
+  cross_acc_correction = // vector cross product GNSS-acc und INS-acc -> heading error
+	   + nav_acceleration[NORTH] * GNSS_acceleration[EAST]
+	   - nav_acceleration[EAST]  * GNSS_acceleration[NORTH];
+  nav_correction[DOWN] += cross_acc_correction * 0.005;
+
 
   gyro_correction = body2nav.reverse_map (nav_correction);
   gyro_integrator += gyro_correction; // update integrator
