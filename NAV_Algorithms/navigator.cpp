@@ -48,9 +48,6 @@ void navigator_t::update_at_100Hz (
 #if DEVELOPMENT_ADDITIONS
   ahrs_magnetic.update_compass(
       gyro, acc,
-      mag,
-      x_mag,
-      x_mag_valid,
       GNSS_acceleration);
 #endif
   float3vector heading_vector;
