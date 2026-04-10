@@ -50,7 +50,8 @@ public:
 #endif
 	 atmosphere (101325.0f),
 	 variometer(),
-	 wind_observer(),
+	 internal_wind_observer( SLOW_SAMPLING_TIME / 30.0f),
+	 user_wind_observer( SLOW_SAMPLING_TIME / configuration( MEAN_WIND_TC) ),
 	 airborne_detector(),
 	 air_pressure_resampler_100Hz_10Hz(0.025f), // = 2.5 Hz @ 100Hz
 	 pitot_pressure(0.0f),
@@ -75,7 +76,7 @@ public:
   {
     variometer.tune();
     vario_integrator.tune( FAST_SAMPLING_TIME / configuration( VARIO_INT_TC) );
-    wind_observer.tune();
+    user_wind_observer.tune();
     ahrs.tune();
 #if DEVELOPMENT_ADDITIONS
     ahrs_magnetic.tune();
@@ -278,7 +279,8 @@ private:
 #endif
   atmosphere_t 	atmosphere;
   variometer_t 	variometer;
-  wind_oberserver_t wind_observer;
+  wind_oberserver_t internal_wind_observer;
+  wind_oberserver_t user_wind_observer;
   airborne_detector_t	airborne_detector;
 
   pt2<float,float> air_pressure_resampler_100Hz_10Hz;

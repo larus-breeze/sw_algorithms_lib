@@ -389,7 +389,7 @@ void format_NMEA_string_fast( const state_vector_t &output_data, string_buffer_t
 		 next);
 
   // instant wind
-  format_PLARW (output_data.wind[NORTH], output_data.wind[EAST], 'I', next);
+  format_PLARW (output_data.user_wind[NORTH], output_data.user_wind[EAST], 'I', next);
 
 //  assert(   next - NMEA_buf.string < string_buffer_t::BUFLEN);
   NMEA_buf.length = next - NMEA_buf.string;
@@ -413,7 +413,7 @@ void format_NMEA_string_slow( const measurement_data_t &m, const D_GNSS_coordina
   format_PLARD( output_data.air_density, 'M', next);
 
   // average wind
-  format_PLARW (output_data.wind_average[NORTH], output_data.wind_average[EAST], 'A', next);
+  format_PLARW (output_data.user_wind_average[NORTH], output_data.user_wind_average[EAST], 'A', next);
 
 //  assert(   next - NMEA_buf.string < string_buffer_t::BUFLEN);
   NMEA_buf.length = next - NMEA_buf.string;

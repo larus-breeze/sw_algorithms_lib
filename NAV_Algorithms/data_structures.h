@@ -66,8 +66,8 @@ typedef struct
   float ground_track; 			//!< ground track / rad
   float vario;				//!< variometer output
   float vario_average;			//!< average variometer output
-  float3vector wind;			//!< instant wind
-  float3vector wind_average;		//!< average wind
+  float3vector user_wind;			//!< instant wind
+  float3vector user_wind_average;		//!< average wind
   float flight_mode;			//!< GROUND, STRAIGHT, TRANSITION, CIRCLING
 
   quaternion<float> q;			//!< Attitude quaternion

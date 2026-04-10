@@ -58,7 +58,8 @@ void navigator_t::update_at_100Hz (
   heading_vector[EAST]  = ahrs.get_east  ();
   heading_vector[DOWN]  = ahrs.get_down  ();
 
-  wind_observer.process_at_100_Hz( GNSS_velocity_3d - heading_vector * TAS);
+  internal_wind_observer.process_at_100_Hz( GNSS_velocity_3d - heading_vector * TAS);
+  user_wind_observer.process_at_100_Hz( GNSS_velocity_3d - heading_vector * TAS);
 
   variometer.update_at_100Hz (
       GNSS_velocity_3d,
@@ -67,7 +68,7 @@ void navigator_t::update_at_100Hz (
       GNSS_negative_altitude,
       atmosphere.get_negative_pressure_altitude(),
       IAS,
-      wind_observer.get_speed_compensator_wind(),
+      internal_wind_observer.get_speed_compensator_wind(),
       (GNSS_fix_type != 0)
       );
 }
@@ -129,7 +130,8 @@ bool navigator_t::update_at_10Hz ()
 
   if( GNSS_fix_type > 0)
     {
-      wind_observer.process_at_10_Hz( ahrs);
+      internal_wind_observer.process_at_10_Hz( ahrs);
+      user_wind_observer.process_at_10_Hz( ahrs);
 
       unsigned airborne_criteria_fulfilled = 0;
       if( abs( variometer.get_speed_compensation_GNSS()) > AIRBORNE_TRIGGER_SPEED_COMP)
@@ -168,8 +170,8 @@ void navigator_t::report_data( state_vector_t &d)
     d.vario			= variometer.get_active_vario(); // todo pick one vario
     d.vario_average		= vario_integrator.get_output();
 
-    d.wind 			= wind_observer.get_instant_value();
-    d.wind_average		= wind_observer.get_average_value();
+    d.user_wind 		= user_wind_observer.get_instant_value();
+    d.user_wind_average		= user_wind_observer.get_average_value();
 
     d.effective_vertical_acceleration
 				= variometer.get_effective_vertical_acceleration();
@@ -209,16 +211,16 @@ void navigator_t::report_data( state_vector_t &d)
     d.body_gyro 		= get_body_gyro();
 
     d.HeadingDifferenceAhrsDgnss = ahrs.getHeadingDifferenceAhrsDgnss();
-    d.instant_wind		= wind_observer.get_measurement();
-    d.headwind 			= wind_observer.get_headwind();
-    d.crosswind			= wind_observer.get_crosswind();
-    d.inst_wind_corrected_N	= wind_observer.get_corrected_wind()[NORTH];
-    d.inst_wind_corrected_E	= wind_observer.get_corrected_wind()[EAST];
+    d.instant_wind		= internal_wind_observer.get_measurement();
+    d.headwind 			= internal_wind_observer.get_headwind();
+    d.crosswind			= internal_wind_observer.get_crosswind();
+    d.inst_wind_corrected_N	= internal_wind_observer.get_corrected_wind()[NORTH];
+    d.inst_wind_corrected_E	= internal_wind_observer.get_corrected_wind()[EAST];
     for( unsigned i=0; i<3; ++i)
       d.speed_compensation[i]  	= variometer.get_speed_compensation(i);
     d.cross_acc_correction 	= ahrs_magnetic.get_cross_acc_correction();
-    d.vario_wind_N		= wind_observer.get_speed_compensator_wind()[NORTH];
-    d.vario_wind_E		= wind_observer.get_speed_compensator_wind()[EAST];
+    d.vario_wind_N		= internal_wind_observer.get_speed_compensator_wind()[NORTH];
+    d.vario_wind_E		= internal_wind_observer.get_speed_compensator_wind()[EAST];
     d.body_induction		= ahrs.getBodyInduction();
     d.body_induction_error	= ahrs.getBodyInductionError();
     d.gyro_correction_power	= ahrs.getGyro_correction_Power();

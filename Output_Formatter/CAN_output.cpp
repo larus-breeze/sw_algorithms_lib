@@ -93,21 +93,21 @@ void CAN_output ( const measurement_data_t &m, const D_GNSS_coordinates_t &c, st
   CAN_send(p, 1);
 
   p.id=CAN_Id_Wind;
-  float direction = ATAN2( - x.wind[EAST], - x.wind[NORTH]);
+  float direction = ATAN2( - x.user_wind[EAST], - x.user_wind[NORTH]);
   // map into 0 .. 2 * pi
   if( direction < 0)
     direction += 2.0f * M_PI_F;
   p.data_f[0] = direction;
-  p.data_f[1] = x.wind.abs();
+  p.data_f[1] = x.user_wind.abs();
   CAN_send(p, 1);
 
   p.id=CAN_Id_Wind_Average;
-  direction = ATAN2( - x.wind_average[EAST], - x.wind_average[NORTH]);
+  direction = ATAN2( - x.user_wind_average[EAST], - x.user_wind_average[NORTH]);
   // map into 0 .. 2 * pi
   if( direction < 0)
     direction += 2.0f * M_PI_F;
   p.data_f[0] = direction;
-  p.data_f[1] = x.wind_average.abs();
+  p.data_f[1] = x.user_wind_average.abs();
   CAN_send(p, 1);
 
   p.id=CAN_Id_Atmosphere;
