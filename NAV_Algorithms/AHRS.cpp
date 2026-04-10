@@ -73,6 +73,11 @@ AHRS_type::attitude_setup (
 
   float3matrix coordinates ( fcoordinates);
   attitude.from_rotation_matrix ( coordinates);
+
+  quaternion<float>decl_comp;
+  decl_comp.from_euler( ZERO, ZERO, ATAN2( expected_nav_induction[EAST],expected_nav_induction[NORTH]));
+  attitude = attitude * decl_comp;
+
   attitude.get_rotation_matrix (body2nav);
   euler = attitude;
 }
