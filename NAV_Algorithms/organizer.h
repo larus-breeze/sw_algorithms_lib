@@ -111,7 +111,7 @@ public:
 
     // setup initial attitude
     float3vector acc = sensor_mapping * m.acc;
-    float3vector mag = sensor_mapping * m.mag;
+    float3vector mag = m.mag; // coordinate rotation sensor->body done within calibration !
 
     if ( c.sat_fix_type & SAT_HEADING)
       {
