@@ -39,7 +39,8 @@ bool compass_calibrator_3D_t::learn (
     const float3vector &expected_induction,
     float present_heading,
     bool turning_right,
-    float error_margin)
+    float error_margin,
+    float mag_disturbance)
 {
   int sector_index;
   if( present_heading < ZERO)
@@ -59,7 +60,10 @@ bool compass_calibrator_3D_t::learn (
     return false; // we have collected more precise data for this observation earlier
 
   if( heading_sector_error[sector_index] > 1e19f) // this sector has not been written before
-    ++populated_sectors;
+    {
+      ++populated_sectors;
+      mag_disturbance_sum += mag_disturbance;
+    }
 
   // so we take it and remember the precision
   heading_sector_error[sector_index] = error_margin;
@@ -171,8 +175,13 @@ bool compass_calibrator_3D_t::calculate( void)
 	  return false;
 	}
 
-      if( ( calibration_status == INITIAL) || ( calibration_status == REGULAR))
+      if(
+	  not ((mag_disturbance_sum / OBSERVATIONS) > MAGNETIC_DISTURBANCE_LIMIT) // not obviously bad calibration in use
+	  and
+	  ( ( calibration_status == INITIAL) or ( calibration_status == REGULAR) ) // having at least one old parameter set
+	)
 	{
+	  // we have old and new good calibration data, so we go for IIR averaging all the values
 	  unsigned other_buffer = next_buffer == 0 ? 1 : 0;
 	  for( unsigned k=0; k < PARAMETERS; ++k)
 	    c[next_buffer][axis][k] = (ONE - MAG_CALIBRATION_LETHARGY) * c[next_buffer][axis][k] + MAG_CALIBRATION_LETHARGY * c[other_buffer][axis][k];

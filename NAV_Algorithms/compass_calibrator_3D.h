@@ -66,6 +66,7 @@ public:
   {
     populated_sectors = 0;
     last_sector_collected = INVALID;
+    mag_disturbance_sum = ZERO;
     for( unsigned i=0; i < OBSERVATIONS; ++i)
       heading_sector_error[i]=1e20f;
   }
@@ -75,7 +76,9 @@ public:
       const float3vector &expected_induction,
       float heading,
       bool turning_right,
-      float error_margin);
+      float error_margin,
+      float mag_disturbance);
+
 float3vector calibrate( const float3vector &induction);
   bool calculate( void);
   bool available( void) const
@@ -117,6 +120,7 @@ private:
   unsigned populated_sectors;
   int last_sector_collected;
   calibration_status_t calibration_status;
+  float mag_disturbance_sum;
 
   // sensor transfer matrix
   computation_float_type c[2][AXES][PARAMETERS]; // double buffering for multi-thrading support

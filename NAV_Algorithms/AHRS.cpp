@@ -471,14 +471,16 @@ void AHRS_type::handle_magnetic_induction (
 	  expected_body_induction,
 	  euler.yaw,
 	  turn_rate_averager.get_output () > 0.0f,
-	  nav_correction.abs ());
+	  nav_correction.abs (),
+	  magnetic_disturbance_averager.get_output());
       if( external_mag_valid)
 	  external_mag_calibration_complete |= external_compass_calibrator_3D.learn (
 	      external_induction_measurement,
 	      expected_body_induction,
 	      euler.yaw,
 	      turn_rate_averager.get_output () > 0.0f,
-	      nav_correction.abs ());
+	      nav_correction.abs (),
+	      magnetic_disturbance_averager.get_output());
     }
 
   if ( mag_calibration_complete && circling_just_terminated )
