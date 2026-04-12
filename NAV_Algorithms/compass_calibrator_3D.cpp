@@ -37,12 +37,11 @@ ROM float RECIP_SECTOR_SIZE = compass_calibrator_3D_t::OBSERVATIONS / M_PI_F / T
 bool compass_calibrator_3D_t::learn (
     const float3vector &observed_induction,
     const float3vector &expected_induction,
-    const quaternion<float> &q,
+    float present_heading,
     bool turning_right,
     float error_margin)
 {
   int sector_index;
-  float present_heading = q.get_heading();
   if( present_heading < ZERO)
 	present_heading += M_PI_F * TWO;
 
