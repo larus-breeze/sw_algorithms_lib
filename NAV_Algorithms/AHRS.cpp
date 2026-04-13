@@ -226,7 +226,7 @@ AHRS_type::update_attitude ( const float3vector &acc,
 
   slip_angle_averager.respond( ATAN2( -acc[RIGHT], -acc[DOWN]));
   pitch_angle_averager.respond( ATAN2( +acc[FRONT], -acc[DOWN]));
-  G_load_averager.respond( acc.abs());
+  G_load_averager.respond( -acc[DOWN]);
   magnetic_disturbance_averager.feed( (induction_nav_frame - expected_nav_induction).abs() );
 }
 
