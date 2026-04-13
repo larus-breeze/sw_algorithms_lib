@@ -73,6 +73,11 @@ AHRS_type::attitude_setup (
 
   float3matrix coordinates ( fcoordinates);
   attitude.from_rotation_matrix ( coordinates);
+
+  quaternion<float>decl_comp;
+  decl_comp.from_euler( ZERO, ZERO, ATAN2( expected_nav_induction[EAST],expected_nav_induction[NORTH]));
+  attitude = attitude * decl_comp;
+
   attitude.get_rotation_matrix (body2nav);
   euler = attitude;
 }
@@ -221,7 +226,7 @@ AHRS_type::update_attitude ( const float3vector &acc,
 
   slip_angle_averager.respond( ATAN2( -acc[RIGHT], -acc[DOWN]));
   pitch_angle_averager.respond( ATAN2( +acc[FRONT], -acc[DOWN]));
-  G_load_averager.respond( acc.abs());
+  G_load_averager.respond( -acc[DOWN]);
   magnetic_disturbance_averager.feed( (induction_nav_frame - expected_nav_induction).abs() );
 }
 

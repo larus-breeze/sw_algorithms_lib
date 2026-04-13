@@ -31,6 +31,7 @@
 #define RAD_TO_DEGREE 57.2958f
 #define METER_TO_FEET 3.2808f
 #define MPS_TO_KMPH 3.6f
+#define RECIPROCAL_GRAVITY 0.1019368f
 
 ROM char HEX[]="0123456789ABCDEF";
 
@@ -283,7 +284,7 @@ void format_PLARW ( float wind_north, float wind_east, char windtype, char * &p)
 ROM char PLARV[]="$PLARV,";
 
 //! TEK vario, average vario, pressure altitude and speed (TAS)
-void format_PLARV ( float variometer, float avg_variometer, float pressure_altitude, float TAS, char * &p)
+void format_PLARV ( float variometer, float avg_variometer, float pressure_altitude, float TAS, float G_load, char * &p)
 {
   char * line_start = p;
   append_string( p, PLARV);
@@ -303,7 +304,9 @@ void format_PLARV ( float variometer, float avg_variometer, float pressure_altit
   *p++ = ',';
 
   format_integer( p, (int) round( TAS * MPS_TO_KMPH));
+  *p++ = ',';
 
+  to_ascii_n_decimals( G_load * RECIPROCAL_GRAVITY, 2, p);
   p = NMEA_append_tail ( line_start);
 }
 
@@ -386,6 +389,7 @@ void format_NMEA_string_fast( const state_vector_t &output_data, string_buffer_t
 		 output_data.vario_average,
 		 output_data.pressure_altitude,
 		 output_data.TAS,
+		 output_data.G_load,
 		 next);
 
   // instant wind
