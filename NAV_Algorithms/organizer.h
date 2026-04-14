@@ -2,7 +2,7 @@
  * @file		organizer.h
  * @brief		combine algorithms to be used by the flight sensor
  * @author		Dr. Klaus Schaefer
- * @copyright 		Copyright 2021 Dr. Klaus Schaefer. All rights reserved.
+ * @copyright 		Copyright 2026 Dr. Klaus Schaefer. All rights reserved.
  * @license 		This project is released under the GNU Public License GPL-3.0
 
     <Larus Flight Sensor Firmware>
@@ -32,6 +32,18 @@
 #include "sensor_orientation_setup.h"
 #include "system_state.h"
 #include "communicator_command.h"
+#include "abstract_EEPROM_storage.h"
+
+typedef enum
+{
+  FRONT_UP,
+  FRONT_DOWN,
+  RIGHT_UP,
+  RIGHT_DOWN,
+  BOTTOM_UP,
+  BOTTOM_DOWN,
+  INVALID
+} attitude_t;
 
 typedef struct
 {
@@ -48,10 +60,20 @@ public:
   organizer_t( void)
     : pitot_offset(0.0f),
       pitot_span(0.0f),
+      accelerometer_offset(),
+      accelerometer_gain(),
       QNH_offset(0.0f),
       magnetic_induction_update_counter(0),
-      fine_tune_sensor_attitude_in_progress( false)
-  {}
+      fine_tune_sensor_attitude_in_progress( false),
+      acceleration_calibration_in_progress(false),
+      attitude_in_progress( INVALID),
+      acceleration_sums{0},
+      acceleration_measurement_complete(0),
+      acceleration_count_down(0)
+  {
+    for( unsigned i=0; i<3; ++i) // poor CPP language ...
+      accelerometer_gain[i]=ONE;
+  }
 
   void tune_pressure_gauges( void)
   {
@@ -71,6 +93,17 @@ public:
 		  configuration (SENS_TILT_YAW));
     q.get_rotation_matrix (sensor_mapping);
 
+    float acc_calibration[6];
+    bool acc_parameters_available = permanent_data_file.retrieve_data( ACCELEROMETER_CALIBRATION, 6, acc_calibration);
+    if( acc_parameters_available)
+      {
+	for( unsigned i=0; i<3; ++i)
+	  {
+	    accelerometer_offset[i] = acc_calibration[2*i];
+	    accelerometer_gain[i] = acc_calibration[2*i + 1];
+	  }
+      }
+
     setup_compass_calibrator_3d();
     navigator.tune();
   }
@@ -78,16 +111,6 @@ public:
   void tune_filters( void)
   {
     navigator.tune();
-  }
-
-  void fine_tune_sensor_orientation( const vector_average_collection_t & values)
-  {
-    ::fine_tune_sensor_orientation( values, sensor_mapping);
-  }
-
-  void update_sensor_orientation_data( const vector_average_collection_t & values)
-  {
-    ::update_sensor_orientation_data( values);
   }
 
   //! initialize the earth magnetic field data taking the observed location
@@ -118,9 +141,8 @@ public:
 	navigator.reset_altitude ( navigator.get_pressure_altitude()); // we do not have a GNSS altitude
       }
 
-
     // setup initial attitude
-    float3vector acc = sensor_mapping * m.acc;
+    float3vector acc = make_body_acceleration( m.acc);
     float3vector mag = m.mag; // coordinate rotation sensor->body done within calibration !
 
     if ( c.sat_fix_type & SAT_HEADING)
@@ -193,8 +215,7 @@ public:
   //! the "FAST" update of the observed properties
   void update_at_100_Hz( const measurement_data_t &m, uint32_t system_state, const float3vector &x_mag)
   {
-    // rotate sensor coordinates into airframe coordinates
-    float3vector acc  = sensor_mapping * m.acc;
+    float3vector acc = make_body_acceleration( m.acc);
     float3vector gyro = sensor_mapping * m.gyro;
 
     bool external_magnetometer_active = system_state & EXTERNAL_MAGNETOMETER_AVAILABLE;
@@ -202,6 +223,13 @@ public:
     navigator.update_at_100Hz (
 	acc, m.mag, gyro,
 	x_mag, external_magnetometer_active);
+
+    if( acceleration_calibration_in_progress)
+      {
+      bool finished = manage_acceleration_calibration( m.acc);
+      if( finished)
+	  acceleration_calibration_in_progress = false;
+      }
   }
 
   void cleanup_after_landing( void)
@@ -260,12 +288,16 @@ public:
 	      break;
 
 	    case FINE_TUNE_CALIB: // names "straight flight" in Larus Display Menu
+#if 0 // todo patch
 	      vector_average_organizer.source = &(observations.acc);
 	      vector_average_organizer.destination =
 		  &(vector_average_collection.acc_observed_level);
 	      vector_average_organizer.destination->zero ();
 	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
 	      fine_tune_sensor_attitude_in_progress = true;
+#else
+	      start_acceleration_calibration();
+#endif
 	      break;
 
 	    case TIME_CONSTANT_CHANGED:
@@ -285,7 +317,7 @@ public:
 	  return false;
   }
 
-  bool manage_calibration_in_progress( D_GNSS_coordinates_t &coordinates, measurement_data_t &observations)
+  bool manage_attitude_setup_in_progress( D_GNSS_coordinates_t &coordinates, measurement_data_t &observations)
   {
     // vector averaging in case of ground or air calibration activity *********************************
     if (vector_average_organizer.counter != 0)
@@ -300,9 +332,9 @@ public:
 	      *(vector_average_organizer.destination) =
 		  vector_average_organizer.sum * inverse_count;
 
-	      // in this case we do not wait for another command but re-calculate immediately
 	      if ( fine_tune_sensor_attitude_in_progress)
 		{
+		  // in this case we do not wait for another command but re-calculate immediately
 		  fine_tune_sensor_orientation ( vector_average_collection);
 		  initialize_before_measurement ();
 		  initialize_after_first_measurement (coordinates, observations);
@@ -314,16 +346,56 @@ public:
     return false;
   }
 
+  bool manage_acceleration_calibration( const float3vector &acceleration);
+
 private:
+  void update_sensor_orientation_data( const vector_average_collection_t & values);
+  void fine_tune_sensor_orientation( const vector_average_collection_t & values);
+
+  float3vector calibrate_acceleration( const float3vector &acc_readings)
+  {
+    // acceleration sensor calibration
+    float3vector acc = acc_readings;
+    acc -= accelerometer_offset;
+    acc = acc.element_wise_multiply( accelerometer_gain);
+    return acc;
+  }
+
+  float3vector make_body_acceleration( const float3vector &acc_readings)
+  {
+    float3vector acc = calibrate_acceleration( acc_readings);
+
+    // rotate sensor coordinates into airframe coordinates
+    acc  = sensor_mapping * acc;
+
+    return acc;
+  }
+
+  void start_acceleration_calibration( void)
+  {
+    attitude_in_progress = INVALID;
+    acceleration_measurement_complete = 0;
+    acceleration_count_down = 0;
+    acceleration_calibration_in_progress = true;
+  }
+
   navigator_t navigator; 	//!< the container for all the algorithms
   float3matrix sensor_mapping; 	//!< sensor -> airframe rotation matrix
   float pitot_offset; 		//!< pitot pressure sensor offset
   float pitot_span;   		//!< pitot pressure sensor span factor
+  float3vector accelerometer_offset;	//!< zero G reading of the accelerometers
+  float3vector accelerometer_gain;	//!< gain factor to be applied to the accelerometers
   float QNH_offset;   		//!< static pressure sensor offset
   unsigned magnetic_induction_update_counter; //!< timer for declination+inclination update
   vector_average_organizer_t vector_average_organizer = { 0 };
   vector_average_collection_t vector_average_collection = { 0 };
   bool fine_tune_sensor_attitude_in_progress;
+
+  bool acceleration_calibration_in_progress;
+  attitude_t attitude_in_progress;
+  float acceleration_sums[6];
+  unsigned acceleration_measurement_complete; //!< bitfield
+  unsigned acceleration_count_down;
 };
 
 #endif /* ORGANIZER_H_ */

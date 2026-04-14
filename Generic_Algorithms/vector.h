@@ -73,6 +73,16 @@ public:
 	    return tmp;
 	}
 
+	vector element_wise_multiply( const vector & right)
+	{
+	  vector retv;
+
+	  for( int i=0; i < size; ++i)
+	    retv.e[i] = e[i] * right.e[i];
+
+	  return retv;
+	}
+
 	//! vector abs operator returns absolute value
 	datatype abs( void) const
 	{
