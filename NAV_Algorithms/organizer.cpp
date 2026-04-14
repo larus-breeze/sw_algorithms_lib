@@ -180,6 +180,10 @@ bool organizer_t::manage_acceleration_calibration( const float3vector &accelerat
   if( attitude == INVALID)
     return false;
 
+  // if already done: forget ...
+  if( acceleration_measurement_complete & (1 << attitude))
+    return false;
+
   if( attitude != attitude_in_progress)
     {
       attitude_in_progress = attitude;
@@ -205,14 +209,14 @@ bool organizer_t::manage_acceleration_calibration( const float3vector &accelerat
     {
       float calibration[6];
 
-      calibration[0] = (acceleration_sums[FRONT_UP] + acceleration_sums[FRONT_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT;
-      calibration[1] = (acceleration_sums[FRONT_UP] - acceleration_sums[FRONT_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT;
+      calibration[0] = (acceleration_sums[FRONT_UP] + acceleration_sums[FRONT_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT / GRAVITY;
+      calibration[1] = (acceleration_sums[FRONT_UP] - acceleration_sums[FRONT_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT / GRAVITY;
 
-      calibration[2] = (acceleration_sums[RIGHT_UP] + acceleration_sums[RIGHT_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT;
-      calibration[3] = (acceleration_sums[RIGHT_UP] - acceleration_sums[RIGHT_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT;
+      calibration[2] = (acceleration_sums[RIGHT_UP] + acceleration_sums[RIGHT_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT / GRAVITY;
+      calibration[3] = (acceleration_sums[RIGHT_UP] - acceleration_sums[RIGHT_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT / GRAVITY;
 
-      calibration[4] = (acceleration_sums[BOTTOM_UP] + acceleration_sums[BOTTOM_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT;
-      calibration[5] = (acceleration_sums[BOTTOM_UP] - acceleration_sums[BOTTOM_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT;
+      calibration[4] = (acceleration_sums[BOTTOM_UP] + acceleration_sums[BOTTOM_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT / GRAVITY;
+      calibration[5] = (acceleration_sums[BOTTOM_UP] - acceleration_sums[BOTTOM_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT / GRAVITY;
 
       permanent_data_file.store_data( ACCELEROMETER_CALIBRATION, 6, calibration);
 
