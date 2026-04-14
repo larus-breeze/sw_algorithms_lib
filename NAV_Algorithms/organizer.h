@@ -31,6 +31,15 @@
 #include "earth_induction_model.h"
 #include "sensor_orientation_setup.h"
 #include "system_state.h"
+#include "communicator_command.h"
+
+typedef struct
+{
+  float3vector * source;
+  float3vector * destination;
+  float3vector sum;
+  unsigned counter;
+} vector_average_organizer_t;
 
 //! set of algorithms and data to be used by Larus flight sensor
 class organizer_t
@@ -40,7 +49,8 @@ public:
     : pitot_offset(0.0f),
       pitot_span(0.0f),
       QNH_offset(0.0f),
-      magnetic_induction_update_counter(0)
+      magnetic_induction_update_counter(0),
+      fine_tune_sensor_attitude_in_progress( false)
   {}
 
   void tune_pressure_gauges( void)
@@ -156,6 +166,9 @@ public:
 	update_system_state_clear(MAGNETIC_DISTURBANCE_BAD);
       }
 
+    if( landing_detected_here)
+      cleanup_after_landing ();
+
     return landing_detected_here;
   }
 
@@ -202,6 +215,105 @@ public:
     navigator.report_data ( data);
   }
 
+  // return true if significant changes in configuration were made
+  bool on_command( communicator_command_t command, D_GNSS_coordinates_t &coordinates, measurement_data_t &observations)
+  {
+	  switch (command)
+	    {
+	    case MEASURE_CALIB_LEFT:
+	      vector_average_organizer.source = &(observations.acc);
+	      vector_average_organizer.destination =
+		  &(vector_average_collection.acc_observed_left);
+	      vector_average_organizer.destination->zero ();
+	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
+	      break;
+
+	    case MEASURE_CALIB_RIGHT:
+	      vector_average_organizer.source = &(observations.acc);
+	      vector_average_organizer.destination =
+		  &(vector_average_collection.acc_observed_right);
+	      vector_average_organizer.destination->zero ();
+	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
+	      break;
+
+	    case MEASURE_CALIB_LEVEL:
+	      vector_average_organizer.source = &(observations.acc);
+	      vector_average_organizer.destination =
+		  &(vector_average_collection.acc_observed_level);
+	      vector_average_organizer.destination->zero ();
+	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
+	      break;
+
+	    case SET_SENSOR_ROTATION:
+
+	      // make sure that we have all three measurements
+	      if (vector_average_collection.acc_observed_left.abs () < 0.001f)
+		break;
+	      if (vector_average_collection.acc_observed_right.abs () < 0.001f)
+		break;
+	      if (vector_average_collection.acc_observed_level.abs () < 0.001f)
+		break;
+
+	      update_sensor_orientation_data ( vector_average_collection);
+	      initialize_before_measurement ();
+	      initialize_after_first_measurement (coordinates, observations);
+	      break;
+
+	    case FINE_TUNE_CALIB: // names "straight flight" in Larus Display Menu
+	      vector_average_organizer.source = &(observations.acc);
+	      vector_average_organizer.destination =
+		  &(vector_average_collection.acc_observed_level);
+	      vector_average_organizer.destination->zero ();
+	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
+	      fine_tune_sensor_attitude_in_progress = true;
+	      break;
+
+	    case TIME_CONSTANT_CHANGED:
+	    case GNSS_CONFIG_CHANGED:
+		tune_filters();
+		return true;
+	      break;
+
+	    case TUNE_PRESSURE_GAUGES:
+		tune_pressure_gauges();
+		return true;
+	      break;
+
+	    case NO_COMMAND:
+	      break;
+	    }
+	  return false;
+  }
+
+  bool manage_calibration_in_progress( D_GNSS_coordinates_t &coordinates, measurement_data_t &observations)
+  {
+    // vector averaging in case of ground or air calibration activity *********************************
+    if (vector_average_organizer.counter != 0)
+	{
+	  vector_average_organizer.sum += *(vector_average_organizer.source);
+	  --vector_average_organizer.counter;
+
+	  // if measurement complete now
+	  if (vector_average_organizer.counter == 0)
+	    {
+	      float inverse_count = 1.0f / VECTOR_AVERAGE_COUNT_SETUP;
+	      *(vector_average_organizer.destination) =
+		  vector_average_organizer.sum * inverse_count;
+
+	      // in this case we do not wait for another command but re-calculate immediately
+	      if ( fine_tune_sensor_attitude_in_progress)
+		{
+		  fine_tune_sensor_orientation ( vector_average_collection);
+		  initialize_before_measurement ();
+		  initialize_after_first_measurement (coordinates, observations);
+		  fine_tune_sensor_attitude_in_progress = false;
+		  return true;
+		}
+	    }
+	}
+    return false;
+  }
+
 private:
   navigator_t navigator; 	//!< the container for all the algorithms
   float3matrix sensor_mapping; 	//!< sensor -> airframe rotation matrix
@@ -209,6 +321,9 @@ private:
   float pitot_span;   		//!< pitot pressure sensor span factor
   float QNH_offset;   		//!< static pressure sensor offset
   unsigned magnetic_induction_update_counter; //!< timer for declination+inclination update
+  vector_average_organizer_t vector_average_organizer = { 0 };
+  vector_average_collection_t vector_average_collection = { 0 };
+  bool fine_tune_sensor_attitude_in_progress;
 };
 
 #endif /* ORGANIZER_H_ */
