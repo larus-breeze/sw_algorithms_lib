@@ -11,7 +11,9 @@ enum event
 
   EEPROM_CONFIGURATION_CHANGED,
   CAN_COMMAND_RECEIVED,
-  DEBUGGER_DATA
+  DEBUGGER_DATA,
+
+  ACCELERATION_CALIBRATION_DONE
 };
 
 void signal_logger_event( uint32_t event);

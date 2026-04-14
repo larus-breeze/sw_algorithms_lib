@@ -40,8 +40,9 @@
 #define MAX_VELOCITY_ERROR_GNSS_M9N 	0.35f	// A M9N-GNSS shall be < 0.35m/s with a good reception
 #define MAX_VELOCITY_ERROR_GNSS_F9X	0.15f  	// A F9P-GNSS shall be < 0.15m/s with a good reception
 
-#define ACCELERATION_CALIBRATION_COUNT	100
-#define ACCELERATION_CALIBRATION_WAIT	100
+#define ACCELERATION_CALIBRATION_COUNT	100 // number of measurements
+#define ACCELERATION_CALIBRATION_WAIT	100 // delay time in 10ms units
+#define ACCELERATION_CALIBRATION_TIMEOUT 2000 // activity time at system start in 10ms units
 
 #define CIRCLE_LIMIT (10 * 100) //!< 10 * 1/100 s delay into / out of circling state
 

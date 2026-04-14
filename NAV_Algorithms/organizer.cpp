@@ -136,7 +136,7 @@ void organizer_t::fine_tune_sensor_orientation( const vector_average_collection_
   write_EEPROM_value( SENS_TILT_YAW,   new_euler.yaw);
 }
 
-bool organizer_t::manage_acceleration_calibration( const float3vector &acceleration)
+acceleration_calibrator_state organizer_t::manage_acceleration_calibration( const float3vector &acceleration)
 {
   attitude_t attitude = INVALID;
   float acceleration_measurement;
@@ -178,11 +178,11 @@ bool organizer_t::manage_acceleration_calibration( const float3vector &accelerat
     }
 
   if( attitude == INVALID)
-    return false;
+    return WAITING;
 
-  // if already done: forget ...
+  // if this position is already done: forget ...
   if( acceleration_measurement_complete & (1 << attitude))
-    return false;
+    return WAITING;
 
   if( attitude != attitude_in_progress)
     {
@@ -196,16 +196,14 @@ bool organizer_t::manage_acceleration_calibration( const float3vector &accelerat
 
       // need to wait until measurement stable
       if( acceleration_count_down > ACCELERATION_CALIBRATION_COUNT)
-	return false;
+	return ACTIVE; // we are active: waiting
 
       acceleration_sums[attitude] += acceleration_measurement;
       if( acceleration_count_down == 0)
-	{
-	  acceleration_measurement_complete |= (1 << attitude_in_progress);
-	}
+	  acceleration_measurement_complete |= (1 << attitude_in_progress); // this position is done
     }
 
-  if( acceleration_measurement_complete == 0b111111)
+  if( acceleration_measurement_complete == 0b111111) // all positions done ?
     {
       float calibration[6];
 
@@ -220,6 +218,7 @@ bool organizer_t::manage_acceleration_calibration( const float3vector &accelerat
 
       permanent_data_file.store_data( ACCELEROMETER_CALIBRATION, 6, calibration);
 
+      // start using these values
       for( unsigned i=0; i<3; ++i)
 	{
 	  accelerometer_offset[i] = calibration[2*i];
@@ -228,8 +227,205 @@ bool organizer_t::manage_acceleration_calibration( const float3vector &accelerat
 
       acceleration_measurement_complete = 0;
 
-      return true;
+      return DONE; // nothing else to do
     }
   else
-    return false;
+    return ACTIVE; // work in progress
 }
+
+bool organizer_t::manage_attitude_setup_in_progress( D_GNSS_coordinates_t &coordinates, measurement_data_t &observations)
+{
+  // vector averaging in case of ground or air calibration activity *********************************
+  if (vector_average_organizer.counter != 0)
+	{
+	  vector_average_organizer.sum += *(vector_average_organizer.source);
+	  --vector_average_organizer.counter;
+
+	  // if measurement complete now
+	  if (vector_average_organizer.counter == 0)
+	    {
+	      float inverse_count = 1.0f / VECTOR_AVERAGE_COUNT_SETUP;
+	      *(vector_average_organizer.destination) =
+		  vector_average_organizer.sum * inverse_count;
+
+	      if ( fine_tune_sensor_attitude_in_progress)
+		{
+		  // in this case we do not wait for another command but re-calculate immediately
+		  fine_tune_sensor_orientation ( vector_average_collection);
+		  initialize_before_measurement ();
+		  initialize_after_first_measurement (coordinates, observations);
+		  fine_tune_sensor_attitude_in_progress = false;
+		  return true;
+		}
+	    }
+	}
+  return false;
+}
+
+// return true if significant changes in configuration were made
+bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates_t &coordinates, measurement_data_t &observations)
+{
+	  switch (command)
+	    {
+	    case MEASURE_CALIB_LEFT:
+	      vector_average_organizer.source = &(observations.acc);
+	      vector_average_organizer.destination =
+		  &(vector_average_collection.acc_observed_left);
+	      vector_average_organizer.destination->zero ();
+	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
+	      break;
+
+	    case MEASURE_CALIB_RIGHT:
+	      vector_average_organizer.source = &(observations.acc);
+	      vector_average_organizer.destination =
+		  &(vector_average_collection.acc_observed_right);
+	      vector_average_organizer.destination->zero ();
+	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
+	      break;
+
+	    case MEASURE_CALIB_LEVEL:
+	      vector_average_organizer.source = &(observations.acc);
+	      vector_average_organizer.destination =
+		  &(vector_average_collection.acc_observed_level);
+	      vector_average_organizer.destination->zero ();
+	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
+	      break;
+
+	    case SET_SENSOR_ROTATION:
+
+	      // make sure that we have all three measurements
+	      if (vector_average_collection.acc_observed_left.abs () < 0.001f)
+		break;
+	      if (vector_average_collection.acc_observed_right.abs () < 0.001f)
+		break;
+	      if (vector_average_collection.acc_observed_level.abs () < 0.001f)
+		break;
+
+	      update_sensor_orientation_data ( vector_average_collection);
+	      initialize_before_measurement ();
+	      initialize_after_first_measurement (coordinates, observations);
+	      break;
+
+	    case FINE_TUNE_CALIB: // names "straight flight" in Larus Display Menu
+	      vector_average_organizer.source = &(observations.acc);
+	      vector_average_organizer.destination =
+		  &(vector_average_collection.acc_observed_level);
+	      vector_average_organizer.destination->zero ();
+	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
+	      fine_tune_sensor_attitude_in_progress = true;
+	      break;
+
+	    case TIME_CONSTANT_CHANGED:
+	    case GNSS_CONFIG_CHANGED:
+		tune_filters();
+		return true;
+	      break;
+
+	    case TUNE_PRESSURE_GAUGES:
+		tune_pressure_gauges();
+		return true;
+	      break;
+
+	    case NO_COMMAND:
+	      break;
+	    }
+	  return false;
+}
+
+//! the "FAST" update of the observed properties
+  void organizer_t::update_at_100_Hz( const measurement_data_t &m, uint32_t system_state, const float3vector &x_mag)
+  {
+    float3vector acc = make_body_acceleration( m.acc);
+    float3vector gyro = sensor_mapping * m.gyro;
+
+    bool external_magnetometer_active = system_state & EXTERNAL_MAGNETOMETER_AVAILABLE;
+
+    navigator.update_at_100Hz (
+	acc, m.mag, gyro,
+	x_mag, external_magnetometer_active);
+
+
+    if( acceleration_calibration_time_to_go > 0)
+      {
+	acceleration_calibrator_state state = manage_acceleration_calibration( m.acc);
+	switch( state)
+	{
+	  default:
+	  case WAITING:
+	      --acceleration_calibration_time_to_go;
+	    break;
+	  case ACTIVE:
+	      acceleration_calibration_time_to_go = ACCELERATION_CALIBRATION_TIMEOUT;
+	    break;
+	  case DONE:
+	      acceleration_calibration_time_to_go = 0;
+	      signal_logger_event( ACCELERATION_CALIBRATION_DONE);
+	    break;
+	}
+      }
+  }
+
+  //! the "SLOW" update of the observed properties
+    bool organizer_t::update_at_10Hz( const D_GNSS_coordinates_t &c, const measurement_data_t &m)
+    {
+      bool landing_detected_here = navigator.update_at_10Hz ();
+
+      if ( navigator.get_speed_accuracy_bad_status() == true )
+        update_system_state_set(GNSS_VELOCITY_ACCURACY_BAD);
+      else
+        {
+  	update_system_state_clear(GNSS_VELOCITY_ACCURACY_BAD);
+
+  	// this stuff can only be done with good GNSS quality
+  	navigator.feed_QFF_density_metering( m.static_pressure - QNH_offset, c.GNSS_MSL_altitude);
+
+  	if( ++magnetic_induction_update_counter > MAGNETIC_UPDATE_TIME_TENTH_SECS) // every 15 minutes
+  	  {
+  	    update_magnetic_induction_data( c.latitude, c.longitude);
+  	    magnetic_induction_update_counter=0;
+  	  }
+        }
+
+      if ( navigator.get_magnetic_disturbance_bad_status() == true )
+  	update_system_state_set(MAGNETIC_DISTURBANCE_BAD);
+      else
+        {
+  	update_system_state_clear(MAGNETIC_DISTURBANCE_BAD);
+        }
+
+      if( landing_detected_here)
+        cleanup_after_landing ();
+
+      return landing_detected_here;
+    }
+
+    //! attitude setup after getting the first set of acceleration an magnetic data
+    void organizer_t::initialize_after_first_measurement( const D_GNSS_coordinates_t &c, const measurement_data_t &m)
+    {
+      navigator.update_pressure( m.static_pressure - QNH_offset);
+
+      if( c.sat_fix_type > SAT_FIX_NONE)
+        {
+  	update_magnetic_induction_data( c.latitude, c.longitude);
+  	navigator.initialize_QFF_density_metering( c.GNSS_MSL_altitude);
+  	navigator.reset_altitude ( c.GNSS_MSL_altitude);
+        }
+      else
+        {
+  	navigator.initialize_QFF_density_metering( navigator.get_pressure_altitude() );
+  	navigator.reset_altitude ( navigator.get_pressure_altitude()); // we do not have a GNSS altitude
+        }
+
+      // setup initial attitude
+      float3vector acc = make_body_acceleration( m.acc);
+      float3vector mag = m.mag; // coordinate rotation sensor->body done within calibration !
+
+      if ( c.sat_fix_type & SAT_HEADING)
+        {
+  	navigator.set_attitude ( 0.0f, 0.0f, c.relPosHeading);
+        }
+      else
+        navigator.set_from_acc_mag( acc, mag); // initialize attitude from acceleration + compass
+    }
+
+
