@@ -136,6 +136,7 @@ void organizer_t::fine_tune_sensor_orientation( const vector_average_collection_
   write_EEPROM_value( SENS_TILT_YAW,   new_euler.yaw);
 }
 
+//! Collect measurements and compute gain and offset values for the accelerometer
 acceleration_calibrator_state organizer_t::manage_acceleration_calibration( const float3vector &acceleration)
 {
   attitude_t attitude = INVALID;

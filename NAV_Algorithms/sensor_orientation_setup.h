@@ -32,9 +32,6 @@ typedef struct
   float3vector acc_observed_left;
   float3vector acc_observed_right;
   float3vector acc_observed_level;
-  float3vector acc_observed_up;
-  float3vector acc_observed_down;
-  float3vector acc_observed_upside_down;
 } vector_average_collection_t;
 
 void setup_compass_calibrator_3d( void);
