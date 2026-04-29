@@ -270,8 +270,8 @@ void AHRS_type::update_diff_GNSS (
 
 #if ATTITUDE_ERROR_EVALUATED
   float3vector attitude_error_nav;
-  attitude_error_nav[NORTH] = nav_correction[NORTH] / 9.81f;
-  attitude_error_nav[EAST]  = nav_correction[EAST] / 9.81f;
+  attitude_error_nav[NORTH] = nav_correction[NORTH] * RECIP_GRAVITY;
+  attitude_error_nav[EAST]  = nav_correction[EAST] * RECIP_GRAVITY;
 #endif
 
     if( (circling_state == CIRCLING) && ( GNSS_acceleration.abs() > MINIMUM_HORIZONTAL_ACCELERATION_AHRS))
@@ -349,8 +349,8 @@ void AHRS_type::update_compass (
 
 #if ATTITUDE_ERROR_EVALUATED
   float3vector attitude_error_nav;
-  attitude_error_nav[NORTH] = nav_correction[NORTH] / 9.81f;
-  attitude_error_nav[EAST]  = nav_correction[EAST] / 9.81f;
+  attitude_error_nav[NORTH] = nav_correction[NORTH] * RECIP_GRAVITY;
+  attitude_error_nav[EAST]  = nav_correction[EAST] * RECIP_GRAVITY;
 #endif
 
   switch (circling_state)
@@ -418,9 +418,9 @@ void AHRS_type::update_experimental (
   acc_difference[ EAST] =  GNSS_acceleration[EAST] - nav_acceleration[EAST];
 
   float3vector gravity;
-  gravity[DOWN] = -9.81f;
+  gravity[DOWN] = - GRAVITY;
   nav_correction = gravity.vector_multiply(acc_difference);
-  nav_correction = nav_correction * 0.102f; // divide by 9.81
+  nav_correction = nav_correction * RECIP_GRAVITY; // divide by 9.81
   nav_correction += expected_nav_induction.vector_multiply(mag_difference);
 
   cross_acc_correction = // vector cross product GNSS-acc und INS-acc -> heading error

@@ -87,6 +87,9 @@
 #define SLOW_SAMPLING_TIME 		0.1f
 
 #define GRAVITY				9.81f
+#define ONE_DIV_BY_GRAVITY_TIMES_2 0.0509684f
+#define RECIP_GRAVITY 0.1019368f
+
 #define VECTOR_AVERAGE_COUNT_SETUP	100 //!< average count for sensor orientation setup
 
 #endif /* NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_ */
