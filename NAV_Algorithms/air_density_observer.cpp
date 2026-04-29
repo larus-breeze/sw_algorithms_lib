@@ -24,6 +24,7 @@
 
 #include "embedded_math.h"
 #include <air_density_observer.h>
+#include "NAV_tuning_parameters.h"
 
 air_data_result air_density_observer_t::feed_metering( float pressure, float GNSS_altitude)
 {
@@ -76,7 +77,7 @@ air_data_result air_density_observer_t::feed_metering( float pressure, float GNS
      (result.variance_offset < MAX_ALLOWED_OFFSET_VARIANCE) )
     {
       air_data.QFF = (float)(result.y_offset);
-      float density = 100.0f * (float)(result.slope) * -0.101936f; // div by -9.81f;
+      float density = 100.0f * (float)(result.slope) * - RECIP_GRAVITY; // div by -9.81f;
 
       float reference_altitude = density_QFF_calculator.get_mean_x() * 0.01f;
       float std_density =

@@ -26,9 +26,6 @@
 #include "system_configuration.h"
 #include "embedded_math.h"
 
-#define ONE_DIV_BY_GRAVITY_TIMES_2 0.0509684f
-#define RECIP_GRAVITY 0.1094f
-
 //! calculate variometer data, update @ 100 Hz
 void variometer_t::update_at_100Hz (
     const float3vector &gnss_velocity,
@@ -119,10 +116,10 @@ void variometer_t::update_at_100Hz (
 
 void variometer_t::reset(float pressure_negative_altitude, float GNSS_negative_altitude)
 {
-  KalmanVario_GNSS.reset( GNSS_negative_altitude, -9.81f);
+  KalmanVario_GNSS.reset( GNSS_negative_altitude, - GRAVITY);
 #if USE_OLD_FASHIONED_PRESSURE_VARIO
   pressure_vario_differentiator.initialize( pressure_negative_altitude);
 #else
-  KalmanVario_pressure.reset( pressure_negative_altitude, -9.81f);
+  KalmanVario_pressure.reset( pressure_negative_altitude, - GRAVITY);
 #endif
 }
