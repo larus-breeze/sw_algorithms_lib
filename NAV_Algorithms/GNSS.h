@@ -155,6 +155,7 @@ typedef struct
   uint16_t pDOP;		//!< Position dilution of precision 0.01 units
 
   float3vector relPosNED;	//!< vector from primary to secondary GNSS antenna
+  float relPosLength;		//!< D-GNSS baseline length / m
   float relPosHeading;		//!< heading from D-GNSS
   float relPosAccN;		//!< D-GNSS baseline accuracy North / m
   float relPosAccE;		//!< D-GNSS baseline accuracy East / m
