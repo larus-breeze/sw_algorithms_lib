@@ -74,7 +74,6 @@ void organizer_t::update_sensor_orientation_data( const vector_average_collectio
 // taking the attitude of a straight-and-level flight period
 void organizer_t::fine_tune_sensor_orientation( const vector_average_collection_t & values)
 {
-  return;
   float3vector calibrated_acc_observed_level = calibrate_acceleration( values.acc_observed_level);
 
   float3vector gravity_measurement_body = sensor_mapping * calibrated_acc_observed_level;
