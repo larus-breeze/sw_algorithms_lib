@@ -193,22 +193,25 @@ void CAN_output ( const measurement_data_t &m, const D_GNSS_coordinates_t &c, st
   p.data_f[1] = c.relPosHeadingAcc;
   CAN_send(p, 1);
 
-  p.id=CAN_Id_GPS_Heading;
-  p.dlc=4;
-  p.data_f[0] = c.relPosHeading;
-  CAN_send(p, 1);
+  if( c.sat_fix_type & SAT_HEADING)
+    {
+      p.id=CAN_Id_GPS_Heading;
+      p.dlc=4;
+      p.data_f[0] = c.relPosHeading;
+      CAN_send(p, 1);
 
-  p.id=CAN_Id_GPS_RelPos_NE;
-  p.dlc=8;
-  p.data_f[0] = c.relPosNED[NORTH];
-  p.data_f[1] = c.relPosNED[EAST];
-  CAN_send(p, 1);
+      p.id=CAN_Id_GPS_RelPos_NE;
+      p.dlc=8;
+      p.data_f[0] = c.relPosNED[NORTH];
+      p.data_f[1] = c.relPosNED[EAST];
+      CAN_send(p, 1);
 
-  p.id=CAN_Id_GPS_RelPos_D_Length;
-  p.dlc=8;
-  p.data_f[0] = c.relPosNED[DOWN];
-  p.data_f[1] = c.relPosLength;
-  CAN_send(p, 1);
+      p.id=CAN_Id_GPS_RelPos_D_Length;
+      p.dlc=8;
+      p.data_f[0] = c.relPosNED[DOWN];
+      p.data_f[1] = c.relPosLength;
+      CAN_send(p, 1);
+    }
 
   p.id=CAN_Id_SystemState;
   p.dlc=8;
