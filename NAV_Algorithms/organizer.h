@@ -71,6 +71,8 @@ public:
       accelerometer_gain(),
       QNH_offset(0.0f),
       magnetic_induction_update_counter(0),
+      vector_average_organizer({ 0 }),
+      vector_average_collection({ 0 }),
       fine_tune_sensor_attitude_in_progress( false),
       acceleration_calibration_time_to_go( ACCELERATION_CALIBRATION_TIMEOUT),
       attitude_in_progress( INVALID),

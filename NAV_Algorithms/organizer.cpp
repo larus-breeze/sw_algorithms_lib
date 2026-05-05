@@ -272,7 +272,7 @@ bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates
 	      vector_average_organizer.source = &(observations.acc);
 	      vector_average_organizer.destination =
 		  &(vector_average_collection.acc_observed_left);
-	      vector_average_organizer.destination->zero ();
+	      vector_average_organizer.sum.zero ();
 	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
 	      break;
 
@@ -280,7 +280,7 @@ bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates
 	      vector_average_organizer.source = &(observations.acc);
 	      vector_average_organizer.destination =
 		  &(vector_average_collection.acc_observed_right);
-	      vector_average_organizer.destination->zero ();
+	      vector_average_organizer.sum.zero ();
 	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
 	      break;
 
@@ -288,7 +288,7 @@ bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates
 	      vector_average_organizer.source = &(observations.acc);
 	      vector_average_organizer.destination =
 		  &(vector_average_collection.acc_observed_level);
-	      vector_average_organizer.destination->zero ();
+	      vector_average_organizer.sum.zero ();
 	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
 	      break;
 
@@ -311,7 +311,7 @@ bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates
 	      vector_average_organizer.source = &(observations.acc);
 	      vector_average_organizer.destination =
 		  &(vector_average_collection.acc_observed_level);
-	      vector_average_organizer.destination->zero ();
+	      vector_average_organizer.sum.zero ();
 	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
 	      fine_tune_sensor_attitude_in_progress = true;
 	      break;
