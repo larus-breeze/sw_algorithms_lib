@@ -74,6 +74,7 @@ void organizer_t::update_sensor_orientation_data( const vector_average_collectio
 // taking the attitude of a straight-and-level flight period
 void organizer_t::fine_tune_sensor_orientation( const vector_average_collection_t & values)
 {
+  return;
   float3vector calibrated_acc_observed_level = calibrate_acceleration( values.acc_observed_level);
 
   float3vector gravity_measurement_body = sensor_mapping * calibrated_acc_observed_level;
@@ -272,7 +273,7 @@ bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates
 	      vector_average_organizer.source = &(observations.acc);
 	      vector_average_organizer.destination =
 		  &(vector_average_collection.acc_observed_left);
-	      vector_average_organizer.destination->zero ();
+	      vector_average_organizer.sum.zero ();
 	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
 	      break;
 
@@ -280,7 +281,7 @@ bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates
 	      vector_average_organizer.source = &(observations.acc);
 	      vector_average_organizer.destination =
 		  &(vector_average_collection.acc_observed_right);
-	      vector_average_organizer.destination->zero ();
+	      vector_average_organizer.sum.zero ();
 	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
 	      break;
 
@@ -288,7 +289,7 @@ bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates
 	      vector_average_organizer.source = &(observations.acc);
 	      vector_average_organizer.destination =
 		  &(vector_average_collection.acc_observed_level);
-	      vector_average_organizer.destination->zero ();
+	      vector_average_organizer.sum.zero ();
 	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
 	      break;
 
@@ -311,7 +312,7 @@ bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates
 	      vector_average_organizer.source = &(observations.acc);
 	      vector_average_organizer.destination =
 		  &(vector_average_collection.acc_observed_level);
-	      vector_average_organizer.destination->zero ();
+	      vector_average_organizer.sum.zero ();
 	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
 	      fine_tune_sensor_attitude_in_progress = true;
 	      break;
