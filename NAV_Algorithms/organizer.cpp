@@ -248,16 +248,6 @@ bool organizer_t::manage_attitude_setup_in_progress( D_GNSS_coordinates_t &coord
 	      float inverse_count = 1.0f / VECTOR_AVERAGE_COUNT_SETUP;
 	      *(vector_average_organizer.destination) =
 		  vector_average_organizer.sum * inverse_count;
-
-	      if ( fine_tune_sensor_attitude_in_progress)
-		{
-		  // in this case we do not wait for another command but re-calculate immediately
-		  fine_tune_sensor_orientation ( vector_average_collection);
-		  initialize_before_measurement ();
-		  initialize_after_first_measurement (coordinates, observations);
-		  fine_tune_sensor_attitude_in_progress = false;
-		  return true;
-		}
 	    }
 	}
   return false;
@@ -294,17 +284,30 @@ bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates
 
 	    case SET_SENSOR_ROTATION:
 
-	      // make sure that we have all three measurements
-	      if (vector_average_collection.acc_observed_left.abs () < 0.001f)
-		break;
-	      if (vector_average_collection.acc_observed_right.abs () < 0.001f)
-		break;
-	      if (vector_average_collection.acc_observed_level.abs () < 0.001f)
-		break;
+	      if ( fine_tune_sensor_attitude_in_progress)
+		{
+		  // in this case we do not wait for another command but re-calculate immediately
+		  fine_tune_sensor_orientation ( vector_average_collection);
+		  initialize_before_measurement ();
+		  initialize_after_first_measurement (coordinates, observations);
+		  fine_tune_sensor_attitude_in_progress = false;
+		  return true; // report significant config change
+		}
+	      else
+		{
+		  // make sure that we have all three measurements
+		  if (vector_average_collection.acc_observed_left.abs () < 0.001f)
+		    break;
+		  if (vector_average_collection.acc_observed_right.abs () < 0.001f)
+		    break;
+		  if (vector_average_collection.acc_observed_level.abs () < 0.001f)
+		    break;
 
-	      update_sensor_orientation_data ( vector_average_collection);
-	      initialize_before_measurement ();
-	      initialize_after_first_measurement (coordinates, observations);
+		  update_sensor_orientation_data ( vector_average_collection);
+		  initialize_before_measurement ();
+		  initialize_after_first_measurement (coordinates, observations);
+		  return true; // report significant config change
+		}
 	      break;
 
 	    case FINE_TUNE_CALIB: // names "straight flight" in Larus Display Menu
@@ -319,18 +322,18 @@ bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates
 	    case TIME_CONSTANT_CHANGED:
 	    case GNSS_CONFIG_CHANGED:
 		tune_filters();
-		return true;
+		return true; // report significant config change
 	      break;
 
 	    case TUNE_PRESSURE_GAUGES:
 		tune_pressure_gauges();
-		return true;
+		return true; // report significant config change
 	      break;
 
 	    case NO_COMMAND:
 	      break;
 	    }
-	  return false;
+	  return false; // report NO significant config change
 }
 
 //! the "FAST" update of the observed properties
