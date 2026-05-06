@@ -286,7 +286,6 @@ bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates
 
 	      if ( fine_tune_sensor_attitude_in_progress)
 		{
-		  // in this case we do not wait for another command but re-calculate immediately
 		  fine_tune_sensor_orientation ( vector_average_collection);
 		  initialize_before_measurement ();
 		  initialize_after_first_measurement (coordinates, observations);
