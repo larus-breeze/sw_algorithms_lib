@@ -44,7 +44,7 @@ ROM persistent_data_t PERSISTENT_DATA[]=
 	{VARIO_INT_TC,	"Vario_Int_TC",		false, 30.0f, 0},	//! Vario integrator time constant
 	{WIND_TC,	"Wind_TC",		false, 5.0f, 0}, 	//! Wind fast time constant
 	{MEAN_WIND_TC,	"Mean_Wind_TC",		false, 30.0f, 0},	//! Wind slow time constant
-	{HORIZON,	"HorizBlockUntil",	false, 0.0f, 0},	//! Horizon output blocked until
+	{HORIZON,	"HorizBlockUntil",	false, 3.12969516e-34f, 0}, //! Horizon output blocked until 2000-01-01
 	{VARIO_P_TC,	"Vario_P_TC",		false, 3.0f, 0}, 	//! Pneumatic Vario time constant
 
 	{GNSS_CONFIGURATION, "GNSS_CONFIG",	false, 1.0f, 0},	//! type of GNSS system
