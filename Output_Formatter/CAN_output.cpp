@@ -69,7 +69,7 @@ enum CAN_ID_SENSOR
 
 };
 
-void CAN_output ( const measurement_data_t &m, const D_GNSS_coordinates_t &c, state_vector_t &x, bool horizon_activated)
+void CAN_output ( const measurement_data_t &m, const D_GNSS_coordinates_t &c, state_vector_t &x, const D_GNSS_accuracy_t &accuracy, bool horizon_activated)
 {
   CANpacket p( 0x7ff, 8);
   if( horizon_activated)
@@ -187,14 +187,14 @@ void CAN_output ( const measurement_data_t &m, const D_GNSS_coordinates_t &c, st
   p.data_b[1] = c.sat_fix_type;
   CAN_send(p, 1);
 
-  p.id=CAN_Id_GPS_Accuracy;
-  p.dlc=8;
-  p.data_f[0] = c.relPosAccLen;
-  p.data_f[1] = c.relPosHeadingAcc;
-  CAN_send(p, 1);
-
   if( c.sat_fix_type & SAT_HEADING)
     {
+      p.id=CAN_Id_GPS_Accuracy;
+      p.dlc=8;
+      p.data_f[0] = accuracy.relPosAccLen;
+      p.data_f[1] = accuracy.relPosHeadingAcc;
+      CAN_send(p, 1);
+
       p.id=CAN_Id_GPS_Heading;
       p.dlc=4;
       p.data_f[0] = c.relPosHeading;
@@ -209,7 +209,7 @@ void CAN_output ( const measurement_data_t &m, const D_GNSS_coordinates_t &c, st
       p.id=CAN_Id_GPS_RelPos_D_Length;
       p.dlc=8;
       p.data_f[0] = c.relPosNED[DOWN];
-      p.data_f[1] = c.relPosLength;
+      p.data_f[1] = accuracy.relPosLength;
       CAN_send(p, 1);
     }
 
