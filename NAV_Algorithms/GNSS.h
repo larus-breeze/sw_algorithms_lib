@@ -155,14 +155,22 @@ typedef struct
   uint16_t pDOP;		//!< Position dilution of precision 0.01 units
 
   float3vector relPosNED;	//!< vector from primary to secondary GNSS antenna
-  float relPosLength;		//!< D-GNSS baseline length / m
   float relPosHeading;		//!< heading from D-GNSS
+} D_GNSS_coordinates_t;
+
+#if SUPPORT_D_GNSS_ACCURACY
+
+typedef struct
+{
+  float relPosLength;		//!< D-GNSS baseline length / m
   float relPosAccN;		//!< D-GNSS baseline accuracy North / m
   float relPosAccE;		//!< D-GNSS baseline accuracy East / m
   float relPosAccD;		//!< D-GNSS baseline accuracy Down / m
   float relPosAccLen;		//!< D-GNSS baseline length accuracy / m
   float relPosHeadingAcc;	//!< D-GNSS heading accuracy / rad
-} D_GNSS_coordinates_t;
+} D_GNSS_accuracy_t;
+
+#endif
 
 //! Contains all important data from the GNSS
 typedef struct
@@ -173,7 +181,6 @@ typedef struct
 
   float3vector velocity;  	//!< NED / m/s
   float speed_acc;		//!< speed accuracy m/s
-
 
   uint8_t year;
   uint8_t month;
@@ -195,7 +202,11 @@ typedef struct
 class GNSS_type
 {
 public:
-  GNSS_type (D_GNSS_coordinates_t & coo);
+#if SUPPORT_D_GNSS_ACCURACY
+  GNSS_type( D_GNSS_coordinates_t & coo, D_GNSS_accuracy_t &acc);
+#else
+  GNSS_type( D_GNSS_coordinates_t & coo);
+#endif
   GNSS_Result update( const uint8_t * data);
   GNSS_Result update_delta( const uint8_t * data);
   GNSS_Result update_combined( uint8_t * data);
@@ -224,6 +235,9 @@ public:
 
 private:
   D_GNSS_coordinates_t &coordinates;
+#if SUPPORT_D_GNSS_ACCURACY
+  D_GNSS_accuracy_t &accuracy;
+#endif
   FIX_TYPE fix_type;
   inline bool checkSumCheck ( const uint8_t *buffer, uint8_t length)
   {

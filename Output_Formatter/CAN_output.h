@@ -61,7 +61,12 @@
 #define  CMD_TUNE				0x3004
 #define  CMD_RESET_SENSOR			0x3005
 
+#if SUPPORT_D_GNSS_ACCURACY
+void CAN_output ( const measurement_data_t &m, const D_GNSS_coordinates_t &c, state_vector_t &x, const D_GNSS_accuracy_t &a, bool horizon_activated);
+#else
 void CAN_output ( const measurement_data_t &m, const D_GNSS_coordinates_t &c, state_vector_t &x, bool horizon_activated);
+#endif
+
 void CAN_heartbeat( void);
 bool CAN_enqueue( const CANpacket &p, unsigned max_delay = 0xffffffff);
 
