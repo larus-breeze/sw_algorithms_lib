@@ -158,6 +158,8 @@ typedef struct
   float relPosHeading;		//!< heading from D-GNSS
 } D_GNSS_coordinates_t;
 
+#if SUPPORT_D_GNSS_ACCURACY
+
 typedef struct
 {
   float relPosLength;		//!< D-GNSS baseline length / m
@@ -167,6 +169,8 @@ typedef struct
   float relPosAccLen;		//!< D-GNSS baseline length accuracy / m
   float relPosHeadingAcc;	//!< D-GNSS heading accuracy / rad
 } D_GNSS_accuracy_t;
+
+#endif
 
 //! Contains all important data from the GNSS
 typedef struct
@@ -198,7 +202,11 @@ typedef struct
 class GNSS_type
 {
 public:
+#if SUPPORT_D_GNSS_ACCURACY
   GNSS_type( D_GNSS_coordinates_t & coo, D_GNSS_accuracy_t &acc);
+#else
+  GNSS_type( D_GNSS_coordinates_t & coo);
+#endif
   GNSS_Result update( const uint8_t * data);
   GNSS_Result update_delta( const uint8_t * data);
   GNSS_Result update_combined( uint8_t * data);
@@ -227,7 +235,9 @@ public:
 
 private:
   D_GNSS_coordinates_t &coordinates;
+#if SUPPORT_D_GNSS_ACCURACY
   D_GNSS_accuracy_t &accuracy;
+#endif
   FIX_TYPE fix_type;
   inline bool checkSumCheck ( const uint8_t *buffer, uint8_t length)
   {
