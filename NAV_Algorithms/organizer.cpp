@@ -324,6 +324,10 @@ bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates
 		return true; // report significant config change
 	      break;
 
+	    case HORIZON_LOCK_CHANGED:
+		return true; // report significant config change
+	      break;
+
 	    case TUNE_PRESSURE_GAUGES:
 		tune_pressure_gauges();
 		return true; // report significant config change
