@@ -176,7 +176,7 @@ bool compass_calibrator_3D_t::calculate( void)
 	}
 
       if(
-	  not ((mag_disturbance_sum / OBSERVATIONS) > MAGNETIC_DISTURBANCE_LIMIT) // not obviously bad calibration in use
+	  not ((mag_disturbance_sum / OBSERVATIONS) > MAGNETIC_DISTURBANCE_ACCEPTABLE) // not obviously bad calibration in use
 	  and
 	  ( ( calibration_status == INITIAL) or ( calibration_status == REGULAR) ) // having at least one old parameter set
 	)

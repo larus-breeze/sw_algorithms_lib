@@ -28,7 +28,9 @@
 #define OMEGA_EARTH 7.2921150e-5f
 #define MAGNETIC_UPDATE_TIME_TENTH_SECS 9000
 
-#define MAGNETIC_DISTURBANCE_LIMIT 	0.1f
+#define MAGNETIC_DISTURBANCE_LIMIT 	0.1f 	// warning flag
+#define MAGNETIC_DISTURBANCE_ACCEPTABLE	0.04f 	// immediately complete re-calibration required
+
 #define D_GNSS_GNSS_DELAY		8
 #define D_GNSS_HEADING_DELAY		8
 #define SINGLE_GNSS_DELAY		30
