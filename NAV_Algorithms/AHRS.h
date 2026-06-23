@@ -37,6 +37,7 @@
 #include "RMS_rectifier.h"
 #include "delay_line.h"
 #include "NAV_tuning_parameters.h"
+#include "differentiator.h"
 
 enum { ROLL, PITCH, HEADING};	//!< euler angles
 enum { FRONT, RIGHT, BOTTOM};	//!< BODY frame
@@ -91,7 +92,8 @@ public:
     bool external_mag_valid,
     const float3vector &GNSS_acceleration,
     float GNSS_heading,
-    bool GNSS_heading_valid);
+    bool GNSS_heading_valid,
+    float TAS);
 
   //! set the AHRS attitude using known euler angles
   inline void set_from_euler (float roll, float pitch, float heading)
@@ -225,6 +227,14 @@ public:
     const float3vector &mag,
     const float3vector &GNSS_acceleration);
 
+  //! update the AHRS taking only the acceleration as a reference
+  void update_blind (
+      const float3vector &gyro,
+      const float3vector &acc,
+      const float3vector &mag,
+      float TAS
+      );
+
   float getHeadingDifferenceAhrsDgnss () const
   {
     return heading_difference_AHRS_DGNSS;
@@ -322,6 +332,7 @@ private:
 #if ATTITUDE_ERROR_EVALUATED
   float3vector attitude_error;
 #endif
+  differentiator<float,float> TAS_diff;
 };
 
 #endif /* AHRS_H_ */
