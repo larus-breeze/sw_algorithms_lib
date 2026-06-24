@@ -266,7 +266,12 @@ private:
     MAGNETIC, D_GNSS
   };
 
-  void handle_magnetic_induction( const float3vector &measured_induction, const float3vector &x_mag_, bool x_mag_valid, const float3vector &gyro);
+  void handle_magnetic_induction(
+      const float3vector &measured_induction,
+      const float3vector &x_mag_,
+      bool x_mag_valid,
+      const float3vector &gyro,
+      bool measure_calibration);
 
   void handle_magnetic_calibration (void);
 

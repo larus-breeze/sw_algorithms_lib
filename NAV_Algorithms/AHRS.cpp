@@ -167,10 +167,11 @@ AHRS_type::update (const float3vector &gyro, const float3vector &acc,
 		   const float3vector &GNSS_acceleration, float GNSS_heading,
 		   bool GNSS_heading_valid, float TAS)
 {
-  handle_magnetic_induction (mag, external_mag, external_mag_valid, gyro);
 
   if (TAS <= 0.0f) // switch for the experimental AHRS
     {
+      handle_magnetic_induction (mag, external_mag, external_mag_valid, gyro, true);
+
 #if DISABLE_SAT_COMPASS
   if( false)
 #else
@@ -196,6 +197,7 @@ AHRS_type::update (const float3vector &gyro, const float3vector &acc,
     }
   else
     {
+	handle_magnetic_induction (mag, external_mag, external_mag_valid, gyro, false);
 	update_blind( gyro, acc, mag, TAS);
 //	update_experimental(gyro, acc, GNSS_acceleration);
     }
@@ -425,14 +427,23 @@ void AHRS_type::update_blind (
 
   float3vector motion_acceleration_nav = body2nav * motion_acceleration_body;
 
+  // calculate horizontal leveling error
+  nav_correction[NORTH] = - nav_acceleration[EAST]  + motion_acceleration_nav[EAST];
+  nav_correction[EAST]  = + nav_acceleration[NORTH] - motion_acceleration_nav[NORTH];
+
+#if 1
   float mag_correction =
       + nav_induction[NORTH] * expected_nav_induction[EAST]
       - nav_induction[EAST]  * expected_nav_induction[NORTH];
 
-  // calculate horizontal leveling error
-  nav_correction[NORTH] = - nav_acceleration[EAST]  + motion_acceleration_nav[EAST];
-  nav_correction[EAST]  = + nav_acceleration[NORTH] - motion_acceleration_nav[NORTH];
-  nav_correction[DOWN]  = magnetic_control_gain * mag_correction * 3.0f;
+  nav_correction[DOWN]  = magnetic_control_gain * mag_correction * 10.0f;
+#else
+  float3vector mag_correction_nav = nav_induction.vector_multiply(expected_nav_induction);
+
+  nav_correction[DOWN]  = 0.0f;
+  mag_correction_nav *= 30000.0f;
+  nav_correction += mag_correction_nav;
+#endif
 
   gyro_correction = body2nav.reverse_map (nav_correction);
 
@@ -490,7 +501,8 @@ void AHRS_type::handle_magnetic_induction (
     const float3vector &induction_measurement,
     const float3vector &external_induction_measurement,
     bool external_mag_valid,
-    const float3vector &gyro)
+    const float3vector &gyro,
+    bool measure_calibration)
 {
   flight_state_t old_circling_state = circling_state;
   update_circling_state ();
@@ -505,6 +517,9 @@ void AHRS_type::handle_magnetic_induction (
       float3vector mag_calibrated = compass_calibrator_3D.calibrate ( induction_measurement);
       body_induction = filter_magnetic_induction (gyro, mag_calibrated);
     }
+
+  if( not measure_calibration)
+    return;
 
   expected_body_induction = body2nav.reverse_map (expected_nav_induction);
 
