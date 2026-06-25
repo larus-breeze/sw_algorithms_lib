@@ -441,10 +441,11 @@ void AHRS_type::update_blind (
   gyro_correction = body2nav.reverse_map (nav_correction);
 
   gyro_correction *= BLIND_GAIN;
-  gyro_integrator += gyro_correction;
 
   if( circling_state == STRAIGHT_FLIGHT)
-    gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
+    gyro_integrator += gyro_correction;
+
+  gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
 
   gyro_correction_power = SQR( gyro_correction[0]) + SQR( gyro_correction[1]) +SQR( gyro_correction[2]);
 
