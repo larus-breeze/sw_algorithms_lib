@@ -65,6 +65,7 @@
 // These parameters have been tuned for the flight-dynamics of gliders
 // and the use of the MTI high-precision IMU
 #define P_GAIN 			0.03f			//!< Attitude controller: proportional gain
+#define BLIND_GAIN 		0.06f			//!< Attitude controller: proportional gain
 #define I_GAIN 			0.00006f 		//!< Attitude controller: integral gain
 #define H_GAIN 			38.0f			//!< Attitude controller: horizontal gain
 #define M_H_GAIN 		6.0f			//!< Attitude controller: horizontal gain magnetic

@@ -44,7 +44,7 @@ void navigator_t::update_at_100Hz (
       GNSS_acceleration,
     GNSS_heading,
     GNSS_fix_type == (SAT_FIX | SAT_HEADING),
-    -1.0f); // switch to legacy AHRS
+    -1.0f); // switch to GNSS-based AHRS
 
 #if DEVELOPMENT_ADDITIONS
   ahrs_magnetic.update(

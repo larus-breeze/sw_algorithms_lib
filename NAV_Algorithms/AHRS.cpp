@@ -168,7 +168,7 @@ AHRS_type::update (const float3vector &gyro, const float3vector &acc,
 		   bool GNSS_heading_valid, float TAS)
 {
 
-  if (TAS <= 0.0f) // switch for the experimental AHRS
+  if ( TAS <= 0.0f) // switch for the experimental AHRS
     {
       handle_magnetic_induction (mag, external_mag, external_mag_valid, gyro, true);
 
@@ -431,25 +431,21 @@ void AHRS_type::update_blind (
   nav_correction[NORTH] = - nav_acceleration[EAST]  + motion_acceleration_nav[EAST];
   nav_correction[EAST]  = + nav_acceleration[NORTH] - motion_acceleration_nav[NORTH];
 
-#if 1
-  float mag_correction =
-      + nav_induction[NORTH] * expected_nav_induction[EAST]
-      - nav_induction[EAST]  * expected_nav_induction[NORTH];
-
-  nav_correction[DOWN]  = magnetic_control_gain * mag_correction * 10.0f;
-#else
   float3vector mag_correction_nav = nav_induction.vector_multiply(expected_nav_induction);
 
-  nav_correction[DOWN]  = 0.0f;
-  mag_correction_nav *= 30000.0f;
+  mag_correction_nav *= 10.0f; // symmetric to acceleration
+  nav_correction[DOWN]  = 0;
+
   nav_correction += mag_correction_nav;
-#endif
 
   gyro_correction = body2nav.reverse_map (nav_correction);
 
-  gyro_correction *= 0.005;
+  gyro_correction *= BLIND_GAIN;
+  gyro_integrator += gyro_correction;
 
-  gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
+  if( circling_state == STRAIGHT_FLIGHT)
+    gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
+
   gyro_correction_power = SQR( gyro_correction[0]) + SQR( gyro_correction[1]) +SQR( gyro_correction[2]);
 
   // feed quaternion update with corrected sensor readings
