@@ -28,10 +28,11 @@
 #include "system_configuration.h"
 #include "float3vector.h"
 #include "embedded_memory.h"
+#include "reminder_flag.h"
 
 extern uint64_t FAT_time; //!< DOS FAT time for file usage
 
-extern bool GNSS_new_data_ready;
+extern reminder_flag GNSS_new_data_ready;
 extern bool D_GNSS_new_data_ready;
 
 //! binary data stream coming from the Ublox GNSS receiver
@@ -241,7 +242,7 @@ private:
   FIX_TYPE fix_type;
   inline bool checkSumCheck ( const uint8_t *buffer, uint8_t length)
   {
-    if( (buffer[2] != length) && (buffer[3] !=0))
+    if( (buffer[2] != length) || (buffer[3] !=0))
         return false;
 
     //Checksum A and B

@@ -54,13 +54,12 @@ public:
   void transpose(void)
   {
     for( int i=0; i<size; ++i)
-       for( int k=0; k<size; ++k)
-	 if( i != k)
-	   {
-	     datatype tmp = e[k][i];
-	     e[k][i] = e[i][k];
-	     e[i][k] = tmp;
-	   }
+       for( int k=i+1; k<size; ++k)
+	 {
+	   datatype tmp = e[k][i];
+	   e[k][i] = e[i][k];
+	   e[i][k] = tmp;
+	 }
   }
 
 //#ifdef DEBUG

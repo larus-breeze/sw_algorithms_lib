@@ -78,7 +78,7 @@ public:
   void set_earth_rotation (float latitude)
   {
     earth_rotation[NORTH] = COS( latitude) * OMEGA_EARTH;
-    earth_rotation[EAST] = 0.0f;
+    earth_rotation[EAST] = ZERO;
     earth_rotation[DOWN] = SIN( latitude) * OMEGA_EARTH;
   }
 

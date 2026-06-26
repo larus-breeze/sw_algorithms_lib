@@ -52,6 +52,8 @@ bool compass_calibrator_3D_t::learn (
   else
     sector_index = (turning_right ? OBSERVATIONS / TWO : 0) + (unsigned)(present_heading * RECIP_SECTOR_SIZE);
 
+  sector_index = CLIP( sector_index, 0, OBSERVATIONS - 1);
+
   // if we have just left the last sector to be collected: report ready for computation
   if( ( last_sector_collected != INVALID) && ( sector_index != last_sector_collected))
     return true;
@@ -176,7 +178,7 @@ bool compass_calibrator_3D_t::calculate( void)
 	}
 
       if(
-	  not ((mag_disturbance_sum / OBSERVATIONS) > MAGNETIC_DISTURBANCE_LIMIT) // not obviously bad calibration in use
+	  not ((mag_disturbance_sum / OBSERVATIONS) > MAGNETIC_DISTURBANCE_ACCEPTABLE) // not obviously bad calibration in use
 	  and
 	  ( ( calibration_status == INITIAL) or ( calibration_status == REGULAR) ) // having at least one old parameter set
 	)
