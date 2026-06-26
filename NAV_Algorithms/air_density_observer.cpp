@@ -61,12 +61,12 @@ air_data_result air_density_observer_t::feed_metering( float pressure, float GNS
 
   // process last acquisition phase data
   linear_least_square_result<evaluation_type> result;
-  density_QFF_calculator.evaluate(result);
+  bool result_valid = density_QFF_calculator.evaluate( result);
 
 //  Due to numeric effects, the variance has been observed
 //  to be negative in some cases.
 //  If this is the case: Throw away this result.
-  if( ( result.variance_slope < 0) || ( result.variance_offset < 0))
+  if( not result_valid or ( result.variance_slope < ZERO) or ( result.variance_offset < ZERO))
       {
       density_QFF_calculator.reset();
       air_data.valid=false;
