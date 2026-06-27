@@ -70,11 +70,11 @@ bool all_EEPROM_parameters_available( void)
 
 bool ensure_EEPROM_parameter_integrity( void)
 {
-  float dummy;
+  float value;
   const persistent_data_t * parameter = PERSISTENT_DATA;
   while( parameter < PERSISTENT_DATA + PERSISTENT_DATA_ENTRIES)
     {
-      if( true == read_EEPROM_value( parameter->id, dummy)) // parameter missing
+      if( true == read_EEPROM_value( parameter->id, value)) // parameter missing
 	{
 	  bool success = write_EEPROM_value( parameter->id, parameter->default_value);
 	  if( not success)
@@ -82,6 +82,17 @@ bool ensure_EEPROM_parameter_integrity( void)
 	}
       ++parameter;
     }
+
+  // avoid exception if antenna base length set too short or zero
+  (void)read_EEPROM_value( ANT_BASELENGTH, value);
+  if( value < 0.5f) // not acceptable
+    {
+      value = 1.0f;
+      bool success = write_EEPROM_value( ANT_BASELENGTH, value);
+      if( not success)
+	return false;
+    }
+
   return true;
 }
 
