@@ -4,6 +4,9 @@
  * @author		Dr. Klaus Schaefer
  **************************************************************************/
 
+#ifndef PARAMETER_SETTING_H_
+#define PARAMETER_SETTING_H_
+
 typedef enum
 {
   MC_CREADY,
@@ -21,3 +24,4 @@ typedef struct
 }
 parameter_setting_message;
 
+#endif // PARAMETER_SETTING_H_
