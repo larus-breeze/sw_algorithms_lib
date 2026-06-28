@@ -8,7 +8,7 @@
 
 #include "data_structures.h"
 #include "embedded_math.h"
-#include "CAN_listener.h"
+#include "parameter_setting.h"
 
 //! contains a string including it's length
 class string_buffer_t
