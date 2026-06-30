@@ -121,7 +121,7 @@ typedef struct
   float3vector nav_acceleration_mag;	//!< NAV acceleration from mag AHRS
   float3vector nav_induction_mag;	//!< NAV induction from mag AHRS
 
-  float speed_compensation[3];		//!< Speed compensator signals experimental
+  float speed_compensation[4];		//!< Speed compensator signals experimental
 
 #endif
 } state_vector_t;

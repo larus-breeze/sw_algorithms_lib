@@ -220,8 +220,6 @@ void navigator_t::report_data( state_vector_t &d)
     d.crosswind			= internal_wind_observer.get_crosswind();
     d.inst_wind_corrected_N	= internal_wind_observer.get_corrected_wind()[NORTH];
     d.inst_wind_corrected_E	= internal_wind_observer.get_corrected_wind()[EAST];
-    for( unsigned i=0; i<3; ++i)
-      d.speed_compensation[i]  	= variometer.get_speed_compensation(i);
     d.cross_acc_correction 	= ahrs_magnetic.get_cross_acc_correction();
     d.vario_wind_N		= internal_wind_observer.get_speed_compensator_wind()[NORTH];
     d.vario_wind_E		= internal_wind_observer.get_speed_compensator_wind()[EAST];
@@ -229,5 +227,7 @@ void navigator_t::report_data( state_vector_t &d)
     d.body_induction_error	= ahrs.getBodyInductionError();
     d.gyro_correction_power	= ahrs.getGyro_correction_Power();
     d.expected_nav_induction	= ahrs.get_expected_nav_induction();
+    for( unsigned i=0; i <= 3; ++i)
+      d.speed_compensation[i]  	= variometer.get_speed_compensation(i);
 #endif
 }
