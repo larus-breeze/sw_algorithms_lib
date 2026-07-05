@@ -73,7 +73,7 @@
 #define HIGH_TURN_RATE 		4.0f*M_PI_F/180.0f	//!< turn rate high limit
 #define LOW_TURN_RATE  		0.5f*M_PI_F/180.0f	//!< turn rate low limit
 
-#define SPEED_COMPENSATION_FUSIONER_FEEDBACK 	0.99995f // empirically tuned alpha
+#define SPEED_COMPENSATION_FUSIONER_FEEDBACK 	0.9995f // empirically tuned alpha
 #define USE_OLD_FASHIONED_PRESSURE_VARIO 	1 // for vario comparison tests (offline)
 
 #define USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING 1 //!< if 1: do not use induction to control attitude while circling
