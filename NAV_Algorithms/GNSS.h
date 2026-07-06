@@ -33,7 +33,6 @@
 extern uint64_t FAT_time; //!< DOS FAT time for file usage
 
 extern reminder_flag GNSS_new_data_ready;
-extern bool D_GNSS_new_data_ready;
 
 //! binary data stream coming from the Ublox GNSS receiver
 typedef struct
