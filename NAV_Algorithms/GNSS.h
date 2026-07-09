@@ -92,6 +92,27 @@ typedef struct
   uint32_t flags;	// 0b1100110111 if optimal result
 } uBlox_relpos_NED;
 
+//! binary data stream coming from the Ublox D-GNSS receiver
+typedef struct
+{
+  uint8_t version; 	// = 0x02
+  uint8_t dummy[3];	// reserved
+  uint32_t TOW;		// time of week
+  int32_t relPosN;	// rel pos N / mm
+  int32_t relPosE;	// rel pos E / mm
+  int32_t relPosD;	// rel pos D / mm
+  int32_t relPoslength;	// rel pos length / mm
+  int32_t relPosheading;// rel pos heading / 1E⁻5 degrees
+  uint32_t dummy1;	// reserved
+  uint32_t accN;	// accuracy north / mm
+  uint32_t accE;	// accuracy north / mm
+  uint32_t accD;	// accuracy north / mm
+  uint32_t acc_len;	// accuracy length / mm
+  uint32_t acc_heading;	// accuracy heading / 1e-5 degrees
+  uint32_t dummy2;	// reserved
+  uint32_t flags;	// bit 0 : fix ok, bit2: rel pos valid
+} uBlox_DAHEADING;
+
 typedef enum { FIX_none, FIX_dead, FIX_2d, FIX_3d} FIX_TYPE;
 typedef enum { GNSS_HAVE_FIX, GNSS_NO_FIX, GNSS_ERROR} GNSS_Result;
 
@@ -208,8 +229,9 @@ public:
   GNSS_type( D_GNSS_coordinates_t & coo);
 #endif
   GNSS_Result update( const uint8_t * data);
-  GNSS_Result update_delta( const uint8_t * data);
-  GNSS_Result update_combined( uint8_t * data);
+  GNSS_Result update_delta_X20D( const uint8_t * data);
+  GNSS_Result update_delta_F9x( const uint8_t * data);
+  GNSS_Result update_combined ( const uint8_t *data, GNSS_configration_t gnss);
 
   void reset_reference( void)
   {
