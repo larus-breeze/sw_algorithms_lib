@@ -238,6 +238,8 @@ public:
     fix_type = FIX_none;
   }
 
+  void report_dead_GNSS( void);
+
   FIX_TYPE get_fix_type( void) const
   {
     return fix_type;
