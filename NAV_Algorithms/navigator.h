@@ -152,11 +152,6 @@ public:
     atmosphere.initialize( MSL_altitude);
   }
 
-  void feed_QFF_density_metering( float pressure, float MSL_altitude)
-  {
-    atmosphere.air_density_metering( pressure, MSL_altitude);
-  }
-
   void report_data( state_vector_t &d);
 
   void set_from_acc_mag ( const float3vector &acc, const float3vector &mag)

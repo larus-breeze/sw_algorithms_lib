@@ -26,19 +26,22 @@
 #include <air_density_observer.h>
 #include "NAV_tuning_parameters.h"
 
-air_data_result air_density_observer_t::feed_metering( float pressure, float GNSS_altitude)
+#include "stdio.h" // todo patch
+
+density_data air_density_observer_t::feed_metering( float pressure, float GNSS_altitude)
 {
-  air_data_result air_data;
+  density_data air_data;
 
   pressure_decimation_filter.respond( pressure);
-  altitude_decimation_filter.respond( GNSS_altitude);
+
   --decimation_counter;
   if( decimation_counter > 0)
     return air_data;
   decimation_counter = AIR_DENSITY_DECIMATION;
 
-  density_QFF_calculator.add_value( GNSS_altitude * 100.0f, pressure);
+  density_QFF_calculator.add_observation_point( GNSS_altitude * altitude_scale_factor, pressure_decimation_filter.get_output() * pressure_scale_factor);
 
+#if 1
   // update elevation range
   if( GNSS_altitude > max_altitude)
     max_altitude = GNSS_altitude;
@@ -58,38 +61,30 @@ air_data_result air_density_observer_t::feed_metering( float pressure, float GNS
   // if data points too rare: continue
   if (density_QFF_calculator.get_count() < 100)
     return air_data;
+#else
 
+  ++sample_counter;
+  if(( sample_counter % 1000) != 0)
+    return air_data;
+
+#endif
   // process last acquisition phase data
-  linear_least_square_result<evaluation_type> result;
-  bool result_valid = density_QFF_calculator.evaluate( result);
+  density_QFF_calculator.calculate();
 
-//  Due to numeric effects, the variance has been observed
-//  to be negative in some cases.
-//  If this is the case: Throw away this result.
-  if( not result_valid or ( result.variance_slope < ZERO) or ( result.variance_offset < ZERO))
-      {
-      density_QFF_calculator.reset();
-      air_data.valid=false;
-      return air_data;
-      }
+  air_data.density_offset = density_QFF_calculator.get_coefficient( 1) / -9.81;
+  air_data.density_slope = density_QFF_calculator.get_coefficient( 2) * -2.0f / 9.81f;
+  air_data.variance = density_QFF_calculator.get_coefficient( -1);
 
- if( (result.variance_slope < MAX_ALLOWED_SLOPE_VARIANCE) &&
-     (result.variance_offset < MAX_ALLOWED_OFFSET_VARIANCE) )
-    {
-      air_data.QFF = (float)(result.y_offset);
-      float density = 100.0f * (float)(result.slope) * - RECIP_GRAVITY; // div by -9.81f;
+  printf("\nrel error: %e\n", SQRT( air_data.variance) / air_data.density_slope);
 
-      float reference_altitude = density_QFF_calculator.get_mean_x() * 0.01f;
-      float std_density =
-	  reference_altitude * reference_altitude *   0.000000003547494f
-	  -0.000115412739613f * reference_altitude +1.224096628212817f;
-      air_data.density_correction = density / std_density;
-      air_data.density_variance = result.variance_slope;
-      air_data.valid = true;
-    }
+//  if( true or air_data.variance < 1e10) // todo patch
+  if( air_data.density_offset < 1.3f and air_data.density_offset > 1.0f)
+    air_data.valid = true;
+  else
+    air_data.valid = false;
 
   max_altitude = min_altitude = GNSS_altitude;
-  density_QFF_calculator.reset();
+  density_QFF_calculator.reset(); // todo patch
 
   return air_data;
 }

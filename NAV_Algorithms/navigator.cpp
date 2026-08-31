@@ -151,10 +151,12 @@ bool navigator_t::update_at_10Hz ()
       if( airborne_detector.detect_just_landed())
 	landing_detected_here = true;
 
-      if( airborne_detector.is_airborne())
-	atmosphere.air_density_metering(
+      if( airborne_detector.is_airborne() /* todo patch and not get_speed_accuracy_bad_status() */)
+      	atmosphere.air_density_metering
+	  (
 	    air_pressure_resampler_100Hz_10Hz.get_output(),
-	    variometer.get_filtered_GNSS_altitude());
+	    variometer.get_filtered_GNSS_altitude()
+	  );
     }
 
   return landing_detected_here;

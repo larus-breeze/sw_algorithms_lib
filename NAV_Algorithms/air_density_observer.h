@@ -26,34 +26,36 @@
 #define AIR_DENSITY_OBSERVER_H_
 
 #include "pt2.h"
-#include "Linear_Least_Square_Fit.h"
+#include "QuadraticLeastSquareFit.h"
 #include "trigger.h"
 
-typedef double evaluation_type;
-typedef uint64_t measurement_type;
+typedef float evaluation_type;
+typedef float  acquisition_type;
+#define altitude_scale_factor 1.0f
+#define pressure_scale_factor 1.0f
 
 #define ALTITUDE_TRIGGER_HYSTERESIS	50.0f
 #define MAX_ALLOWED_SLOPE_VARIANCE	3e-9
 #define MAX_ALLOWED_OFFSET_VARIANCE	200
-#define MINIMUM_ALTITUDE_RANGE		300.0f
-#define MAXIMUM_ALTITUDE_RANGE		800.0f
+#define MINIMUM_ALTITUDE_RANGE		250.0f
+#define MAXIMUM_ALTITUDE_RANGE		500.0f
 #define USE_AIR_DENSITY_LETHARGY	1
 #define AIR_DENSITY_LETHARGY 		0.7f
 #define AIR_DENSITY_DECIMATION		20
 
 //! Maintains offset and slope of the air density measurement
-class air_data_result
+class density_data
 {
 public:
-  air_data_result( void)
-    : density_correction(1.0f),
-      density_variance(1.0f),
-      QFF(101325.0f),
+  density_data( void)
+    : density_offset( 1.224096628212817f),
+      density_slope( -0.000115412739613f),
+      variance( ZERO),
       valid( false)
   {}
-  float density_correction;
-  float density_variance;
-  float QFF;
+  float density_offset;
+  float density_slope;
+  float variance;
   bool valid;
 };
 
@@ -66,11 +68,12 @@ public:
     max_altitude(0.0f),
     altitude_trigger( ALTITUDE_TRIGGER_HYSTERESIS),
     decimation_counter( 20),
-    altitude_decimation_filter( 1.0f / AIR_DENSITY_DECIMATION * 0.25f),
+    sample_counter( 0),
     pressure_decimation_filter( 1.0f / AIR_DENSITY_DECIMATION * 0.25f)
   {
   }
-  air_data_result feed_metering( float pressure, float MSL_altitude);
+
+  density_data feed_metering( float pressure, float MSL_altitude);
 
   void initialize( float altitude)
   {
@@ -79,14 +82,12 @@ public:
     density_QFF_calculator.reset();
   }
 private:
-
-  //    linear_least_square_fit<int64_t,evaluation_float_type> density_QFF_calculator;
-    linear_least_square_fit< measurement_type, evaluation_type> density_QFF_calculator;
+    Quadratic_Least_Square_Fit <acquisition_type, evaluation_type> density_QFF_calculator;
     float min_altitude;
     float max_altitude;
     trigger altitude_trigger;
     unsigned decimation_counter;
-    pt2 <float, float> altitude_decimation_filter;
+    unsigned sample_counter;
     pt2 <float, float> pressure_decimation_filter;
 };
 

@@ -383,9 +383,6 @@ bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates
         {
   	update_system_state_clear(GNSS_VELOCITY_ACCURACY_BAD);
 
-  	// this stuff can only be done with good GNSS quality
-  	navigator.feed_QFF_density_metering( m.static_pressure - QNH_offset, c.GNSS_MSL_altitude);
-
   	if( ++magnetic_induction_update_counter > MAGNETIC_UPDATE_TIME_TENTH_SECS) // every 15 minutes
   	  {
   	    update_magnetic_induction_data( c.latitude, c.longitude);
