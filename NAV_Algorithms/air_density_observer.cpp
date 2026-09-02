@@ -66,17 +66,7 @@ air_data_result air_density_observer_t::feed_metering( float pressure, float GNS
   // process last acquisition phase data
   linear_least_square_result<evaluation_type> result;
   density_QFF_calculator.evaluate(result);
-#if 0
-//  Due to numeric effects, the variance has been observed
-//  to be negative in some cases.
-//  If this is the case: Throw away this result.
-  if( ( result.variance_slope < 0) || ( result.variance_offset < 0))
-      {
-      density_QFF_calculator.reset();
-      air_data.valid=false;
-      return air_data;
-      }
-#endif
+
   air_data.QFF = (float)(result.y_offset);
   float density = 100.0f * (float)(result.slope) * - RECIP_GRAVITY;
 
@@ -85,7 +75,6 @@ air_data_result air_density_observer_t::feed_metering( float pressure, float GNS
       reference_altitude * reference_altitude *   0.000000003547494f
       -0.000115412739613f * reference_altitude +1.224096628212817f;
   air_data.density_correction = density / std_density;
-  air_data.density_variance = result.variance_slope;
 
   air_data.valid = true;
 
