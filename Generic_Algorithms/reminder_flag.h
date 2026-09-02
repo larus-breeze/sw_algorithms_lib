@@ -19,7 +19,7 @@ public:
   }
 
 private:
-  bool status;
+  volatile bool status;
 };
 
 #endif /* REMINDER_FLAG_H_ */

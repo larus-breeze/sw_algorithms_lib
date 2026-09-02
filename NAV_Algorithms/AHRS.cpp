@@ -143,7 +143,8 @@ AHRS_type::AHRS_type (float sampling_time)
   magnetic_calibration_updated( false),
   external_magnetic_calibration_updated( false),
   mag_calibration_complete( false),
-  external_mag_calibration_complete( false)
+  external_mag_calibration_complete( false),
+  TAS_diff( 1.0f, 0.01f)
 {
   update_magnetic_loop_gain(); // adapt to magnetic inclination
 
@@ -159,40 +160,46 @@ void AHRS_type::tune( void)
   antenna_RIGHT_correction = configuration( ANT_SLAVE_RIGHT) / configuration( ANT_BASELENGTH);
 }
 
-void AHRS_type::update (
-  const float3vector &gyro,
-  const float3vector &acc,
-  const float3vector &mag,
-  const float3vector &external_mag,
-  bool external_mag_valid,
-  const float3vector &GNSS_acceleration,
-  float GNSS_heading,
-  bool GNSS_heading_valid)
+void
+AHRS_type::update (const float3vector &gyro, const float3vector &acc,
+		   const float3vector &mag, const float3vector &external_mag,
+		   bool external_mag_valid,
+		   const float3vector &GNSS_acceleration, float GNSS_heading,
+		   bool GNSS_heading_valid, float TAS)
 {
-  handle_magnetic_induction( mag, external_mag, external_mag_valid, gyro);
+
+  if ( TAS <= 0.0f) // switch for the experimental AHRS
+    {
+      handle_magnetic_induction (mag, external_mag, external_mag_valid, gyro, true);
 
 #if DISABLE_SAT_COMPASS
   if( false)
 #else
-  if( GNSS_heading_valid)
+      if (GNSS_heading_valid)
 #endif
-    {
-      if( heading_source == MAGNETIC)
 	{
-	  heading_source = D_GNSS;
-	  heading_source_changed = true;
+	  if (heading_source == MAGNETIC)
+	    {
+	      heading_source = D_GNSS;
+	      heading_source_changed = true;
+	    }
+	  update_diff_GNSS (gyro, acc, GNSS_acceleration, GNSS_heading);
 	}
-      update_diff_GNSS (gyro, acc, GNSS_acceleration, GNSS_heading);
+      else
+	{
+	  if (heading_source == D_GNSS)
+	    {
+	      heading_source = MAGNETIC;
+	      heading_source_changed = true;
+	    }
+	  update_compass (gyro, acc, GNSS_acceleration);
+	}
     }
   else
     {
-      if( heading_source == D_GNSS)
-	{
-	  heading_source = MAGNETIC;
-	  heading_source_changed = true;
-	}
-      update_compass(gyro, acc, GNSS_acceleration);
-//      update_experimental(gyro, acc, GNSS_acceleration);
+	handle_magnetic_induction (mag, external_mag, external_mag_valid, gyro, false);
+	update_blind( gyro, acc, mag, TAS);
+//	update_experimental(gyro, acc, GNSS_acceleration);
     }
 }
 
@@ -399,6 +406,54 @@ void AHRS_type::update_compass (
 }
 
 /**
+ * @brief  update attitude from IMU data and magnetometer w/o GNSS information
+ */
+void AHRS_type::update_blind (
+  const float3vector &gyro,
+  const float3vector &acc,
+  const float3vector &mag,
+  float TAS
+  )
+{
+  float3vector nav_acceleration = body2nav * acc;
+  float3vector nav_induction = body2nav * body_induction;
+
+
+  float3vector velocity_body;
+  velocity_body[FRONT] = TAS;
+
+  float3vector motion_acceleration_body = gyro.vector_multiply( velocity_body);
+  motion_acceleration_body[FRONT] += TAS_diff.respond(TAS);
+
+  float3vector motion_acceleration_nav = body2nav * motion_acceleration_body;
+
+  // calculate horizontal leveling error
+  nav_correction[NORTH] = - nav_acceleration[EAST]  + motion_acceleration_nav[EAST];
+  nav_correction[EAST]  = + nav_acceleration[NORTH] - motion_acceleration_nav[NORTH];
+
+  float3vector mag_correction_nav = nav_induction.vector_multiply(expected_nav_induction);
+
+  mag_correction_nav *= 10.0f; // symmetric to acceleration
+  nav_correction[DOWN]  = 0;
+
+  nav_correction += mag_correction_nav;
+
+  gyro_correction = body2nav.reverse_map (nav_correction);
+
+  gyro_correction *= BLIND_GAIN;
+
+  if( circling_state == STRAIGHT_FLIGHT)
+    gyro_integrator += gyro_correction;
+
+  gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
+
+  gyro_correction_power = SQR( gyro_correction[0]) + SQR( gyro_correction[1]) +SQR( gyro_correction[2]);
+
+  // feed quaternion update with corrected sensor readings
+  update_attitude (acc, gyro + gyro_correction, body_induction);
+}
+
+/**
  * @brief  update attitude from IMU data and magnetometer
  */
 void AHRS_type::update_experimental (
@@ -443,7 +498,8 @@ void AHRS_type::handle_magnetic_induction (
     const float3vector &induction_measurement,
     const float3vector &external_induction_measurement,
     bool external_mag_valid,
-    const float3vector &gyro)
+    const float3vector &gyro,
+    bool measure_calibration)
 {
   flight_state_t old_circling_state = circling_state;
   update_circling_state ();
@@ -458,6 +514,9 @@ void AHRS_type::handle_magnetic_induction (
       float3vector mag_calibrated = compass_calibrator_3D.calibrate ( induction_measurement);
       body_induction = filter_magnetic_induction (gyro, mag_calibrated);
     }
+
+  if( not measure_calibration)
+    return;
 
   expected_body_induction = body2nav.reverse_map (expected_nav_induction);
 

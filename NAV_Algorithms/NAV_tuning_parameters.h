@@ -25,6 +25,8 @@
 #ifndef NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_
 #define NAV_ALGORITHMS_NAV_TUNING_PARAMETERS_H_
 
+#define LEAST_SQUARE_FIT_MIN_X_AC_POWER 1
+
 #define OMEGA_EARTH 7.2921150e-5f
 #define MAGNETIC_UPDATE_TIME_TENTH_SECS 9000
 
@@ -65,6 +67,7 @@
 // These parameters have been tuned for the flight-dynamics of gliders
 // and the use of the MTI high-precision IMU
 #define P_GAIN 			0.03f			//!< Attitude controller: proportional gain
+#define BLIND_GAIN 		0.06f			//!< Attitude controller: proportional gain
 #define I_GAIN 			0.00006f 		//!< Attitude controller: integral gain
 #define H_GAIN 			38.0f			//!< Attitude controller: horizontal gain
 #define M_H_GAIN 		6.0f			//!< Attitude controller: horizontal gain magnetic
@@ -72,7 +75,7 @@
 #define HIGH_TURN_RATE 		4.0f*M_PI_F/180.0f	//!< turn rate high limit
 #define LOW_TURN_RATE  		0.5f*M_PI_F/180.0f	//!< turn rate low limit
 
-#define SPEED_COMPENSATION_FUSIONER_FEEDBACK 	0.99995f // empirically tuned alpha
+#define SPEED_COMPENSATION_FUSIONER_FEEDBACK 	0.9995f // empirically tuned alpha
 #define USE_OLD_FASHIONED_PRESSURE_VARIO 	1 // for vario comparison tests (offline)
 
 #define USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING 1 //!< if 1: do not use induction to control attitude while circling

@@ -27,9 +27,9 @@
 #define APPLICATION_ATMOSPHERE_H_
 
 #include "embedded_math.h"
-#include <air_density_observer.h>
-#include "NAV_tuning_parameters.h"
 #include "system_configuration.h"
+#include "NAV_tuning_parameters.h"
+#include <air_density_observer.h>
 #include "signal_flight_event.h"
 
 #define RECIP_STD_DENSITY_TIMES_2 1.632f

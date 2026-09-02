@@ -130,7 +130,7 @@ public:
     if( induction_data.valid)
       navigator.update_magnetic_induction_data( induction_data.declination, induction_data.inclination);
 
-    navigator.set_earth_rotation(latitude);
+    navigator.set_earth_rotation( latitude * M_PI / 180.0);
   }
 
   //! attitude setup after getting the first set of acceleration an magnetic data

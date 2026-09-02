@@ -23,8 +23,8 @@
  **************************************************************************/
 
 #include "embedded_math.h"
-#include <air_density_observer.h>
 #include "NAV_tuning_parameters.h"
+#include <air_density_observer.h>
 
 air_data_result air_density_observer_t::feed_metering( float pressure, float GNSS_altitude)
 {
@@ -65,7 +65,7 @@ air_data_result air_density_observer_t::feed_metering( float pressure, float GNS
 
   // process last acquisition phase data
   linear_least_square_result<evaluation_type> result;
-  density_QFF_calculator.evaluate(result);
+  bool result_valid = density_QFF_calculator.evaluate( result);
 
   air_data.QFF = (float)(result.y_offset);
   float density = 100.0f * (float)(result.slope) * - RECIP_GRAVITY;

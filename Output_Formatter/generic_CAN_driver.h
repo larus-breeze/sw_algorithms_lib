@@ -38,9 +38,17 @@ public:
   {}
   bool operator ==(const CANpacket&right)
     {
-      return 	(id == right.id) &&
-		(dlc = right.dlc) &&
-		(data_l == right.data_l);
+      if(
+	  (id != right.id) or
+	  (dlc != right.dlc)
+	  )
+	return false;
+
+      for( unsigned count = dlc; count > 0; --count)
+	if( data_b[ count-1] != right.data_b[ count-1])
+	  return false;
+
+      return true;
     }
   uint16_t id; 	//!< identifier
   uint16_t dlc; //!< data length code

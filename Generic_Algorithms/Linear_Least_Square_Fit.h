@@ -84,18 +84,24 @@ template<typename sample_type, typename evaluation_type=sample_type>
       sum_xy *= factor;
       n *= factor;
     }
-    void
-    evaluate (evaluation_type &a, evaluation_type &b, evaluation_type &variance_a, evaluation_type &variance_b) const
+
+    bool evaluate (evaluation_type &a, evaluation_type &b, evaluation_type &variance_a, evaluation_type &variance_b) const
     {
+      if( n < 3)
+	return false;
+
       evaluation_type inv_n = (evaluation_type)ONE / n;
 
       evaluation_type x_mean = (evaluation_type)sum_x * inv_n;
       evaluation_type Qx = (evaluation_type)sum_xx - inv_n * sum_x * sum_x;
+
+      if( Qx < LEAST_SQUARE_FIT_MIN_X_AC_POWER)
+	return false;
+
       evaluation_type invQx = (evaluation_type)ONE / Qx;
       evaluation_type Qy = (evaluation_type)sum_yy - inv_n * sum_y * sum_y;
       evaluation_type Qxy = (evaluation_type)sum_xy - inv_n * sum_x * sum_y;
 
-//      ASSERT( n > TWO);
       evaluation_type Vyx = (Qy - Qxy * Qxy / Qx) / (n - TWO);
 
       b = Qxy * invQx;
@@ -103,11 +109,13 @@ template<typename sample_type, typename evaluation_type=sample_type>
 
       variance_a = Vyx * (inv_n + SQR( x_mean) * invQx);
       variance_b = Vyx * invQx;
+
+      return true;
     }
-    void
-    evaluate (linear_least_square_result<evaluation_type> &r) const
+
+    bool evaluate (linear_least_square_result<evaluation_type> &r) const
     {
-      evaluate (r.y_offset, r.slope, r.variance_offset, r.variance_slope);
+      return evaluate (r.y_offset, r.slope, r.variance_offset, r.variance_slope);
     }
     unsigned
     get_count (void) const

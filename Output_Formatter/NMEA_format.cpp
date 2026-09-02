@@ -225,6 +225,16 @@ void format_PLARB ( float voltage, char * &p)
   p = NMEA_append_tail ( line_start);
 }
 
+ROM char PLARF[]="$PLARF,";
+
+void format_PLARF ( const char * fw_version, char * &p)
+{
+  char * line_start = p;
+  append_string( p, PLARF);
+  append_string( p, fw_version);
+  p = NMEA_append_tail ( line_start);
+}
+
 ROM char PLARA[]="$PLARA,";
 
 void format_PLARA ( float roll, float pitch, float yaw, char * &p)
@@ -316,19 +326,19 @@ ROM char PLARS_BAL[]="BAL,";
 ROM char PLARS_BUGS[]="BUGS,";
 ROM char PLARS_QNH[]="QNH,";
 ROM char PLARS_CIR[]="CIR,";
+
 //! format setting NMEA for MacCready, Ballast, Bugs, QNH
-void format_PLARS ( float value, PLARS_TYPES option, char * &p)
+void format_PLARS ( float value, parameter_type type, char * &p)
 {
   char * line_start = p;
   append_string( p, PLARS);
-  enum PLARS_TYPES type = option;
 
   switch (type) {
-    case MC:   //MC MacCready m/s (0.0 - 5.0)
+    case MC_CREADY:   //MC MacCready m/s (0.0 - 5.0)
       append_string( p, PLARS_MC);
       to_ascii_n_decimals( value, 1, p);
       break;
-    case BAL:  //BAL Ballast (fraction of water ballast 0.000 - 1.000)
+    case BALLAST:  //BAL Ballast (fraction of water ballast 0.000 - 1.000)
       CLIP( value, 0.0f, 1.0f);
       append_string( p, PLARS_BAL);
       to_ascii_n_decimals( value, 3, p);
@@ -343,7 +353,7 @@ void format_PLARS ( float value, PLARS_TYPES option, char * &p)
       append_string( p, PLARS_QNH);
       to_ascii_n_decimals( value  * 0.01f, 2, p); // Pa -> hPa
         break;
-    case CIR: //1 == Circling or 0 == Cruising
+    case VARIO_MODE: //1 == Circling or 0 == Cruising
       append_string( p, PLARS_CIR);
       if (value < 0.5)  // CAN definition 0 == Vario
 	{
@@ -400,7 +410,7 @@ void format_NMEA_string_fast( const state_vector_t &output_data, string_buffer_t
 }
 
 //! this procedure formats all our NMEA sequences
-void format_NMEA_string_slow( const measurement_data_t &m, const D_GNSS_coordinates_t &c, const state_vector_t &output_data, string_buffer_t &NMEA_buf)
+void format_NMEA_string_slow( const measurement_data_t &m, const D_GNSS_coordinates_t &c, const state_vector_t &output_data, const char *fw_version, string_buffer_t &NMEA_buf)
 {
   char *next = NMEA_buf.string + NMEA_buf.length;
 
@@ -418,6 +428,8 @@ void format_NMEA_string_slow( const measurement_data_t &m, const D_GNSS_coordina
 
   // average wind
   format_PLARW (output_data.user_wind_average[NORTH], output_data.user_wind_average[EAST], 'A', next);
+
+  format_PLARF( fw_version, next);
 
 //  assert(   next - NMEA_buf.string < string_buffer_t::BUFLEN);
   NMEA_buf.length = next - NMEA_buf.string;

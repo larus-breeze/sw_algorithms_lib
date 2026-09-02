@@ -43,12 +43,19 @@ void navigator_t::update_at_100Hz (
       x_mag_valid,
       GNSS_acceleration,
     GNSS_heading,
-    GNSS_fix_type == (SAT_FIX | SAT_HEADING));
+    GNSS_fix_type == (SAT_FIX | SAT_HEADING),
+    -1.0f); // switch to GNSS-based AHRS
 
 #if DEVELOPMENT_ADDITIONS
-  ahrs_magnetic.update_compass(
-      gyro, acc,
-      GNSS_acceleration);
+  ahrs_magnetic.update(
+          gyro, acc,
+          mag,
+          x_mag,
+          x_mag_valid,
+          GNSS_acceleration,
+        GNSS_heading,
+        GNSS_fix_type == (SAT_FIX | SAT_HEADING),
+        TAS);
 #endif
   float3vector heading_vector;
   heading_vector[NORTH] = ahrs.get_north ();

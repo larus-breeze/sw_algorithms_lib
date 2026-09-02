@@ -52,7 +52,8 @@ public:
       return false;
 
     linear_least_square_result <double> result;
-    llsf.evaluate( result);
+    if( not llsf.evaluate( result))
+      return false;
 
     samples_right = samples_left = 0;
     llsf.reset();

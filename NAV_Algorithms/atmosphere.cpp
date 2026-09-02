@@ -82,18 +82,18 @@ float atmosphere_t::calculateGasConstantHumAir(
  * Calculate the density of air as a function of temperature, pressure and
  * relative humidity.
  *
- * @param humidity Humidity in % relative humidity x1000.
+ * @param humidity Humidity in % relative humidity
  *
  * @param pressure Pressure in Pascal.
  *
- * @param temperature Temperature in degree celsius x100.
+ * @param temperature Temperature in degree celsius
  *
  * @return the air density in kg/m^3.
  */
 float atmosphere_t::calculateAirDensity(
     float humidity, float pressure, float temperature)
 {
-	float abs_temp = (CELSIUS_TO_KELVIN_OFFSET + temperature);
-	float gasConst = calculateGasConstantHumAir(humidity, pressure, abs_temp);
+	float abs_temp = (CELSIUS_TO_KELVIN_OFFSET + temperature * 100.0f);
+	float gasConst = calculateGasConstantHumAir( humidity * 1000.0f, pressure, abs_temp);
 	return pressure / gasConst / temperature;
 }
