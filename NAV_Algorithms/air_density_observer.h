@@ -33,12 +33,10 @@ typedef double evaluation_type;
 typedef uint64_t measurement_type;
 
 #define ALTITUDE_TRIGGER_HYSTERESIS	50.0f
-#define MAX_ALLOWED_SLOPE_VARIANCE	3e-9
+#define MAX_ALLOWED_SLOPE_VARIANCE	1e-8 // 3e-9
 #define MAX_ALLOWED_OFFSET_VARIANCE	200
-#define MINIMUM_ALTITUDE_RANGE		300.0f
-#define MAXIMUM_ALTITUDE_RANGE		800.0f
-#define USE_AIR_DENSITY_LETHARGY	1
-#define AIR_DENSITY_LETHARGY 		0.7f
+#define MINIMUM_ALTITUDE_RANGE		250.0f
+#define MAXIMUM_ALTITUDE_RANGE		500.0f
 #define AIR_DENSITY_DECIMATION		20
 
 //! Maintains offset and slope of the air density measurement
@@ -46,13 +44,17 @@ class air_data_result
 {
 public:
   air_data_result( void)
-    : density_correction(1.0f),
-      density_variance(1.0f),
+    : density_correction( ONE),
+      density_variance( ONE),
+      density_slope( ZERO),
+      density_offset( ZERO),
       QFF(101325.0f),
       valid( false)
   {}
   float density_correction;
   float density_variance;
+  float density_slope;
+  float density_offset;
   float QFF;
   bool valid;
 };
@@ -62,8 +64,8 @@ class air_density_observer_t
 {
 public:
   air_density_observer_t (void)
-  : min_altitude(10000.0f),
-    max_altitude(0.0f),
+  : min_altitude( 10000.0f),
+    max_altitude( ZERO),
     altitude_trigger( ALTITUDE_TRIGGER_HYSTERESIS),
     decimation_counter( 20),
     altitude_decimation_filter( 1.0f / AIR_DENSITY_DECIMATION * 0.25f),
@@ -79,9 +81,8 @@ public:
     density_QFF_calculator.reset();
   }
 private:
-
-  //    linear_least_square_fit<int64_t,evaluation_float_type> density_QFF_calculator;
-    linear_least_square_fit< measurement_type, evaluation_type> density_QFF_calculator;
+  linear_least_square_fit< measurement_type, evaluation_type> density_QFF_calculator;
+  linear_least_square_fit< float, float> density_over_altitude_fit;
     float min_altitude;
     float max_altitude;
     trigger altitude_trigger;

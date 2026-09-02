@@ -74,6 +74,16 @@ template<typename sample_type, typename evaluation_type=sample_type>
     {
       sum_x = sum_xx = sum_y = sum_yy = sum_xy = n = ZERO;
     }
+    void forget( void)
+    {
+      float factor = 0.5f;
+      sum_x *= factor;
+      sum_xx *= factor;
+      sum_y *= factor;
+      sum_yy *= factor;
+      sum_xy *= factor;
+      n *= factor;
+    }
     void
     evaluate (evaluation_type &a, evaluation_type &b, evaluation_type &variance_a, evaluation_type &variance_b) const
     {

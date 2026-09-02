@@ -50,7 +50,9 @@ public:
   atmosphere_t( float p_abs)
   :
     pressure ( p_abs),
-    density_correction(1.0f),
+    density_correction_factor( ONE),
+    density_offset( ZERO),
+    density_slope( ZERO),
     extrapolated_sea_level_pressure(101325),
     GNSS_altitude_based_density_available(false),
     GNSS_altitude_based_density(1.2255f),
@@ -63,7 +65,14 @@ public:
   {
     if( valid)
       {
-	GNSS_altitude_based_density = get_std_density( GNSS_altitude) * density_correction;
+	if( density_offset != ZERO) // density slope data available
+	  {
+	    GNSS_altitude_based_density = density_offset + density_slope * GNSS_altitude;
+	  }
+	else
+	  {
+	    GNSS_altitude_based_density = get_std_density( GNSS_altitude) * density_correction_factor;
+	  }
 	GNSS_altitude_based_density_available = true;
       }
     else
@@ -97,7 +106,7 @@ public:
     if( GNSS_altitude_based_density_available)
       return GNSS_altitude_based_density;
     else
-      return  (1.0496346613e-5f * pressure + 0.1671546011f) * density_correction;
+      return  (1.0496346613e-5f * pressure + 0.1671546011f) * density_correction_factor;
   }
   float get_negative_pressure_altitude( void) const
   {
@@ -120,46 +129,19 @@ public:
 
   void air_density_metering (float pressure, float MSL_altitude)
   {
-    air_data_result result = air_density_observer.feed_metering (pressure,
-								 MSL_altitude);
+    air_data_result result = air_density_observer.feed_metering ( pressure, MSL_altitude);
     if (result.valid)
       {
-	if (density_measurement_number < 3)
-	  ++density_measurement_number;
-
-	weight_sum = weight_sum * AIR_DENSITY_LETHARGY
-	    + (1.0f - AIR_DENSITY_LETHARGY) / result.density_variance;
-	density_factor_weighed_sum = density_factor_weighed_sum
-	    * AIR_DENSITY_LETHARGY
-	    + (1.0f - AIR_DENSITY_LETHARGY) * result.density_correction
-		/ result.density_variance;
-
-	// postpone update unless we have two measurements
-	switch (density_measurement_number)
+	if( result.density_slope != ZERO) // we have at least three density measurements
 	  {
-	  case 1:
-	    first_result = result; // remember and wait for better statistics
-	    // honorize trend for the moment
-	    density_correction = (1.0f + result.density_correction) * 0.5f;
-
-	    signal_logger_event( AIR_DENSITY_MODIFIED | 0x100);
-	    break;
-	  case 2:
-	    // use variance-weighed sum of both measurements
-	    density_correction = (first_result.density_correction
-		/ first_result.density_variance
-		+ result.density_correction / result.density_variance)
-		/ (1.0f / first_result.density_variance
-		    + 1.0f / result.density_variance);
-
+	    density_offset = result.density_offset;
+	    density_slope = result.density_slope;
 	    signal_logger_event( AIR_DENSITY_MODIFIED | 0x200);
-	    break;
-	  default:
-	    // use IIR-filtered weighed sum of measurements
-	    density_correction = density_factor_weighed_sum / weight_sum;
-
-	    signal_logger_event( AIR_DENSITY_MODIFIED | 0x300);
-	    break;
+	  }
+	else
+	  {
+	    density_correction_factor = result.density_correction;
+	    signal_logger_event( AIR_DENSITY_MODIFIED | 0x100);
 	  }
       }
   }
@@ -171,7 +153,9 @@ private:
       float humidity, float pressure, float temperature);
   float calculateSaturationVaporPressure(float temp);
   float pressure;
-  float density_correction;
+  float density_correction_factor;
+  float density_offset;
+  float density_slope;
   float extrapolated_sea_level_pressure;
   air_density_observer_t air_density_observer;
   bool GNSS_altitude_based_density_available;
