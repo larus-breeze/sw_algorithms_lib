@@ -84,7 +84,7 @@ air_data_result air_density_observer_t::feed_metering( float pressure, float GNS
     density_over_altitude_fit.add_value( reference_altitude, density);
 
   if( density_over_altitude_fit.get_count() > 6)
-    density_over_altitude_fit.forget();
+    density_over_altitude_fit.forget_older_data();
 
   if( density_over_altitude_fit.get_count() > 2)
     {

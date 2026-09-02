@@ -74,7 +74,7 @@ template<typename sample_type, typename evaluation_type=sample_type>
     {
       sum_x = sum_xx = sum_y = sum_yy = sum_xy = n = ZERO;
     }
-    void forget( void)
+    void forget_older_data( void)
     {
       float factor = 0.5f;
       sum_x *= factor;
