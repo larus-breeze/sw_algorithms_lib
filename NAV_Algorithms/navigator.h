@@ -67,7 +67,7 @@ public:
 	 GNSS_negative_altitude( ZERO),
 	 GNSS_fix_type( 0),
 	 GNSS_type(GNSS_TYPE_NOT_DEFINED),
-	 vario_integrator( FAST_SAMPLING_TIME / configuration( VARIO_INT_TC) ),
+	 vario_integrator( SLOW_SAMPLING_TIME / configuration( VARIO_INT_TC) ),
 	 TAS_averager(1.0f / 1.0f / 100.0f),
 	 IAS_averager(1.0f / 1.0f / 100.0f)
   {};
@@ -75,7 +75,7 @@ public:
   void tune(void)
   {
     variometer.tune();
-    vario_integrator.tune( FAST_SAMPLING_TIME / configuration( VARIO_INT_TC) );
+    vario_integrator.tune( SLOW_SAMPLING_TIME / configuration( VARIO_INT_TC) );
     user_wind_observer.tune();
     ahrs.tune();
 #if DEVELOPMENT_ADDITIONS
@@ -299,7 +299,7 @@ private:
   unsigned	GNSS_fix_type;
   GNSS_configration_t GNSS_type;
 
-  soaring_flight_averager< float, false, false> vario_integrator;
+  soaring_flight_averager< float, false> vario_integrator;
   pt2<float,float> TAS_averager;
   pt2<float,float> IAS_averager;
 };

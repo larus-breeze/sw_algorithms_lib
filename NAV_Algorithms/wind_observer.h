@@ -171,7 +171,7 @@ private:
   pt2<float3vector,float> wind_resampler_100_10Hz;
   pt2<float3vector,float> instant_wind_averager;
   soaring_flight_averager< float3vector, true> wind_average_observer; // configure wind average clamping on first circle
-  soaring_flight_averager< float3vector, true, true> relative_wind_observer;
+  soaring_flight_averager< float3vector, true> relative_wind_observer;
   pt2<float3vector,float> corrected_wind_averager;
   accumulating_averager < float3vector> circling_wind_averager;
   flight_state_t circling_state;
