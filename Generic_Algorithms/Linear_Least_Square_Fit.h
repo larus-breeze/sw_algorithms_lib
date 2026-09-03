@@ -74,6 +74,16 @@ template<typename sample_type, typename evaluation_type=sample_type>
     {
       sum_x = sum_xx = sum_y = sum_yy = sum_xy = n = ZERO;
     }
+    void forget_older_data( void)
+    {
+      float factor = 0.5f;
+      sum_x *= factor;
+      sum_xx *= factor;
+      sum_y *= factor;
+      sum_yy *= factor;
+      sum_xy *= factor;
+      n *= factor;
+    }
 
     bool evaluate (evaluation_type &a, evaluation_type &b, evaluation_type &variance_a, evaluation_type &variance_b) const
     {
@@ -85,7 +95,7 @@ template<typename sample_type, typename evaluation_type=sample_type>
       evaluation_type x_mean = (evaluation_type)sum_x * inv_n;
       evaluation_type Qx = (evaluation_type)sum_xx - inv_n * sum_x * sum_x;
 
-      if( Qx < EPSILON)
+      if( Qx < LEAST_SQUARE_FIT_MIN_X_AC_POWER)
 	return false;
 
       evaluation_type invQx = (evaluation_type)ONE / Qx;
