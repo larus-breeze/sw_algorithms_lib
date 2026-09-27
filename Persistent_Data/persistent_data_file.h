@@ -190,9 +190,7 @@ public:
       }
     else // : bunch of 32bit data
       {
-	uint16_t crc = CRC16_blockcheck( (uint16_t *)data,  data_size_words * 2);
-	uint16_t protected_id_and_size = temp_node.id + ((temp_node.size) << 8);
-	temp_node.data = CRC16( protected_id_and_size, crc);
+	temp_node.data = long_node_crc( temp_node, (const uint16_t *)data, false);
 	FLASH_write( (uint32_t *)node, (uint32_t *)&temp_node, 1, synchronized);
 	FLASH_write( (uint32_t *)(node + 1), (uint32_t *)data, data_size_words, synchronized);
 	registry[id] = node;
@@ -218,11 +216,7 @@ public:
       return false;
 
     uint32_t *from = (uint32_t *)candidate + 1;
-    uint16_t crc = CRC16_blockcheck( (uint16_t *)from,  data_size * sizeof( uint16_t));
-    uint16_t protected_id_and_size = candidate->id + ((candidate->size) << 8);
-    crc = CRC16( protected_id_and_size, crc);
-
-    if( candidate->data != crc)
+    if( not long_node_is_consistent( candidate))
       return false;
 
     do
@@ -362,30 +356,41 @@ private:
 
   uint16_t check_and_pack_id_len_and_data( EEPROM_file_system_node the_node, uint8_t datum)
   {
-    uint32_t info = datum;		 // need 16bit data
-    uint32_t crc = CRC16( (uint16_t)info, 0); // data crc
-    info = the_node.id + ((uint32_t)(the_node.size) << 8);
-    crc = CRC16( (uint16_t)info, (uint16_t)crc); 	 // plus node crc
-    crc = (crc ^ (crc >> 8)) & 0xff;	 // fold crc into 8 bits
-    return (uint16_t)(datum | (crc << 8));
+    return (uint16_t)(datum | (short_node_crc( the_node, datum, false) << 8));
+  }
+
+  //! 8 bit CRC of a direct-data node: datum plus id and size
+  static uint16_t short_node_crc( const EEPROM_file_system_node &the_node, uint8_t datum, bool legacy)
+  {
+    uint32_t crc = CRC16( datum, 0); // data crc
+    uint16_t info = (uint16_t)(the_node.id + (the_node.size << 8));
+    crc = legacy ? CRC16( info, (uint16_t)crc) : CRC16_word( info, (uint16_t)crc); // plus node crc
+    return (crc ^ (crc >> 8)) & 0xff; // fold crc into 8 bits
   }
 
   static bool short_node_is_consistent( EEPROM_file_system_node the_node)
   {
-    uint32_t crc = CRC16( the_node.data & 0xff, 0); // data crc
-    uint32_t info = (uint32_t)(the_node.id) + (the_node.size << 8);
-    crc = CRC16( (uint16_t)info, (uint16_t)crc); 	     // plus node crc
-    crc = (crc ^ (crc >> 8)) & 0xff; // fold crc into 8 bits
-    return (the_node.data >> 8) == crc;
+    uint8_t datum = the_node.data & 0xff;
+    if( (the_node.data >> 8) == short_node_crc( the_node, datum, false))
+      return true;
+    return ACCEPT_LEGACY_CRC && ((the_node.data >> 8) == short_node_crc( the_node, datum, true));
   }
-  static bool long_node_is_consistent( EEPROM_file_system_node * work)
 
+  //! CRC16 of a data-file node: 32 bit data words plus id and size
+  static uint16_t long_node_crc( const EEPROM_file_system_node &the_node, const uint16_t *data, bool legacy)
   {
-    uint32_t crc = CRC16_blockcheck( (uint16_t *)work + 2, (work->size - 1) * 2);
-    uint32_t protected_id_and_size = (uint32_t)(work->id) + ((work->size) << 8);
-    crc = CRC16( (uint16_t)protected_id_and_size, (uint16_t)crc);
+    unsigned length = (the_node.size - 1) * 2; // in 16 bit units
+    uint16_t crc = legacy ? CRC16_blockcheck_legacy( data, length) : CRC16_blockcheck( data, length);
+    uint16_t protected_id_and_size = (uint16_t)(the_node.id + (the_node.size << 8));
+    return legacy ? CRC16( protected_id_and_size, crc) : CRC16_word( protected_id_and_size, crc);
+  }
 
-    return work->data == crc;
+  static bool long_node_is_consistent( EEPROM_file_system_node * work)
+  {
+    const uint16_t *data = (const uint16_t *)(work + 1);
+    if( work->data == long_node_crc( *work, data, false))
+      return true;
+    return ACCEPT_LEGACY_CRC && (work->data == long_node_crc( *work, data, true));
   }
 
   EEPROM_file_system_node * find_current_free_space( void)
