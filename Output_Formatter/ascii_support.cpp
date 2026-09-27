@@ -30,34 +30,50 @@
 static ROM char ASCIItable[]="zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz";
 ROM char HEX[]="0123456789ABCDEF";
 
-//! format an float into ASCII with 1 to 4 digits after the decimal point
+//! format a float into ASCII with 1 to 9 digits after the decimal point, rounded
 void to_ascii_n_decimals( float number, unsigned decimals, char * &s)
 {
+  static ROM uint32_t power_of_ten[] =
+    { 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000 };
+
   if (decimals < 1 || decimals > 9)
     return;
 
-  int32_t whole = (int32_t) number;
+  uint32_t scale = power_of_ten[decimals];
+  bool negative = number < 0.0f;
+  float magnitude = negative ? -number : number;
 
-  if ((number < 0.0f) && (whole == 0))
-  	  *s++ = '-'; //Add a - if < 0 && >= -1;
-  format_integer(s, whole);
-  *s++ = '.';
-  float remaining = number - (int32_t)number;
-  if (remaining < 0.0)
-    remaining = remaining * -1;
-  float dec = 10;
-  for( unsigned i = 0; i < decimals - 1; i++)
+  // split into whole and fraction (exact), then round the fraction to the requested resolution
+  uint32_t whole, fraction;
+  if( magnitude != magnitude) // NaN
+    whole = fraction = 0;
+  else if( magnitude >= 2147483648.0f) // saturate instead of overflowing
     {
-      if( remaining < 1 / dec )
-        *s++ = '0';
-      dec = dec * 10;
+      whole = 2147483647u;
+      fraction = 0;
+    }
+  else
+    {
+      whole = (uint32_t)magnitude;
+      fraction = (uint32_t)((magnitude - (float)whole) * (float)scale + 0.5f);
+      if( fraction >= scale) // rounding carries into the whole part
+	{
+	  fraction -= scale;
+	  ++whole;
+	}
     }
 
-  float parts = number * dec - (float)whole * dec;
-  if (parts < 0.0)
-    parts = -parts;
-  format_integer(s, (int32_t)parts);
-  return;
+  if( negative && (whole != 0 || fraction != 0)) // avoid "-0.00"
+    *s++ = '-';
+  format_integer( s, (int32_t)whole);
+  *s++ = '.';
+
+  for( uint32_t digit = scale / 10; digit > 0; digit /= 10) // with leading zeros
+    {
+      *s++ = (char)('0' + fraction / digit);
+      fraction %= digit;
+    }
+  *s = 0;
 }
 
 char* itoa( int value, char* result, int base)
