@@ -102,8 +102,8 @@ public:
 
   void setup_registry( void)
   {
-    // correctly set used entries
-    for( EEPROM_file_system_node * node = head; node->id < size; node=node->next())
+    // correctly set used entries, stop at the first erased or malformed node
+    for( EEPROM_file_system_node * node = head; node_is_plausible( node) && node->id < size; node=node->next())
       registry[node->id] = node;
   }
 
@@ -392,10 +392,20 @@ private:
   {
     EEPROM_file_system_node * work = head;
 
-    while( (work->size != 0xff) && (work->size != 0x00))
+    while( node_is_plausible( work))
 	work = work->next();
 
     return work;
+  }
+
+  //! node lies completely within the memory area and has a usable size
+  bool node_is_plausible( EEPROM_file_system_node * node) const
+  {
+    if( node < head || node >= tail)
+      return false;
+    if( (node->size == 0) || (node->size == ERASED_FLASH_BYTE))
+      return false;
+    return node->size <= (unsigned)(tail - node);
   }
 
   EEPROM_file_system_node * find_first_datum( EEPROM_file_system_node * start, EEPROM_file_system_node::ID_t id) const
