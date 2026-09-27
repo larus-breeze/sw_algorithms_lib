@@ -105,13 +105,7 @@ public:
     float acc_calibration[6];
     bool acc_parameters_available = permanent_data_file.retrieve_data( ACCELEROMETER_CALIBRATION, 6, acc_calibration);
     if( acc_parameters_available)
-      {
-	for( unsigned i=0; i<3; ++i)
-	  {
-	    accelerometer_offset[i] = acc_calibration[2*i];
-	    accelerometer_gain[i] = acc_calibration[2*i + 1];
-	  }
-      }
+      set_acceleration_calibration( acc_calibration);
 
     setup_compass_calibrator_3d();
     navigator.tune();
@@ -187,6 +181,26 @@ public:
 private:
   void update_sensor_orientation_data( const vector_average_collection_t & values);
   void fine_tune_sensor_orientation( const vector_average_collection_t & values);
+
+  //! apply accelerometer calibration: per axis bias / g and sensitivity
+  bool set_acceleration_calibration( const float calibration[6])
+  {
+    for( unsigned i=0; i<3; ++i)
+      {
+	float bias = calibration[2*i];
+	float sensitivity = calibration[2*i + 1];
+	if( ! ( ( bias > -MAX_ACCELERATION_BIAS) && ( bias < MAX_ACCELERATION_BIAS)
+	    && ( sensitivity > MIN_ACCELERATION_SENSITIVITY) && ( sensitivity < MAX_ACCELERATION_SENSITIVITY) ) )
+	  return false; // implausible (or NaN): keep present values
+      }
+
+    for( unsigned i=0; i<3; ++i)
+      {
+	accelerometer_offset[i] = calibration[2*i] * GRAVITY; // g -> m/s^2
+	accelerometer_gain[i] = ONE / calibration[2*i + 1];
+      }
+    return true;
+  }
 
   float3vector calibrate_acceleration( const float3vector &acc_readings)
   {
