@@ -1,0 +1,53 @@
+name: World Magnetic Model current
+
+# Fails if NOAA NCEI lists a newer World Magnetic Model than the one in
+# World_Magnetic_Model_design/WMM.COF, or if that model has expired.
+# A scheduled failure opens (or comments on) an issue, so it is not only
+# noticed by whoever last edited this file.
+
+on:
+  schedule:
+    - cron: "17 5 1 * *"  # monthly
+  workflow_dispatch:
+  push:
+    paths:
+      - "World_Magnetic_Model_design/**"
+      - ".github/workflows/wmm-current.yml"
+  pull_request:
+    paths:
+      - "World_Magnetic_Model_design/**"
+      - ".github/workflows/wmm-current.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test the check script (offline)
+        run: python3 -m unittest World_Magnetic_Model_design/test_check_wmm_current.py -v
+
+      - name: Is WMM.COF the newest, still valid World Magnetic Model?
+        id: check
+        run: python3 World_Magnetic_Model_design/check_wmm_current.py 2>&1 | tee wmm-check.txt; exit ${PIPESTATUS[0]}
+
+      - name: Report a scheduled failure as an issue
+        if: failure() && steps.check.outcome == 'failure' && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: "World Magnetic Model needs an update"
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          body="$(printf 'The monthly check failed ([run](%s)):\n\n```\n%s\n```\n\nSee World_Magnetic_Model_design/README.md for the update procedure.' "$RUN" "$(cat wmm-check.txt)")"
+          number="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number')"
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body "$body"
+          fi
