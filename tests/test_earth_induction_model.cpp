@@ -153,7 +153,8 @@ static unsigned implausible_cells( bool new_zealand)
 	induction_values v = model.get_induction_data_at( la, lo);
 	if( ! v.valid)
 	  continue;
-	bool out_of_range = ! ( fabs( v.declination) <= 60.0 && fabs( v.inclination) <= 90.0);
+	// near the magnetic poles the declination reaches large values, so only the range is checked
+	bool out_of_range = ! ( fabs( v.declination) <= 180.0 && fabs( v.inclination) <= 90.0);
 	// away from the magnetic equator the field points down in the north and up in the south
 	bool wrong_sign = fabs( la) >= 25.0 && ( ( la > 0.0) != ( v.inclination > 0.0));
 	if( out_of_range || wrong_sign)
@@ -222,11 +223,11 @@ TEST_CASE( "AHRS: expected induction north = cos(incl)*cos(decl), unit length"
 }
 
 TEST_CASE( "AHRS: does not run with a zero expected field"
-	   * doctest::should_fail() * doctest::description( "known issue #154"))
+	   * doctest::should_fail() * doctest::description( "known issue: zero expected field until the first GNSS fix"))
 {
-  // A freshly constructed AHRS, and one whose location is outside the model
-  // (organizer.h only updates it for valid model data), keeps the zero vector:
-  // no magnetic heading aiding and a permanent disturbance flag.
+  // A freshly constructed AHRS keeps the zero vector until organizer.h feeds it
+  // model data for a GNSS position (and, before #154 is fixed, forever outside
+  // the model's areas): no magnetic heading aiding, permanent disturbance flag.
   AHRS_type ahrs( 0.01f);
   CHECK( ahrs.get_expected_nav_induction().abs() > 0.5f);
 }
