@@ -12,6 +12,12 @@ the SIL on a PC and in the sensor firmware on the Cortex-M4F (STM32F407).
 Requirements for the target: `arm-none-eabi-gcc` (the CI uses Arm GNU Toolchain
 13.3.rel1, see `.github/workflows/ci.yml`) and `qemu-system-arm`.
 
+The CI compiler follows the compiler used for sensor firmware releases, which
+sw_sensor pins in `sw_stm32/scripts/release_toolchain.txt`
+(larus-breeze/sw_sensor#258). The CI job compares both GCC versions and fails
+if they differ; then update `ARM_TOOLCHAIN_VERSION` and `ARM_TOOLCHAIN_SHA256`
+in the workflow.
+
 `stubs/` replaces the headers the sensor firmware provides (`system_configuration.h`,
 `embedded_math.h`, ...). Note that the firmware implements `embedded_math.h` with
 CMSIS-DSP functions, while the stubs use the C standard library. `target/` holds
