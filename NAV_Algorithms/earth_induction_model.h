@@ -27,38 +27,35 @@
 
 #include "embedded_memory.h"
 #include "embedded_math.h"
+#include "wmm_coefficients.h"
 
-enum { N_AREAS=8, N_COEFFICIENTS=10};
+//! decimal year used when no date is known: the middle of the model's validity
+#define WMM_DEFAULT_YEAR ( WMM_EPOCH + 2.5)
 
 //! struct containing magnetic induction data for a point
 typedef struct
 {
-  float declination; //!< positive to the east
-  float inclination; //!< positive on the northern hemisphere
-  bool valid;
+  float declination; //!< degrees, positive to the east
+  float inclination; //!< degrees, positive downward (northern hemisphere)
+  bool valid;        //!< false only for invalid input (NaN, |latitude| > 90)
 } induction_values;
 
-//! struct containing magnetic induction data for a regional region
-typedef struct
-{
-  double longitude_limit_west;
-  double longitude_limit_east;
-  double latitude__limit_south;
-  double latitude__limit_north;
-  double coefficients_declination[N_COEFFICIENTS];
-  double coefficients_inclination[N_COEFFICIENTS];
-} induction_model_area_t;
-
-//! Providing worldwide magnetic induction data
+//! Worldwide magnetic declination and inclination from the World Magnetic Model
+//! (spherical harmonic model, coefficients in wmm_coefficients.h)
 class earth_induction_model_t
 {
-private:
-  static const induction_model_area_t induction_model_area[N_AREAS]; //!< 3rd order 2d polynome coefficients
 public:
   earth_induction_model_t( void)
   {};
 
-  induction_values get_induction_data_at( double longitude, double latitude);
+  //! declination and inclination at a geodetic position
+  //! @param latitude     geodetic latitude, degrees north
+  //! @param longitude    longitude, degrees east
+  //! @param decimal_year date, e.g. 2026.75 (secular variation)
+  //! @param altitude_km  height above the WGS84 ellipsoid in km
+  induction_values get_induction_data_at( double latitude, double longitude,
+					  double decimal_year = WMM_DEFAULT_YEAR,
+					  double altitude_km = 0.0) const;
 };
 
 extern earth_induction_model_t earth_induction_model; //!< one singleton object of this type

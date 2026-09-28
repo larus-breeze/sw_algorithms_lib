@@ -123,14 +123,25 @@ public:
   }
 
   //! initialize the earth magnetic field data taking the observed location
-  void update_magnetic_induction_data( double latitude, double longitude)
+  void update_magnetic_induction_data( double latitude, double longitude,
+				       double decimal_year = WMM_DEFAULT_YEAR, double altitude_km = 0.0)
   {
     induction_values induction_data;
-    induction_data = earth_induction_model.get_induction_data_at( latitude, longitude);
+    induction_data = earth_induction_model.get_induction_data_at( latitude, longitude, decimal_year, altitude_km);
     if( induction_data.valid)
       navigator.update_magnetic_induction_data( induction_data.declination, induction_data.inclination);
 
     navigator.set_earth_rotation( latitude * M_PI / 180.0);
+  }
+
+  //! the same, taking position, altitude and date from the GNSS
+  void update_magnetic_induction_data( const D_GNSS_coordinates_t &c)
+  {
+    // the GNSS reports year - 2000; without a valid date use the model's default
+    double decimal_year = WMM_DEFAULT_YEAR;
+    if( c.year >= 20 && c.month >= 1 && c.month <= 12 && c.day >= 1 && c.day <= 31)
+      decimal_year = 2000.0 + c.year + ( c.month - 1) / 12.0 + ( c.day - 1) / 365.25;
+    update_magnetic_induction_data( c.latitude, c.longitude, decimal_year, c.GNSS_MSL_altitude * 0.001);
   }
 
   //! attitude setup after getting the first set of acceleration an magnetic data
