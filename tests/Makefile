@@ -19,7 +19,9 @@ ARM_MATH_SOURCES := $(wildcard $(LIB)/ARM_math/*.c)
 TEST_SOURCES := test_regression.cpp $(LIB)/Output_Formatter/ascii_support.cpp \
                 $(LIB)/Persistent_Data/CRC16_table.cpp $(LIB)/Persistent_Data/flexible_log_file.cpp
 
-CXXSTD   := -std=c++17 -fno-exceptions -fno-rtti
+# language standards and flags as in sw_sensor's release builds (see its README, "Release toolchain")
+CXXSTD   := -std=gnu++14 -fno-exceptions -fno-rtti
+CSTD     := -std=gnu11
 
 # like sw_sensor's STM32CubeIDE project
 TARGET_PREFIX := arm-none-eabi-
@@ -35,7 +37,7 @@ host:
 
 target:
 	mkdir -p $(BUILD)
-	$(TARGET_PREFIX)gcc $(TARGET_FLAGS) -O2 -c target/startup.c -o $(BUILD)/startup.o
+	$(TARGET_PREFIX)gcc $(TARGET_FLAGS) -O2 $(CSTD) -c target/startup.c -o $(BUILD)/startup.o
 	$(TARGET_PREFIX)g++ $(TARGET_FLAGS) $(OPT) $(CXXSTD) -Wall $(INCLUDES) --specs=rdimon.specs \
 	  -T target/mps2_an386.ld -Wl,--no-warn-rwx-segments $(TEST_SOURCES) $(BUILD)/startup.o -lm -o $(BUILD)/test_target$(OPT).elf
 	timeout 600 $(QEMU) -kernel $(BUILD)/test_target$(OPT).elf
@@ -48,7 +50,7 @@ target-compile:
 	done
 	@for f in $(ARM_MATH_SOURCES); do \
 	  echo "$$f"; \
-	  $(TARGET_PREFIX)gcc $(TARGET_FLAGS) $(OPT) $(INCLUDES) -c $$f -o $(BUILD)/objects/$$(basename $$f).o || exit 1; \
+	  $(TARGET_PREFIX)gcc $(TARGET_FLAGS) $(OPT) $(CSTD) $(INCLUDES) -c $$f -o $(BUILD)/objects/$$(basename $$f).o || exit 1; \
 	done
 
 clean:
