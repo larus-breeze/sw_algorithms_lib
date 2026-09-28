@@ -208,7 +208,7 @@ TEST_CASE( "AHRS: expected induction without declination is a unit vector")
 }
 
 TEST_CASE( "AHRS: expected induction north = cos(incl)*cos(decl), unit length"
-	   * doctest::should_fail() * doctest::description( "known issue: cos(declination) missing in AHRS.h:73"))
+	   * doctest::should_fail() * doctest::description( "known issue #159"))
 {
   for( double d : DECLINATIONS)
     for( double i : INCLINATIONS)
