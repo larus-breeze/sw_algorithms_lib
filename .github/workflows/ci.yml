@@ -1,0 +1,96 @@
+name: CI
+
+# Builds the library and runs tests/test_regression.cpp:
+#  - on the host (like the SIL, sw_tools/sensor_data_analyzer)
+#  - for the sensor's Cortex-M4F (STM32F407) with the firmware's compiler flags,
+#    executed in QEMU (machine mps2-an386, Cortex-M4F)
+#
+# Toolchain: Arm GNU Toolchain 13.3.rel1, the upstream of "GNU Tools for STM32
+# 13.3.rel1" used for sw_sensor release 0.7.6 (STM32CubeIDE 1.19.0).
+# The job checks that its GCC version matches the release toolchain pinned in
+# sw_sensor (sw_stm32/scripts/release_toolchain.txt, larus-breeze/sw_sensor#258).
+# When sw_sensor changes its release compiler, update ARM_TOOLCHAIN_VERSION and
+# ARM_TOOLCHAIN_SHA256 below.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      release_toolchain_url:
+        description: 'URL of release_toolchain.txt to check against (default: sw_sensor master)'
+        required: false
+
+env:
+  ARM_TOOLCHAIN_VERSION: '13.3.rel1'
+  ARM_TOOLCHAIN_SHA256: '95c011cee430e64dd6087c75c800f04b9c49832cc1000127a92a97f9c8d83af4'
+  RELEASE_TOOLCHAIN_URL: 'https://raw.githubusercontent.com/larus-breeze/sw_sensor/master/sw_stm32/scripts/release_toolchain.txt'
+
+jobs:
+  host:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and run tests
+        run: make -C tests host
+
+  cortex-m4f:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        opt: ['-O0', '-O3'] # sw_sensor: debug build and Release build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Arm GNU Toolchain
+        id: cache-toolchain
+        uses: actions/cache@v4
+        with:
+          path: ~/arm-gnu-toolchain
+          key: arm-gnu-toolchain-${{ env.ARM_TOOLCHAIN_VERSION }}-x86_64
+
+      - name: Install Arm GNU Toolchain
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: |
+          archive=arm-gnu-toolchain-${ARM_TOOLCHAIN_VERSION}-x86_64-arm-none-eabi.tar.xz
+          curl -sSfL -o $archive "https://developer.arm.com/-/media/Files/downloads/gnu/${ARM_TOOLCHAIN_VERSION}/binrel/$archive"
+          echo "${ARM_TOOLCHAIN_SHA256}  $archive" | sha256sum -c
+          mkdir -p ~/arm-gnu-toolchain
+          tar xf $archive -C ~/arm-gnu-toolchain --strip-components=1
+
+      - name: Install QEMU
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq qemu-system-arm
+
+      - name: Toolchain versions
+        run: |
+          echo "$HOME/arm-gnu-toolchain/bin" >> $GITHUB_PATH
+          ~/arm-gnu-toolchain/bin/arm-none-eabi-gcc --version | head -1
+          qemu-system-arm --version | head -1
+
+      - name: Check against the sensor firmware's release toolchain
+        env:
+          URL: ${{ inputs.release_toolchain_url || env.RELEASE_TOOLCHAIN_URL }}
+        run: |
+          if ! curl -sSfL -o release_toolchain.txt "$URL"; then
+            echo "::warning::$URL not available - the release toolchain is not pinned in sw_sensor yet (larus-breeze/sw_sensor#258), check skipped"
+            exit 0
+          fi
+          release_line=$(grep -v '^#' release_toolchain.txt | grep -m1 'GCC:' || true)
+          ci_line=$(arm-none-eabi-gcc --version | head -1)
+          echo "sw_sensor release compiler: $release_line"
+          echo "CI compiler:                $ci_line"
+          expected=$(echo "$release_line" | sed -E 's/.*\) //') # e.g. "13.3.1 20240614"
+          actual=$(echo "$ci_line" | sed -E 's/.*\) //')
+          if [ -z "$expected" ] || [ "$expected" != "$actual" ]; then
+            echo "::error::CI uses GCC $actual, but sw_sensor releases are built with GCC ${expected:-(unknown)}. Update ARM_TOOLCHAIN_VERSION and ARM_TOOLCHAIN_SHA256 in this workflow (see larus-breeze/sw_sensor#258)."
+            exit 1
+          fi
+
+      - name: Compile all library sources for Cortex-M4F
+        run: make -C tests target-compile OPT=${{ matrix.opt }}
+
+      - name: Run tests on Cortex-M4F (QEMU)
+        run: make -C tests target OPT=${{ matrix.opt }}
