@@ -47,6 +47,9 @@
 #define ACCELERATION_CALIBRATION_COUNT	100 // number of measurements
 #define ACCELERATION_CALIBRATION_WAIT	100 // delay time in 10ms units
 #define ACCELERATION_CALIBRATION_TIMEOUT 2000 // activity time at system start in 10ms units
+#define MAX_ACCELERATION_BIAS		0.2f // plausibility limit / g
+#define MIN_ACCELERATION_SENSITIVITY	0.9f // plausibility limit
+#define MAX_ACCELERATION_SENSITIVITY	1.1f // plausibility limit
 
 #define CIRCLE_LIMIT (10 * 100) //!< 10 * 1/100 s delay into / out of circling state
 
