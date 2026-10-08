@@ -5,15 +5,14 @@
 #include "geodetic_toolbox.h"
 #include "GNSS.h"
 #include "data_structures.h"
+#include "stdio.h"
 
 class INSLIB_wrapper
 {
 public:
   INSLIB_wrapper()
   :  ins({0}),
-     t_us(0),
-     time_offset(0),
-     new_GNSS_record_received(false)
+     t_us(0)
   {
 
   }
@@ -24,25 +23,14 @@ public:
 
     if( GNSS_valid)
       {
-	ins_time_us_t new_t_us = (ins_time_us_t)
-	    (coordinates.hour   * 3600000000.0 +
-	     coordinates.minute * 60000000.0 +
-	     coordinates.second * 1000000.0 +
-	     coordinates.nano   / 1000);
-
-	if( new_t_us < t_us) // utc = zero overflow ...
-	  time_offset = 24 * 3600 * 1000000;
-
-	t_us = new_t_us + time_offset;
-
-	new_GNSS_record_received = true;
+	t_us += 10; // just to get a positive delta
 
 	m.timestamp        = t_us;
 	m.strapdown_dt_sec = 0.01;
 
 	m.gnss_pos.is_valid   = coordinates.sat_fix_type > 0;
-	m.gnss_pos.llh[0]     = coordinates.latitude * M_PI / 180.0;
-	m.gnss_pos.llh[1]     = coordinates.longitude * M_PI / 180.0;
+	latitude = m.gnss_pos.llh[0]     = coordinates.latitude * M_PI / 180.0;
+	longitude = m.gnss_pos.llh[1]     = coordinates.longitude * M_PI / 180.0;
 	m.gnss_pos.llh[2]     = coordinates.GNSS_MSL_altitude;
 
 	m.gnss_pos.Qll_ned[0] = 1.0f;
@@ -59,11 +47,19 @@ public:
 	m.gnss_vel.Qll_ned[8] = SQR(coordinates.speed_acc * 2.0);
 
 	m.gnss_delay_ms = 80;
+
+	if(t_us % 1000000000 == 0)
+	  {
+	    float year = coordinates.year;
+	    if( year < 2025.0f)
+	      year = 2025.0f;
+
+	    ins_set_magnetic_model_from_position( &ins, coordinates.latitude * M_PI / 180.0, coordinates.longitude * M_PI / 180.0, year);
+	  }
       }
     else
       {
-	t_us += new_GNSS_record_received ? 5000 :10000;
-	new_GNSS_record_received = false;
+	t_us += 10000;
 
 	m.timestamp        = t_us;
 	m.strapdown_dt_sec = 0.01;
@@ -78,16 +74,20 @@ public:
 	m.gyr.data[1]  = calibrated_data.body_gyro[RIGHT];
 	m.gyr.data[2]  = calibrated_data.body_gyro[BOTTOM];
 
-	if( coordinates.sat_fix_type == 3)
+	if( coordinates.sat_fix_type & 2)
 	  {
 	    m.yaw.is_valid = true;
-	    m.yaw.yaw_rad = coordinates.relPosHeading;
+	    m.yaw.stddev_rad = 0.5 * M_PI / 180.0;
 	    m.yaw_delay_ms = 80;
+	    m.yaw.yaw_rad = coordinates.relPosHeading;
 	  }
+
 	m.mag.is_valid = true;
-	m.mag.data[FRONT]  = calibrated_data.body_induction[FRONT] * 48.0f;
-	m.mag.data[RIGHT]  = calibrated_data.body_induction[RIGHT] * 48.0f;
-	m.mag.data[BOTTOM] = calibrated_data.body_induction[BOTTOM] * 48.0f;
+	float strength = ins.mag_field_expected_uT;
+	m.mag.Qll_diag[0]=m.mag.Qll_diag[1]=m.mag.Qll_diag[2]=SQR( strength * (0.01));
+	m.mag.data[FRONT]  = calibrated_data.body_induction[FRONT]  * strength;
+	m.mag.data[RIGHT]  = calibrated_data.body_induction[RIGHT]  * strength;
+	m.mag.data[BOTTOM] = calibrated_data.body_induction[BOTTOM] * strength;
       }
 
     ins_update( &ins, &m);
@@ -98,12 +98,6 @@ public:
     int retv;
 
     ins_init_t init = {0};
-
-    t_us = (ins_time_us_t)
-	(coordinates.hour * 3600000000.0 +
-	 coordinates.minute * 60000000.0 +
-	 coordinates.second * 1000000.0 +
-	 coordinates.nano * 0.001);
 
     init.llh[0] = coordinates.latitude * M_PI / 180.0;
     init.llh[1] = coordinates.longitude * M_PI / 180.0;
@@ -132,11 +126,25 @@ public:
     return ins_get_rpy( &ins, &(retv.roll), &(retv.pitch), &(retv.yaw));
   }
 
+  float get_latitude( void)
+  {
+    double llh[3];
+    ins_get_latlonh(&ins, llh);
+    return llh[0]-latitude;
+  }
+
+  float get_longitude( void)
+  {
+    double llh[3];
+    ins_get_latlonh(&ins, llh);
+    return llh[1]-longitude;
+  }
+
 private:
   ins_t ins;
   ins_time_us_t t_us;
-  ins_time_us_t time_offset;
-  bool new_GNSS_record_received;
+  double longitude;
+  double latitude;
 };
 
 
