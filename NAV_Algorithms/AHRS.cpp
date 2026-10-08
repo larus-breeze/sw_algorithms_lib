@@ -198,7 +198,8 @@ AHRS_type::update (const float3vector &gyro, const float3vector &acc,
   else
     {
 	handle_magnetic_induction (mag, external_mag, external_mag_valid, gyro, false);
-	update_blind( gyro, acc, mag, TAS);
+	update_compass( gyro, acc, GNSS_acceleration);
+//	update_blind( gyro, acc, mag, TAS);
 //	update_experimental(gyro, acc, GNSS_acceleration);
     }
 }
@@ -417,7 +418,6 @@ void AHRS_type::update_blind (
 {
   float3vector nav_acceleration = body2nav * acc;
   float3vector nav_induction = body2nav * body_induction;
-
 
   float3vector velocity_body;
   velocity_body[FRONT] = TAS;

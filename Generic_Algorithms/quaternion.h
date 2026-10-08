@@ -45,7 +45,7 @@ public:
 	quaternion( )
 	: vector <datatype, 4>({0})
 	  {
-	    vector <datatype, 4>::e[0]=1;
+	    vector <datatype, 4>::e[0] = ONE;
 	  };
 
 	//! normalize quaternion absolute value to ONE

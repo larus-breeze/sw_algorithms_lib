@@ -388,7 +388,7 @@ bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates
 
   	if( ++magnetic_induction_update_counter > MAGNETIC_UPDATE_TIME_TENTH_SECS) // every 15 minutes
   	  {
-  	    update_magnetic_induction_data( c.latitude, c.longitude);
+  	    update_magnetic_induction_vector( c.latitude, c.longitude, c.year + c.month / 12.0f);
   	    magnetic_induction_update_counter=0;
   	  }
         }
@@ -413,7 +413,7 @@ bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates
 
       if( c.sat_fix_type > SAT_FIX_NONE)
         {
-  	update_magnetic_induction_data( c.latitude, c.longitude);
+  	update_magnetic_induction_vector( c.latitude, c.longitude, c.year + c.month / 12.0f);
   	navigator.initialize_QFF_density_metering( c.GNSS_MSL_altitude);
   	navigator.reset_altitude ( c.GNSS_MSL_altitude);
         }

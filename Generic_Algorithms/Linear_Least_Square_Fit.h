@@ -85,7 +85,7 @@ template<typename sample_type, typename evaluation_type=sample_type>
       evaluation_type x_mean = (evaluation_type)sum_x * inv_n;
       evaluation_type Qx = (evaluation_type)sum_xx - inv_n * sum_x * sum_x;
 
-      if( Qx < EPSILON)
+      if( Qx < 1)
 	return false;
 
       evaluation_type invQx = (evaluation_type)ONE / Qx;

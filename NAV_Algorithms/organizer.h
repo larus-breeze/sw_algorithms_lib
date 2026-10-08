@@ -123,13 +123,9 @@ public:
   }
 
   //! initialize the earth magnetic field data taking the observed location
-  void update_magnetic_induction_data( double latitude, double longitude)
+  void update_magnetic_induction_vector( float latitude, float longitude, float year)
   {
-    induction_values induction_data;
-    induction_data = earth_induction_model.get_induction_data_at( latitude, longitude);
-    if( induction_data.valid)
-      navigator.update_magnetic_induction_data( induction_data.declination, induction_data.inclination);
-
+    navigator.update_magnetic_induction_vector( latitude, longitude, year);
     navigator.set_earth_rotation( latitude * M_PI / 180.0);
   }
 
@@ -175,6 +171,11 @@ public:
   void report_data ( state_vector_t &data)
   {
     navigator.report_data ( data);
+  }
+
+  float3vector getBodyInduction () const
+  {
+    return navigator.getBodyInduction();
   }
 
   // return true if significant changes in configuration were made

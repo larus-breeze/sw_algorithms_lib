@@ -38,6 +38,7 @@
 #include "delay_line.h"
 #include "NAV_tuning_parameters.h"
 #include "differentiator.h"
+#include "magnetic_model.h"
 
 enum { ROLL, PITCH, HEADING};	//!< euler angles
 enum { FRONT, RIGHT, BOTTOM};	//!< BODY frame
@@ -65,14 +66,13 @@ public:
   void tune (void);
 
   //! compute and remember any changes in the earth's magnetic induction
-  void update_magnetic_induction_data (float declination, float inclination)
+  void update_magnetic_induction_vector (float latitude, float longitude, float year)
   {
-    declination *= (M_PI_F / 180.0f); // degrees to radiant
-    inclination *= (M_PI_F / 180.0f);
-
-    expected_nav_induction[NORTH] = COS(inclination);
-    expected_nav_induction[EAST] = COS( inclination) * SIN(declination);
-    expected_nav_induction[DOWN] = SIN(inclination);
+    float value[3];
+    magnetic_field_ned_uT( latitude, longitude, year, value);
+    float3vector vec_value( value);
+    expected_nav_induction = vec_value;
+    expected_nav_induction.normalize();
     update_magnetic_loop_gain (); // adapt to magnetic inclination
   }
 

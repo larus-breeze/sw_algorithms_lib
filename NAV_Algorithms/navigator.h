@@ -50,7 +50,7 @@ public:
 #endif
 	 atmosphere (101325.0f),
 	 variometer(),
-	 internal_wind_observer( SLOW_SAMPLING_TIME / 30.0f),
+	 internal_wind_observer( SLOW_SAMPLING_TIME / 300.0f),
 	 user_wind_observer( SLOW_SAMPLING_TIME / configuration( MEAN_WIND_TC) ),
 	 airborne_detector(),
 	 air_pressure_resampler_100Hz_10Hz(0.025f), // = 2.5 Hz @ 100Hz
@@ -83,11 +83,11 @@ public:
 #endif
   }
 
-  void update_magnetic_induction_data( float declination, float inclination)
+  void update_magnetic_induction_vector (float latitude, float longitude, float year)
   {
-    ahrs.update_magnetic_induction_data( declination, inclination);
+    ahrs.update_magnetic_induction_vector( latitude, longitude, 2025.0f);
 #if DEVELOPMENT_ADDITIONS
-    ahrs_magnetic.update_magnetic_induction_data( declination, inclination);
+    ahrs_magnetic.update_magnetic_induction_vector( latitude, longitude, 2025.0f);
 #endif
   }
 
@@ -269,6 +269,10 @@ public:
     return body_gyro;
   }
 
+  float3vector getBodyInduction () const
+  {
+    return ahrs.getBodyInduction();
+  }
 
 private:
   float3vector body_acceleration;

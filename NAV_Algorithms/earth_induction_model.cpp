@@ -1,5 +1,7 @@
 #include "earth_induction_model.h"
+#include "magnetic_model.h"
 
+#if 0
 ROM induction_model_area_t earth_induction_model_t::induction_model_area[N_AREAS]=
     {
 	{ // DACH
@@ -228,9 +230,18 @@ ROM induction_model_area_t earth_induction_model_t::induction_model_area[N_AREAS
 	}
     };
 
+#endif
+
 induction_values earth_induction_model_t::get_induction_data_at( double latitude, double longitude)
   {
     induction_values retv={ 0.0, 0.0, false};
+#if 1
+
+    retv.declination = magnetic_declination_deg( (float)latitude * 180.0f /  M_PI_F, (float)longitude * 180.0f /  M_PI_F, 2025.0f) * M_PI_F / 180.0f;
+    retv.inclination = magnetic_inclination_deg( (float)latitude * 180.0f /  M_PI_F, (float)longitude * 180.0f /  M_PI_F) * M_PI_F / 180.0f;
+    retv.valid = true;
+
+#else
 
     // try to find parameter set for given coordinates
     for( int parameter_set = 0; parameter_set < N_AREAS; ++parameter_set)
@@ -275,6 +286,7 @@ induction_values earth_induction_model_t::get_induction_data_at( double latitude
 
     // no area found
     retv.valid = false;
+#endif
     return retv;
   }
 

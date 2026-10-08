@@ -136,6 +136,7 @@ public:
 	    corrected_wind_averager.respond( wind_resampler_100_10Hz.get_output() - wind_correction_nav);
 	    circling_wind_averager.update( wind_resampler_100_10Hz.get_output() - wind_correction_nav);
           }
+        latched_wind = wind_average_observer.get_output();
       }
 
     old_circling_state = circling_state;
@@ -163,7 +164,8 @@ public:
 
   float3vector get_speed_compensator_wind( void) const
   {
-    return wind_average_observer.get_output();
+    return wind_average_observer.get_output(); // todo patch
+//    return latched_wind;
   }
 
 
@@ -177,6 +179,7 @@ private:
   flight_state_t circling_state;
   flight_state_t old_circling_state;
   float3vector wind_correction_nav;
+  float3vector latched_wind;
 };
 
 #endif /* NAV_ALGORITHMS_WIND_OBSERVER_H_ */
