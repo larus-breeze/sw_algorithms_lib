@@ -173,11 +173,6 @@ public:
     navigator.report_data ( data);
   }
 
-  float3vector getBodyInduction () const
-  {
-    return navigator.getBodyInduction();
-  }
-
   // return true if significant changes in configuration were made
   bool on_command( communicator_command_t command, D_GNSS_coordinates_t &coordinates, measurement_data_t &observations);
 
@@ -200,7 +195,9 @@ private:
 
   float3vector make_body_acceleration( const float3vector &acc_readings)
   {
-    float3vector acc = calibrate_acceleration( acc_readings);
+    // todo patch
+    //    float3vector acc = calibrate_acceleration( acc_readings);
+    float3vector acc = acc_readings;
 
     // rotate sensor coordinates into airframe coordinates
     acc  = sensor_mapping * acc;

@@ -269,11 +269,6 @@ public:
     return body_gyro;
   }
 
-  float3vector getBodyInduction () const
-  {
-    return ahrs.getBodyInduction();
-  }
-
 private:
   float3vector body_acceleration;
   float3vector body_gyro;
