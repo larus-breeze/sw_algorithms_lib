@@ -269,6 +269,12 @@ public:
     return body_gyro;
   }
 
+  float get_GNSS_heading_corrected( void) const
+  {
+    return ahrs.get_GNSS_heading_corrected();
+  }
+
+
 private:
   float3vector body_acceleration;
   float3vector body_gyro;

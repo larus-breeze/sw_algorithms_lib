@@ -260,6 +260,11 @@ public:
     return gyro_correction_power;
   }
 
+  float get_GNSS_heading_corrected( void) const
+  {
+    return GNSS_heading_corrected;
+  }
+
 private:
   enum heading_type
   {
@@ -338,6 +343,7 @@ private:
   float3vector attitude_error;
 #endif
   differentiator<float,float> TAS_diff;
+  float GNSS_heading_corrected;
 };
 
 #endif /* AHRS_H_ */

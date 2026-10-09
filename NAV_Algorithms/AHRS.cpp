@@ -252,6 +252,8 @@ void AHRS_type::update_diff_GNSS (
       + antenna_DOWN_correction  * SIN (euler.roll)
       - antenna_RIGHT_correction * COS (euler.roll);
 
+  GNSS_heading_corrected = heading_gnss_work;
+
   if( heading_source_changed)
     {
       heading_source_changed = false;

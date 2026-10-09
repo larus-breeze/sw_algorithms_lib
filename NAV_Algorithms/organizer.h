@@ -180,6 +180,11 @@ public:
 
   acceleration_calibrator_state manage_acceleration_calibration( const float3vector &acceleration);
 
+  float get_GNSS_heading_corrected( void) const
+  {
+    return navigator.get_GNSS_heading_corrected();
+  }
+
 private:
   void update_sensor_orientation_data( const vector_average_collection_t & values);
   void fine_tune_sensor_orientation( const vector_average_collection_t & values);
