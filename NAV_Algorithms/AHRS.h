@@ -235,6 +235,17 @@ public:
       float TAS
       );
 
+  //! update using injected orientation
+  void update_injected(
+    const float3vector &gyro,
+    const float3vector &acc,
+    const float3vector &GNSS_acceleration);
+
+  void update_attitude_injected ( const float3vector &acc,
+  			     const float3vector &gyro,
+  			     const float3vector &mag,
+  			     const quaternion <float> & inject);
+
   float getHeadingDifferenceAhrsDgnss () const
   {
     return heading_difference_AHRS_DGNSS;

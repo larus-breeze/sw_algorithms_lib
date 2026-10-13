@@ -198,7 +198,7 @@ AHRS_type::update (const float3vector &gyro, const float3vector &acc,
   else
     {
 	handle_magnetic_induction (mag, external_mag, external_mag_valid, gyro, false);
-	update_compass( gyro, acc, GNSS_acceleration);
+	update_injected( gyro, acc, GNSS_acceleration);
 //	update_blind( gyro, acc, mag, TAS);
 //	update_experimental(gyro, acc, GNSS_acceleration);
     }
@@ -221,6 +221,38 @@ AHRS_type::update_attitude ( const float3vector &acc,
 		   gyro_wo_earth_rotation[HEADING] * Ts_div_2);
 
   attitude.normalize ();
+
+  attitude.get_rotation_matrix (body2nav);
+
+  acceleration_nav_frame_INS = body2nav * acc;
+  induction_nav_frame 	 = body2nav * mag;
+  euler = attitude;
+
+  float3vector nav_rotation;
+  nav_rotation = body2nav * gyro_wo_earth_rotation;
+  turn_rate_averager.respond( nav_rotation[DOWN]);
+
+  slip_angle_averager.respond( ATAN2( -acc[RIGHT], -acc[DOWN]));
+  pitch_angle_averager.respond( ATAN2( +acc[FRONT], -acc[DOWN]));
+  G_load_averager.respond( -acc[DOWN]);
+  magnetic_disturbance_averager.feed( (induction_nav_frame - expected_nav_induction).abs() );
+}
+
+
+/**
+ * @brief  generic update of AHRS
+ *
+ * Side-effect: create rotation matrices, NAV-acceleration, NAV-induction
+ */
+void
+AHRS_type::update_attitude_injected ( const float3vector &acc,
+			     const float3vector &gyro,
+			     const float3vector &mag,
+			     const quaternion <float> & inject)
+{
+  float3vector gyro_wo_earth_rotation = gyro - body2nav.reverse_map(earth_rotation);
+
+  attitude = inject;
 
   attitude.get_rotation_matrix (body2nav);
 
@@ -397,6 +429,7 @@ void AHRS_type::update_compass (
       break;
     }
 
+
 #if ATTITUDE_ERROR_EVALUATED
   attitude_error = body2nav.reverse_map(attitude_error_nav);
 #endif
@@ -407,6 +440,93 @@ void AHRS_type::update_compass (
   // feed quaternion update with corrected sensor readings
   update_attitude (acc, gyro + gyro_correction, body_induction);
 }
+/**
+ * @brief  update attitude from IMU data and magnetometer
+ */
+void AHRS_type::update_injected(
+  const float3vector &gyro,
+  const float3vector &acc,
+  const float3vector &GNSS_acceleration)
+{
+  float3vector nav_acceleration = body2nav * acc;
+  float3vector nav_induction = body2nav * body_induction;
+
+  nav_acceleration = GNSS_delay_compensation.respond(nav_acceleration);
+
+  // calculate horizontal leveling error
+  nav_correction[NORTH] = -nav_acceleration[EAST] + GNSS_acceleration[EAST];
+  nav_correction[EAST] = +nav_acceleration[NORTH] - GNSS_acceleration[NORTH];
+
+  // *******************************************************************************************************
+  // calculate heading error depending on the present circling state
+  // on state changes handle MAG auto calibration
+
+  float mag_correction =
+      + nav_induction[NORTH] * expected_nav_induction[EAST]
+      - nav_induction[EAST]  * expected_nav_induction[NORTH];
+
+  if( heading_source_changed)
+    {
+      heading_source_changed = false;
+      GNSS_heading_delay_compensation.initialize(mag_correction);
+    }
+
+  cross_acc_correction = // vector cross product GNSS-acc und INS-acc -> heading error
+	   + nav_acceleration[NORTH] * GNSS_acceleration[EAST]
+	   - nav_acceleration[EAST]  * GNSS_acceleration[NORTH];
+
+#if ATTITUDE_ERROR_EVALUATED
+  float3vector attitude_error_nav;
+  attitude_error_nav[NORTH] = nav_correction[NORTH] * RECIP_GRAVITY;
+  attitude_error_nav[EAST]  = nav_correction[EAST] * RECIP_GRAVITY;
+#endif
+
+  switch (circling_state)
+    {
+    case STRAIGHT_FLIGHT:
+    case TRANSITION:
+    default:
+      {
+#if ATTITUDE_ERROR_EVALUATED
+      attitude_error_nav[DOWN]  = mag_correction;
+#endif
+	nav_correction[DOWN] = magnetic_control_gain * mag_correction;
+	gyro_correction = body2nav.reverse_map (nav_correction);
+	gyro_correction *= P_GAIN;
+	gyro_integrator += gyro_correction; // update integrator
+      }
+      break;
+      // *******************************************************************************************************
+    case CIRCLING:
+      {
+#if USE_ACCELERATION_CROSS_GAIN_ALONE_WHEN_CIRCLING
+	    nav_correction[DOWN] = cross_acc_correction * CROSS_GAIN; // no MAG or D-GNSS use here ! (old version)
+#if ATTITUDE_ERROR_EVALUATED
+	    attitude_error_nav[DOWN]  = cross_acc_correction / GNSS_acceleration.abs();
+#endif
+#else
+	nav_correction[DOWN] =
+		cross_acc_correction * CROSS_GAIN
+	    + mag_correction * magnetic_control_gain; // use cross-acceleration and induction: better !
+#endif
+	gyro_correction = body2nav.reverse_map (nav_correction);
+	gyro_correction *= P_GAIN;
+      }
+      break;
+    }
+
+
+#if ATTITUDE_ERROR_EVALUATED
+  attitude_error = body2nav.reverse_map(attitude_error_nav);
+#endif
+
+  gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
+  gyro_correction_power = SQR( gyro_correction[0]) + SQR( gyro_correction[1]) +SQR( gyro_correction[2]);
+
+  extern quaternion <float> inslib_q;
+  update_attitude_injected (acc, gyro + gyro_correction, body_induction, inslib_q);
+}
+
 
 /**
  * @brief  update attitude from IMU data and magnetometer w/o GNSS information

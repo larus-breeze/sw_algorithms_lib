@@ -149,6 +149,15 @@ public:
     return ins_get_rpy( &ins, &(retv.roll), &(retv.pitch), &(retv.yaw));
   }
 
+  bool get_quaternion( quaternion <float> &out)
+  {
+    float data[4];
+    bool retv = ins_get_quaternion( &ins, data);
+    quaternion <float> tmp( data);
+    out = tmp;
+    return retv;
+  }
+
   float get_latitude( void)
   {
     double llh[3];

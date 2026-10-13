@@ -163,7 +163,7 @@ public:
   {
     ahrs.attitude_setup(acc, mag);
 #if DEVELOPMENT_ADDITIONS
-//    ahrs_magnetic.attitude_setup(acc, mag); // todo patch
+    ahrs_magnetic.attitude_setup(acc, mag);
 #endif
   }
   void set_from_euler ( float r, float n, float y)

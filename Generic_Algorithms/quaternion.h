@@ -48,6 +48,12 @@ public:
 	    vector <datatype, 4>::e[0] = ONE;
 	  };
 
+	//! constructor from array of values
+	quaternion( datatype * init)
+	: vector <datatype, 4>(init)
+	  {
+	  };
+
 	//! normalize quaternion absolute value to ONE
 	inline void normalize(void)
 	{
