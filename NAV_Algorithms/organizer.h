@@ -130,7 +130,7 @@ public:
     if( induction_data.valid)
       navigator.update_magnetic_induction_data( induction_data.declination, induction_data.inclination);
 
-    navigator.set_earth_rotation( latitude * M_PI / 180.0);
+    navigator.set_earth_rotation( (float)latitude * M_PI_F / 180.0f);
   }
 
   //! attitude setup after getting the first set of acceleration an magnetic data
@@ -215,8 +215,8 @@ private:
   float3vector accelerometer_gain;	//!< gain factor to be applied to the accelerometers
   float QNH_offset;   		//!< static pressure sensor offset
   unsigned magnetic_induction_update_counter; //!< timer for declination+inclination update
-  vector_average_organizer_t vector_average_organizer = { 0 };
-  vector_average_collection_t vector_average_collection = { 0 };
+  vector_average_organizer_t vector_average_organizer;
+  vector_average_collection_t vector_average_collection;
   bool fine_tune_sensor_attitude_in_progress;
 
   unsigned acceleration_calibration_time_to_go;
