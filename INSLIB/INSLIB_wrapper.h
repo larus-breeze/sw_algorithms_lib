@@ -15,10 +15,24 @@ public:
   INSLIB_wrapper()
   :  ins({0}),
      t_us(0),
-     magnetic_update_countdown(MAG_UPDATE_COUNT)
+     magnetic_update_countdown(MAG_UPDATE_COUNT),
+     out_file( "inslog.csv", ios::out | ios::binary | ios::ate)
   {
-
+#if LOG_INSLIB_CALLS
+    if( not out_file.is_open ())
+      {
+        cout << "Unable to open output file\n";
+        exit( 1);
+      }
+#endif
   }
+
+#if LOG_INSLIB_CALLS
+  ~INSLIB_wrapper(void)
+  {
+    out_file.close();
+  }
+#endif
 
   void update( const D_GNSS_coordinates_t &coordinates, const state_vector_t &calibrated_data, float D_GNSS_heading, bool GNSS_valid)
   {
@@ -57,6 +71,22 @@ public:
 	m.gnss_vel.Qll_ned[8] = SQR(coordinates.speed_acc * 2.0);
 
 	m.gnss_delay_ms = 80;
+
+#if LOG_INSLIB_CALLS
+	out_file << "GNSS" << ',' << t_us << ',' <<
+		coordinates.latitude  * M_PI / 180.0
+		<< ',' <<
+		coordinates.longitude * M_PI / 180.0
+		<< ',' <<
+		coordinates.GNSS_MSL_altitude
+		<< ',' <<
+		coordinates.velocity[NORTH]
+		<< ',' <<
+		coordinates.velocity[EAST]
+		<< ',' <<
+		coordinates.velocity[DOWN]
+		<< endl;
+#endif
 
 	if( --magnetic_update_countdown == 0 )
 	  {
@@ -100,6 +130,29 @@ public:
 	m.mag.data[FRONT]  = calibrated_data.body_induction[FRONT]  * strength;
 	m.mag.data[RIGHT]  = calibrated_data.body_induction[RIGHT]  * strength;
 	m.mag.data[BOTTOM] = calibrated_data.body_induction[BOTTOM] * strength;
+
+#if LOG_INSLIB_CALLS
+	out_file << "IMU" << ',' << t_us << ',' <<
+		calibrated_data.body_acc[FRONT]
+		<< ',' <<
+		calibrated_data.body_acc[RIGHT]
+		<< ',' <<
+		calibrated_data.body_acc[DOWN]
+		<< ',' <<
+		calibrated_data.body_gyro[FRONT]
+		<< ',' <<
+		calibrated_data.body_gyro[RIGHT]
+		<< ',' <<
+		calibrated_data.body_gyro[DOWN]
+		<< ',' <<
+		calibrated_data.body_induction[FRONT] * strength
+		<< ',' <<
+		calibrated_data.body_induction[RIGHT] * strength
+		<< ',' <<
+		calibrated_data.body_induction[DOWN] * strength
+		<< endl;
+#endif
+
       }
 
     ins_update( &ins, &m);
@@ -176,6 +229,11 @@ private:
   ins_t ins;
   ins_time_us_t t_us;
   unsigned magnetic_update_countdown;
+
+#if LOG_INSLIB_CALLS
+  ofstream out_file;
+#endif
+
 };
 
 
