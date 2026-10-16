@@ -570,8 +570,12 @@ void AHRS_type::write_calibration_into_EEPROM( void)
     }
   if( external_magnetic_calibration_updated)
     {
-      permanent_data_file.store_data( EXT_MAG_SENSOR_XFER_MATRIX, 12, external_compass_calibrator_3D.get_current_parameters());
-      magnetic_calibration_updated = false;
+      auto parameters = external_compass_calibrator_3D.get_current_parameters();
+      if( parameters != 0)
+	{
+	  permanent_data_file.store_data( EXT_MAG_SENSOR_XFER_MATRIX, 12, parameters);
+	  external_magnetic_calibration_updated = false;
+	}
     }
 }
 

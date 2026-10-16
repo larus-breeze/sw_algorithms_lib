@@ -70,7 +70,7 @@ public:
     declination *= (M_PI_F / 180.0f); // degrees to radiant
     inclination *= (M_PI_F / 180.0f);
 
-    expected_nav_induction[NORTH] = COS(inclination);
+    expected_nav_induction[NORTH] = COS( inclination) * COS( declination);
     expected_nav_induction[EAST] = COS( inclination) * SIN(declination);
     expected_nav_induction[DOWN] = SIN(inclination);
     update_magnetic_loop_gain (); // adapt to magnetic inclination

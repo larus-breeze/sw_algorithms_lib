@@ -43,7 +43,8 @@ enum GNSS_configration_t
   GNSS_TYPE_NOT_DEFINED=0,
   GNSS_M9N, 	// single frequency module, usually on PCB
   GNSS_F9P_F9P, // D-GNSS using 2 * uBlox F9P, both on USART 3
-  GNSS_F9P_F9H  // D-GNSS using F9P on USART 3 and F9H (heading) on USART4
+  GNSS_F9P_F9H,  // D-GNSS using F9P on USART 3 and F9H (heading) on USART4
+  GNSS_X20D     // D-GNSS using X20D on USART 3
 };
 
 enum EEPROM_PARAMETER_FILE_ID

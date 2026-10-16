@@ -34,7 +34,7 @@
 #define PI_TIMES_2 6.2832f
 
 //! template for an average filter for circling and straight flight
-template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false, bool SOFT_TAKEOFF = true>
+template<class value_t, bool SOFT_TRANSITIONS = true>
   class soaring_flight_averager
   {
   public:
@@ -68,6 +68,8 @@ template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false, bool SOFT_TAKEOF
       if (heading < ZERO)
 	heading += PI_TIMES_2;
 
+      averager.respond (current_value);
+
       switch (active_state)
 	{
 	case STRAIGHT_FLIGHT:
@@ -75,8 +77,7 @@ template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false, bool SOFT_TAKEOF
 	    {
 	      active_state = CIRCLING;
 
-	      // use a little trick to provide a smooth transition
-	      if( SOFT_TAKEOFF)
+	      if( SOFT_TRANSITIONS)
 		fill_recordings_with_value (averager.get_output());
 	      else
 		reset( current_value);
@@ -86,19 +87,24 @@ template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false, bool SOFT_TAKEOF
 	    }
 	  else
 	    {
-	      present_output = averager.respond (current_value);
+	      present_output = averager.get_output();
 	    }
 	  break;
 	case CIRCLING:
 	  if (new_state == STRAIGHT_FLIGHT)
 	    {
 	      active_state = STRAIGHT_FLIGHT;
-	      reset( present_output); // smooth transition
+	      if( SOFT_TRANSITIONS)
+		{
+		  reset( present_output);
+		}
+	      else
+		reset( current_value);
 	    }
 
 	  record_input (current_value, heading);
 
-	  if( CLAMP_OUTPUT_FIRST_CIRCLE)
+	  if( SOFT_TRANSITIONS)
 	    {
 	      if( circle_completed())
 		present_output = get_boxcar_average();
