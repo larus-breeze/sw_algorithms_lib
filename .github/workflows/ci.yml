@@ -5,8 +5,8 @@ name: CI
 #  - for the sensor's Cortex-M4F (STM32F407) with the firmware's compiler flags,
 #    executed in QEMU (machine mps2-an386, Cortex-M4F)
 #
-# Toolchain: Arm GNU Toolchain 13.3.rel1, the upstream of "GNU Tools for STM32
-# 13.3.rel1" used for sw_sensor release 0.7.6 (STM32CubeIDE 1.19.0).
+# Toolchain: Arm GNU Toolchain 14.3.rel1, the upstream of "GNU Tools for STM32
+# 14.3.rel1" in STM32CubeIDE 2.2.0, sw_sensor's release toolchain.
 # The job checks that its GCC version matches the release toolchain pinned in
 # sw_sensor (sw_stm32/scripts/release_toolchain.txt, larus-breeze/sw_sensor#258).
 # When sw_sensor changes its release compiler, update ARM_TOOLCHAIN_VERSION and
@@ -22,8 +22,8 @@ on:
         required: false
 
 env:
-  ARM_TOOLCHAIN_VERSION: '13.3.rel1'
-  ARM_TOOLCHAIN_SHA256: '95c011cee430e64dd6087c75c800f04b9c49832cc1000127a92a97f9c8d83af4'
+  ARM_TOOLCHAIN_VERSION: '14.3.rel1'
+  ARM_TOOLCHAIN_SHA256: '8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd'
   RELEASE_TOOLCHAIN_URL: 'https://raw.githubusercontent.com/larus-breeze/sw_sensor/master/sw_stm32/scripts/release_toolchain.txt'
 
 jobs:
@@ -82,7 +82,7 @@ jobs:
           ci_line=$(arm-none-eabi-gcc --version | head -1)
           echo "sw_sensor release compiler: $release_line"
           echo "CI compiler:                $ci_line"
-          expected=$(echo "$release_line" | sed -E 's/.*\) //') # e.g. "13.3.1 20240614"
+          expected=$(echo "$release_line" | sed -E 's/.*\) //') # e.g. "14.3.1 20250623"
           actual=$(echo "$ci_line" | sed -E 's/.*\) //')
           if [ -z "$expected" ] || [ "$expected" != "$actual" ]; then
             echo "::error::CI uses GCC $actual, but sw_sensor releases are built with GCC ${expected:-(unknown)}. Update ARM_TOOLCHAIN_VERSION and ARM_TOOLCHAIN_SHA256 in this workflow (see larus-breeze/sw_sensor#258)."

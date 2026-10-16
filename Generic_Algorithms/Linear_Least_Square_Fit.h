@@ -26,6 +26,7 @@
 #define LINEAR_LEAST_SQUARE_FIT_H_
 
 #include "embedded_math.h"
+#include "NAV_tuning_parameters.h" // LEAST_SQUARE_FIT_MIN_X_AC_POWER
 
 //! maintains result and precision data from a linear least square fit
 template<typename sample_type>
