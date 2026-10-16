@@ -29,6 +29,7 @@
 #include "float3vector.h"
 #include "embedded_memory.h"
 #include "reminder_flag.h"
+#include "persistent_data.h" // GNSS_configration_t
 
 extern uint64_t FAT_time; //!< DOS FAT time for file usage
 
