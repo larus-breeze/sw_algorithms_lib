@@ -10,7 +10,7 @@ the SIL on a PC and in the sensor firmware on the Cortex-M4F (STM32F407).
 | `make target-compile OPT=-O0` | compiles every library source for Cortex-M4F |
 
 Requirements for the target: `arm-none-eabi-gcc` (the CI uses Arm GNU Toolchain
-13.3.rel1, see `.github/workflows/ci.yml`) and `qemu-system-arm`.
+14.3.rel1, see `.github/workflows/ci.yml`) and `qemu-system-arm`.
 
 Language standards are the ones sensor firmware releases are built with:
 `-std=gnu++14` and `-std=gnu11` (the STM32CubeIDE defaults, visible in the
