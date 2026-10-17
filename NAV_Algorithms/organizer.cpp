@@ -196,7 +196,7 @@ acceleration_calibrator_state organizer_t::manage_acceleration_calibration( cons
       --acceleration_count_down;
 
       // need to wait until measurement stable
-      if( acceleration_count_down > ACCELERATION_CALIBRATION_COUNT)
+      if( acceleration_count_down >= ACCELERATION_CALIBRATION_COUNT)
 	return ACTIVE; // we are active: waiting
 
       acceleration_sums[attitude] += acceleration_measurement;
@@ -217,14 +217,9 @@ acceleration_calibrator_state organizer_t::manage_acceleration_calibration( cons
       calibration[4] = (acceleration_sums[BOTTOM_UP] + acceleration_sums[BOTTOM_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT / GRAVITY;
       calibration[5] = (acceleration_sums[BOTTOM_UP] - acceleration_sums[BOTTOM_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT / GRAVITY;
 
-      permanent_data_file.store_data( ACCELEROMETER_CALIBRATION, 6, calibration);
-
-      // start using these values
-      for( unsigned i=0; i<3; ++i)
-	{
-	  accelerometer_offset[i] = calibration[2*i];
-	  accelerometer_gain[i] =   calibration[2*i + 1];
-	}
+      // start using these values and make them permanent if plausible
+      if( set_acceleration_calibration( calibration))
+	permanent_data_file.store_data( ACCELEROMETER_CALIBRATION, 6, calibration);
 
       acceleration_measurement_complete = 0;
 
