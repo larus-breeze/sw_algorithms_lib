@@ -127,7 +127,7 @@ void format_RMC (const D_GNSS_coordinates_t &coordinates, float ground_speed, fl
   append_string( p, GPRMC);
   format_GNSS_timestamp( coordinates, p);
 
-  *p++ = coordinates.sat_fix_type != 0 ? 'A' : 'V';
+  *p++ = (coordinates.sat_fix_type & 1) != 0 ? 'A' : 'V';
   *p++ = ',';
 
   angle_format (coordinates.latitude, 'N', 'S', p, false);
@@ -172,7 +172,7 @@ void format_GGA( const D_GNSS_coordinates_t &coordinates, char * &p)
   angle_format (coordinates.longitude, 'E', 'W', p, true);
   *p++ = ',';
 
-  *p++ = coordinates.sat_fix_type  > 0 ? '1' : '0';
+  *p++ = (coordinates.sat_fix_type & 1) != 0 ? '1' : '0';
   *p++ = ',';
 
   *p++ = (coordinates.SATS_number) / 10 + '0';
