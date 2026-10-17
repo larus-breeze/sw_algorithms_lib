@@ -339,12 +339,12 @@ void format_PLARS ( float value, parameter_type type, char * &p)
       to_ascii_n_decimals( value, 1, p);
       break;
     case BALLAST:  //BAL Ballast (fraction of water ballast 0.000 - 1.000)
-      CLIP( value, 0.0f, 1.0f);
+      value = CLIP( value, 0.0f, 1.0f);
       append_string( p, PLARS_BAL);
       to_ascii_n_decimals( value, 3, p);
       break;
     case BUGS:  //BUGS Bugs in % (0 - 50)
-      CLIP( value, 1.0f, 1.5f);
+      value = CLIP( value, 1.0f, 1.5f);
       value = (value - 1.0f) * 100.0f + 0.5f; // Scale CAN
       append_string( p, PLARS_BUGS);
       to_ascii_n_decimals( value, 2, p);

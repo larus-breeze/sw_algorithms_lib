@@ -50,7 +50,7 @@ typedef struct
   int32_t nano; 	// time fraction, signed
   uint8_t fix_type;
   uint8_t fix_flags;
-  uint8_t reserved1;
+  uint8_t fix_flags2;
   uint8_t num_SV;
   int32_t longitude;	// 10^-7 deg
   int32_t latitude;
