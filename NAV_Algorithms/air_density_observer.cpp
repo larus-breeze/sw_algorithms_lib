@@ -67,6 +67,12 @@ air_data_result air_density_observer_t::feed_metering( float pressure, float GNS
   linear_least_square_result<evaluation_type> result;
   bool result_valid = density_QFF_calculator.evaluate( result);
 
+  if( not result_valid) // discard data if result is questionable
+    {
+      density_QFF_calculator.reset();
+      return air_data;
+    }
+
   air_data.QFF = (float)(result.y_offset);
   float density = 100.0f * (float)(result.slope) * - RECIP_GRAVITY;
 
