@@ -188,7 +188,7 @@ void CAN_output ( const measurement_data_t &m, const D_GNSS_coordinates_t &c, st
   p.id=CAN_Id_GPS_Sats;
   p.dlc=2;
   p.data_b[0] = c.SATS_number;
-  p.data_b[1] = c.sat_fix_type;
+  p.data_b[1] = c.sat_fix_type & 0x03;
   CAN_send(p, 1);
 
 #if SUPPORT_D_GNSS_ACCURACY
