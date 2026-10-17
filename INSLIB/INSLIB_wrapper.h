@@ -5,7 +5,9 @@
 #include "geodetic_toolbox.h"
 #include "GNSS.h"
 #include "data_structures.h"
-#include "stdio.h"
+#include <fstream>
+#include <string>
+#include <iomanip>
 
 #define MAG_UPDATE_COUNT 100000
 
@@ -15,8 +17,16 @@ public:
   INSLIB_wrapper()
   :  ins({0}),
      t_us(0),
+     old(0),
      magnetic_update_countdown(MAG_UPDATE_COUNT),
+     imu_values({0}),
+     m({0})
+
+#if LOG_INSLIB_CALLS
+     ,
      out_file( "inslog.csv", ios::out | ios::binary | ios::ate)
+#endif
+
   {
 #if LOG_INSLIB_CALLS
     if( not out_file.is_open ())
@@ -36,8 +46,6 @@ public:
 
   void update( const D_GNSS_coordinates_t &coordinates, const state_vector_t &calibrated_data, float D_GNSS_heading, bool GNSS_valid)
   {
-    ins_measurements_t m = {0};
-
     if( GNSS_valid)
       {
 	t_us =
@@ -46,7 +54,17 @@ public:
 	       coordinates.second * (int64_t)1000000000.0 +
 	       (int64_t)(coordinates.nano)) / 1000;
 
-	m.timestamp        = t_us;
+//	if( t_us < old)
+//	  {
+//	    m.timestamp = old;
+//	    printf("[Warn] time step: %d\r", t_us - old);
+//	  }
+//	else
+	  m.timestamp        = t_us;
+
+	imu_values = 0;
+	old = m.timestamp;
+
 	m.strapdown_dt_sec = 0.01;
 
 	m.gnss_pos.is_valid   = coordinates.sat_fix_type > 0;
@@ -74,10 +92,12 @@ public:
 
 #if LOG_INSLIB_CALLS
 	out_file << "GNSS" << ',' << t_us << ',' <<
+		std::fixed << std::setprecision(9) <<
 		coordinates.latitude  * M_PI / 180.0
 		<< ',' <<
 		coordinates.longitude * M_PI / 180.0
 		<< ',' <<
+		std::fixed << std::setprecision(5) <<
 		coordinates.GNSS_MSL_altitude
 		<< ',' <<
 		coordinates.velocity[NORTH]
@@ -98,12 +118,17 @@ public:
 
 	    ins_set_magnetic_model_from_position( &ins, coordinates.latitude * M_PI / 180.0, coordinates.longitude * M_PI / 180.0, year);
 	  }
+
+	ins_update( &ins, &m);
+	memset( &m, 0, sizeof(m));
+
       }
     else
       {
-	t_us += 10000; // IMU sample rate in microseconds
-
 	m.timestamp        = t_us;
+	old = m.timestamp;
+	++imu_values;
+
 	m.strapdown_dt_sec = 0.01;
 
 	m.acc.is_valid = true;
@@ -131,6 +156,14 @@ public:
 	m.mag.data[RIGHT]  = calibrated_data.body_induction[RIGHT]  * strength;
 	m.mag.data[BOTTOM] = calibrated_data.body_induction[BOTTOM] * strength;
 
+	t_us += 10000; // IMU sample rate in microseconds
+
+	if( imu_values < 8)
+	  {
+	    ins_update( &ins, &m);
+	    memset( &m, 0, sizeof(m));
+	  }
+
 #if LOG_INSLIB_CALLS
 	out_file << "IMU" << ',' << t_us << ',' <<
 		calibrated_data.body_acc[FRONT]
@@ -154,8 +187,6 @@ public:
 #endif
 
       }
-
-    ins_update( &ins, &m);
   }
 
   int initialize( const D_GNSS_coordinates_t & coordinates)
@@ -228,8 +259,10 @@ public:
 private:
   ins_t ins;
   ins_time_us_t t_us;
+  ins_time_us_t old;
   unsigned magnetic_update_countdown;
-
+  unsigned imu_values;
+  ins_measurements_t m;
 #if LOG_INSLIB_CALLS
   ofstream out_file;
 #endif
