@@ -16,6 +16,18 @@ enum event
   ACCELERATION_CALIBRATION_DONE
 };
 
+typedef enum
+{
+  GNSS_TIMEOUT_HALF,
+  GNSS_TIMEOUT_FULL,
+  GNSS_DATA_ERROR
+} debug_points;
+
 void signal_logger_event( uint32_t event);
+
+inline void signal_debug_event( debug_points event, int16_t value = 0)
+{
+  signal_logger_event( (uint32_t)(DEBUGGER_DATA | event << 8) | value << 16);
+}
 
 #endif /* SIGNAL_FLIGHT_EVENT_H_ */

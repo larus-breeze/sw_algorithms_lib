@@ -115,11 +115,21 @@ typedef struct
 } uBlox_DAHEADING;
 
 typedef enum { FIX_none, FIX_dead, FIX_2d, FIX_3d} FIX_TYPE;
-typedef enum { GNSS_HAVE_FIX, GNSS_NO_FIX, GNSS_ERROR} GNSS_Result;
+typedef enum { GNSS_HAVE_FIX, GNSS_NO_FIX,
+  GNSS_ERROR_1,
+  GNSS_ERROR_2,
+  GNSS_ERROR_3,
+  GNSS_ERROR_4,
+  GNSS_ERROR_5,
+  GNSS_ERROR_6
+} GNSS_Result;
 
+// bits within sat_fix_type
 #define SAT_FIX_NONE 	0
-#define SAT_FIX 	1 // bits within sat_fix
+#define SAT_FIX 	1
 #define SAT_HEADING 	2
+#define DIFFERENTIAL_SOLUTION 4
+#define CARRIER_SOLUTION_MASK 0b11000000
 
 //! Contains all important data from the GNSS
 typedef struct
@@ -245,10 +255,6 @@ public:
   {
     return fix_type;
   }
-  uint8_t get_num_SV( void) const
-  {
-    return num_SV;
-  }
   uint64_t get_FAT_time( void) const
   {
     return FAT_time;
@@ -278,8 +284,6 @@ private:
   	}
    return ((CK_A == buffer[length + 4]) && (CK_B == buffer[length + 5]));
   }
-
-  uint8_t num_SV;
 };
 
 extern GNSS_type GNSS;
