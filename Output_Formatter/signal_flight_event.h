@@ -18,6 +18,7 @@ enum event
 
 typedef enum
 {
+  UNSPECIFIED_ERROR,
   GNSS_TIMEOUT_HALF,
   GNSS_TIMEOUT_FULL,
   GNSS_DATA_ERROR
