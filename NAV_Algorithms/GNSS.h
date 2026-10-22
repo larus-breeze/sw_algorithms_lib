@@ -121,7 +121,10 @@ typedef enum { GNSS_HAVE_FIX, GNSS_NO_FIX,
   GNSS_ERROR_3,
   GNSS_ERROR_4,
   GNSS_ERROR_5,
-  GNSS_ERROR_6
+  GNSS_ERROR_6,
+  GNSS_ERROR_7,
+  GNSS_ERROR_8,
+  GNSS_ERROR_9
 } GNSS_Result;
 
 // bits within sat_fix_type
