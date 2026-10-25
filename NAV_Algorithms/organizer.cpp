@@ -406,7 +406,7 @@ bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates
     {
       navigator.update_pressure( m.static_pressure - QNH_offset);
 
-      if( c.sat_fix_type > SAT_FIX_NONE)
+      if( (c.sat_fix_type & 0x03) > SAT_FIX_NONE)
         {
   	update_magnetic_induction_data( c.latitude, c.longitude);
   	navigator.initialize_QFF_density_metering( c.GNSS_MSL_altitude);
