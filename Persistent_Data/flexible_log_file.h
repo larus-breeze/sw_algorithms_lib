@@ -11,7 +11,7 @@ class flexible_log_file_t
   friend class flexible_log_file_implementation_t;
 
 public:
-  enum{ FLEXIBLE_LOG_FILE_FORMAT_VERSION = 1};
+  enum{ FLEXIBLE_LOG_FILE_FORMAT_VERSION = 2}; // 2: record header CRC covers id AND size
 
   flexible_log_file_t ( uint32_t * buf, unsigned size_words)
   : buffer( buf),
@@ -33,6 +33,7 @@ public:
 
 private:
   enum {CRC_SEED = 0xfff1};
+  static uint16_t extended_header_crc( uint32_t extended_id, uint32_t extended_size, bool legacy);
 
   uint32_t *buffer;
   uint32_t *buffer_end;
