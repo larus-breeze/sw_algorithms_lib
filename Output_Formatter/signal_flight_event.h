@@ -13,7 +13,8 @@ enum event
   CAN_COMMAND_RECEIVED,
   DEBUGGER_DATA,
 
-  ACCELERATION_CALIBRATION_DONE
+  ACCELERATION_CALIBRATION_DONE,
+  GNSS_LOG,
 };
 
 typedef enum
@@ -30,5 +31,11 @@ inline void signal_debug_event( debug_points event, int16_t value = 0)
 {
   signal_logger_event( (uint32_t)(DEBUGGER_DATA | event << 8) | value << 16);
 }
+
+inline void signal_GNSS_log_event( uint32_t explanation)
+{
+  signal_logger_event( (uint32_t)GNSS_LOG | explanation << 8);
+}
+
 
 #endif /* SIGNAL_FLIGHT_EVENT_H_ */
