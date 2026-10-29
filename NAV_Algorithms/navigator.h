@@ -111,22 +111,20 @@ public:
 
   bool get_speed_accuracy_bad_status(void)
   {
-    if (GNSS_type == GNSS_M9N)
+    switch( GNSS_type)
     {
-	if (GNSS_speed_accuracy > MAX_VELOCITY_ERROR_GNSS_M9N)
-	  return true;
+      case GNSS_M9N:
+      {
+	  return(GNSS_speed_accuracy > MAX_VELOCITY_ERROR_GNSS_M9N);
+      }
+      case GNSS_F9P_F9H:
+      case GNSS_F9P_F9P:
+      case GNSS_X20D:
+      {
+	  return (GNSS_speed_accuracy > MAX_VELOCITY_ERROR_GNSS_F9X);
+      }
+      default:
 	return false;
-    }
-    else if ((GNSS_type == GNSS_F9P_F9H) || (GNSS_type == GNSS_F9P_F9P))
-    {
-	if (GNSS_speed_accuracy > MAX_VELOCITY_ERROR_GNSS_F9X)
-	  return true;
-	return false;
-    }
-    else
-    {
-//	ASSERT(0); // error-tolerant for now, todo fixme
-	return true;
     }
   }
 
