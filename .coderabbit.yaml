@@ -1,0 +1,48 @@
+# CodeRabbit review settings (larus-breeze/sw_tools#45).
+# Reference: https://docs.coderabbit.ai/reference/configuration
+language: en-US
+reviews:
+  profile: chill
+  poem: false
+  in_progress_fortune: false
+  auto_review:
+    enabled: true
+    drafts: false
+  path_filters:
+    - "!ARM_math/**" # vendored CMSIS-DSP code
+  path_instructions:
+    - path: "**/*.cpp"
+      instructions: &embedded >-
+        The code runs on an STM32F4 (Cortex-M4F with single-precision FPU)
+        in the Larus sensor firmware, and on the host for the tests and the
+        tools in larus-breeze/sw_tools. No dynamic memory allocation. Prefer
+        float over double; watch for implicit double promotions and literal
+        suffixes.
+    - path: "**/*.h"
+      instructions: *embedded
+    - path: "NAV_Algorithms/**"
+      instructions: &algorithms >-
+        Check that units are consistent (m/s² vs. g, rad vs. deg, Pa vs. hPa)
+        and that vectors use the right frame (NED, body). Check the sign
+        conventions and array indices of axes (NORTH, EAST, DOWN, FRONT,
+        RIGHT, BOTTOM). Look for off-by-one errors in loops and filters.
+    - path: "Generic_Algorithms/**"
+      instructions: *algorithms
+    - path: "Persistent_Data/**"
+      instructions: >-
+        The EEPROM layout and the log file format are interfaces specified in
+        larus-breeze/doc_larus. Stored data must stay readable by existing
+        sensors and tools; flag incompatible changes.
+    - path: "Output_Formatter/**"
+      instructions: >-
+        The NMEA and CAN output formats are interfaces specified in
+        larus-breeze/doc_larus. Check number formatting, rounding, sign
+        handling and buffer lengths.
+    - path: "tests/**"
+      instructions: >-
+        Host and Cortex-M4F (QEMU) tests. Tests must check behaviour against
+        independent expectations, not just repeat the implementation.
+knowledge_base:
+  code_guidelines:
+    filePatterns:
+      - "AGENTS.md"
