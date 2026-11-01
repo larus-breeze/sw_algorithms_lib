@@ -50,6 +50,19 @@ typedef struct
   float supply_voltage;  //Measuring the supply voltage. Might be related to sensor noise.
 } measurement_data_t;
 
+//! timestamp counter of the TIMESTAMPS log record (sensor: STM32 TIM4/TIM5, 84 MHz)
+#define TIMESTAMP_TICKS_PER_SECOND 84000000
+
+//! acquisition times of the observations, logged as TIMESTAMPS record once per 100 Hz cycle
+//! values: low 32 bits of the timestamp counter (wraps every 51 s at 84 MHz),
+//! unwrapped by the reader with the help of the record sequence
+typedef struct
+{
+  uint32_t IMU_sample;		//!< data-ready edge of the IMU sample in this cycle's BASIC_SENSOR_DATA
+  uint32_t GNSS_reception;	//!< end of the reception of the latest GNSS message
+  uint32_t GNSS_timepulse;	//!< latest GNSS time pulse edge (GNSS second), 0 = none received yet
+} timestamps_t;
+
 //! this structure contains all the observations from sensors and GNSS
 typedef struct
 {
