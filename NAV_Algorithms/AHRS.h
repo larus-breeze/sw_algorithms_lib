@@ -66,13 +66,13 @@ public:
   void tune (void);
 
   //! compute and remember any changes in the earth's magnetic induction
-  void update_magnetic_induction_vector (float latitude, float longitude, float year)
+  void update_magnetic_induction_vector (float latitude_deg, float longitude_deg, float year)
   {
     float value[3];
-    magnetic_field_ned_uT( latitude, longitude, year, value);
+    magnetic_field_ned_uT( latitude_deg, longitude_deg, year, value);
     float3vector vec_value( value);
     expected_nav_induction = vec_value;
-    expected_nav_induction.normalize();
+    expected_nav_induction.normalize(); // todo  patch remove  me some day
     update_magnetic_loop_gain (); // adapt to magnetic inclination
   }
 

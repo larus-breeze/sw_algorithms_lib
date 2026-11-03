@@ -83,11 +83,11 @@ public:
 #endif
   }
 
-  void update_magnetic_induction_vector (float latitude, float longitude, float year)
+  void update_magnetic_induction_vector (float latitude_deg, float longitude_deg, float year)
   {
-    ahrs.update_magnetic_induction_vector( latitude, longitude, 2025.0f);
+    ahrs.update_magnetic_induction_vector( latitude_deg, longitude_deg, 2025.0f);
 #if DEVELOPMENT_ADDITIONS
-    ahrs_magnetic.update_magnetic_induction_vector( latitude, longitude, 2025.0f);
+    ahrs_magnetic.update_magnetic_induction_vector( latitude_deg, longitude_deg, 2025.0f);
 #endif
   }
 

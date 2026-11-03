@@ -123,7 +123,7 @@ public:
   }
 
   //! initialize the earth magnetic field data taking the observed location
-  void update_magnetic_induction_vector( float latitude, float longitude, float year)
+  void update_magnetic_induction_vector( float latitude_deg, float longitude_deg, float year)
   {
     navigator.update_magnetic_induction_vector( latitude, longitude, year);
     navigator.set_earth_rotation( latitude * M_PI / 180.0);
@@ -200,9 +200,7 @@ private:
 
   float3vector make_body_acceleration( const float3vector &acc_readings)
   {
-    // todo patch
-    //    float3vector acc = calibrate_acceleration( acc_readings);
-    float3vector acc = acc_readings;
+    float3vector acc = calibrate_acceleration( acc_readings);
 
     // rotate sensor coordinates into airframe coordinates
     acc  = sensor_mapping * acc;

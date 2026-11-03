@@ -79,7 +79,7 @@ void navigator_t::update_at_100Hz (
 
 void navigator_t::update_GNSS_data (const D_GNSS_coordinates_t &coordinates)
 {
-  GNSS_fix_type = coordinates.sat_fix_type;
+  GNSS_fix_type = coordinates.sat_fix_type & 0x03;
 
   if (coordinates.sat_fix_type == SAT_FIX_NONE) // presently no GNSS fix
     {
