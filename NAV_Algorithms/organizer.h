@@ -125,8 +125,8 @@ public:
   //! initialize the earth magnetic field data taking the observed location
   void update_magnetic_induction_vector( float latitude_deg, float longitude_deg, float year)
   {
-    navigator.update_magnetic_induction_vector( latitude, longitude, year);
-    navigator.set_earth_rotation( latitude * M_PI / 180.0);
+    navigator.update_magnetic_induction_vector( latitude_deg, longitude_deg, year);
+    navigator.set_earth_rotation( latitude_deg * M_PI / 180.0);
   }
 
   //! attitude setup after getting the first set of acceleration an magnetic data
