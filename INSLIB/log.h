@@ -10,7 +10,8 @@
  * overhead and does not need log.c linked in. Define LOG_LEVEL on the compiler
  * command line (e.g. -DLOG_LEVEL=LOG_LEVEL_WARN) for the project-wide ceiling,
  * or before including "log.h" in a single .c file to change it just there.
- * LOG_LEVEL defaults to LOG_LEVEL_INFO.
+ * LOG_LEVEL defaults to LOG_LEVEL_WARN, so INFO calls are compiled out unless
+ * the build asks for them with -DLOG_LEVEL=LOG_LEVEL_INFO.
  *
  * On top of that ceiling, log.c keeps one runtime threshold
  * (log_set_level/log_get_level) so verbosity can be changed without a rebuild,
@@ -65,7 +66,7 @@
  *  nothing at their call site. Override with -DLOG_LEVEL=... (project-
  *  wide) or define LOG_LEVEL before including "log.h" (single file). */
 #ifndef LOG_LEVEL
-#define LOG_LEVEL LOG_LEVEL_INFO
+#define LOG_LEVEL LOG_LEVEL_WARN
 #endif
 
 #if defined(__GNUC__) || defined(__clang__)
@@ -87,6 +88,7 @@
  *         LOG_LEVEL_INFO). */
 #define LOG_INFO(...) log_write(LOG_LEVEL_INFO, __FILE__, __LINE__, __VA_ARGS__)
 #else
+/** @brief INFO logging compiled out (LOG_LEVEL < LOG_LEVEL_INFO). */
 #define LOG_INFO(...) ((void)0)
 #endif
 
@@ -95,6 +97,7 @@
  *         LOG_LEVEL_WARN). */
 #define LOG_WARN(...) log_write(LOG_LEVEL_WARN, __FILE__, __LINE__, __VA_ARGS__)
 #else
+/** @brief WARN logging compiled out (LOG_LEVEL < LOG_LEVEL_WARN). */
 #define LOG_WARN(...) ((void)0)
 #endif
 
@@ -103,6 +106,7 @@
  *         LOG_LEVEL_ERROR). */
 #define LOG_ERROR(...) log_write(LOG_LEVEL_ERROR, __FILE__, __LINE__, __VA_ARGS__)
 #else
+/** @brief ERROR logging compiled out (LOG_LEVEL < LOG_LEVEL_ERROR). */
 #define LOG_ERROR(...) ((void)0)
 #endif
 
@@ -111,6 +115,7 @@
  *         LOG_LEVEL_FATAL). */
 #define LOG_FATAL(...) log_write(LOG_LEVEL_FATAL, __FILE__, __LINE__, __VA_ARGS__)
 #else
+/** @brief FATAL logging compiled out (LOG_LEVEL < LOG_LEVEL_FATAL). */
 #define LOG_FATAL(...) ((void)0)
 #endif
 

@@ -25,7 +25,7 @@
  * Double precision is only used for the absolute-position anchor: the n-frame
  * origin (origin_llh) and the current lat/lon/height (latlonh, book-kept
  * incrementally from the float n-frame deltas), both geodetic. The hot path
- * (strapdown, predict, fusion corrections) is float-only, and ECEF is a form
+ * (strapdown, predict, fusion corrections) is float-only, and ECEF/llh is a form
  * of the interface rather than of the filter: it is converted where a caller
  * hands one in or asks for one, never per epoch (REQ-NAV-080).
  *
@@ -74,7 +74,11 @@
  *  states that are already covered by the IMU columns. */
 #define INS_NOISE_COLS_MAX (12 + INS_UNKNOWNS_MAX - 6)
 
-/** Maximum tolerated measurement delay (history buffer size). */
+/** Maximum tolerated measurement delay (history buffer size). Older
+ *  measurements are dropped. Meant for sensor latency only: the delay
+ *  compensation assumes the estimation error barely changes over the delay
+ *  (Wendel, 2nd ed., ch. 8.4), which does not hold for delays of seconds or
+ *  more, so raising this does not make arbitrarily late data fusable. */
 #define INS_MAX_DELAY_MS 500
 
 /** Consecutive epochs dropped as older than INS_MAX_DELAY_MS that are read as
@@ -92,9 +96,9 @@
 #endif
 
 /** Minimum time between history entries [ms]. The delayed-measurement
- *  anchoring relies on the error-state being ~constant over the delay
- *  (Phi ~ I), so a coarse grid is sufficient: the nearest anchor is at most
- *  INS_HISTORY_DT_MS/2 off the true time of validity. */
+ *  anchoring relies on the estimation error being ~constant over the delay
+ *  (Wendel, 2nd ed., ch. 8.4), so a coarse grid is sufficient: the state at
+ *  the time of validity is interpolated between the two anchors around it. */
 #ifndef INS_HISTORY_DT_MS
 #define INS_HISTORY_DT_MS 20
 #endif
@@ -137,7 +141,9 @@
  * TYPEDEFS
  ******************************************************************************/
 
-/** Timestamp in microseconds (monotonic). */
+/** Timestamp in microseconds (monotonic). The difference of two timestamps is a
+ *  plain signed subtraction, so the valid range is about +-2^62: values at the
+ *  ends of the int64 range overflow it (undefined behaviour). */
 typedef int64_t ins_time_us_t;
 
 /** @brief 3x1 Measurement (accel, gyro, magnetometer, GNSS velocity). */
@@ -248,9 +254,9 @@ typedef struct
 /** @brief Range to an anchor at a known position (REQ-NAV-082).
  *
  *  A range measurement: the
- *  distance between the platform's ranging antenna and the anchor/satellite.
- *  The range is expected calibrated (hardware delay offset, oscillator offset, scale),
- *  the filter only weights it with stddev_m and rejects chi2 outliers.
+ *  distance between the platform's receiver and the anchor/satellite.
+ *  The range is expected calibrated, the filter only weights it with stddev_m
+ *  and rejects chi2 outliers.
  *
  *  The anchor is stated in ECEF. */
 typedef struct
@@ -265,7 +271,7 @@ typedef struct
     bool     is_valid;     /**< is this entry usable? */
 } ins_meas_range_t;
 
-/** @brief Optional external attitude/gyro-bias initial attitude for ins's own
+/** @brief Optional external attitude/gyro-bias initial attitude for INS's own
  * auto-init bootstrap and re-acquisition (REQ-NAV-048), e.g. from a
  * continuously-running AHRS. */
 typedef struct
@@ -321,11 +327,15 @@ typedef struct
                                    body frame [m] */
 
     /* GNSS time-of-validity, informational only. The filter does not use
-     * it for latency compensation: set gnss_delay_ms, which states how old
-     * the measurement is and is history-anchored. */
-    int gps_week;      /**< 0 if unknown */
-    int gps_itow_ms;   /**< 0 if unknown */
-    int gnss_delay_ms; /**< >0: this many ms old. 0 = now. */
+     * it for latency compensation: set gnss_delay_ms (and gnss_delay_us),
+     * which state how old the measurement is and are history-anchored. */
+    int     gps_week;      /**< 0 if unknown */
+    int     gps_itow_ms;   /**< 0 if unknown */
+    int     gnss_delay_ms; /**< >0: this many ms old. 0 = now. */
+    int32_t gnss_delay_us; /**< >0: further age [us], added to
+                                gnss_delay_ms (REQ-NAV-092), e.g. how much
+                                older the fix is than the IMU epoch it is
+                                handed over with. 0 = none. */
 
     /* Local position aiding (e.g. lighthouse/UWB/mocap) */
     ins_meas_local_pos_t local_pos;               /**< local NED position */
@@ -335,12 +345,19 @@ typedef struct
                                                        many ms old (residual is
                                                        anchored in the history,
                                                        like GNSS). 0 = now. */
+    int32_t local_pos_delay_us;                   /**< >0: further age [us],
+                                                       added to
+                                                       local_pos_delay_ms
+                                                       (REQ-NAV-092). 0 = none. */
 
     /* Absolute yaw aiding (e.g. lighthouse pose, dual-antenna GNSS) */
     ins_meas_yaw_t yaw;          /**< yaw (heading) measurement */
     int            yaw_delay_ms; /**< >0: measurement is this many
                                       ms old (history-anchored).
                                       0 = now. */
+    int32_t yaw_delay_us;        /**< >0: further age [us], added to
+                                      yaw_delay_ms (REQ-NAV-092).
+                                      0 = none. */
 
     /** External attitude/gyro-bias seed for auto-init and re-acquisition
      *  (REQ-NAV-048), e.g. nav_suite's ARS/AHRS (REQ-SUITE-016). */
@@ -363,6 +380,9 @@ typedef struct
     int              speed_delay_ms; /**< >0: measurement is this many ms
                                           old (residual anchored in the
                                           history, like GNSS). 0 = now. */
+    int32_t speed_delay_us;          /**< >0: further age [us], added to
+                                          speed_delay_ms (REQ-NAV-092).
+                                          0 = none. */
 
     /* Virtual measurements */
     bool zero_velocity_update; /**< we know v == 0 */
@@ -372,8 +392,7 @@ typedef struct
        entry with its own time of validity. Same "new sample only" contract as
        the barometer: a latched is_valid re-fuses one reading every epoch. */
     ins_meas_range_t range[INS_RANGE_MAX]; /**< range entries, any subset valid */
-    float            range_leverarm_b[3];  /**< ranging antenna lever arm,
-                                                body frame [m] */
+    float            range_leverarm_b[3];  /**< ranging lever arm, body frame [m] */
 } ins_measurements_t;
 
 /** @brief Initial values supplied to ins_init(). */
@@ -381,8 +400,8 @@ typedef struct
 {
     ins_time_us_t time; /**< initial timestamp [us] */
     /* Start position and velocity, in the frames the filter works in: it
-       anchors geodetically and mechanizes in NED (REQ-NAV-081). A caller
-       holding ECEF converts once at startup with ins_ecef_to_latlonh().
+       anchors geodetically (llh) and mechanizes in NED (REQ-NAV-081). A caller
+       holding ECEF must convert e.g. with ins_ecef_to_latlonh() first.
 
        An all-zero block is a legal start, namely where the equator meets
        the prime meridian at ellipsoid height 0, and is NOT rejected as
@@ -620,7 +639,7 @@ typedef struct
      * in coordinated flight has its heading aligned with the *airspeed* vector,
      * not the *ground* velocity vector GNSS measures, so a crosswind adds a
      * crab-angle error a car does not have. */
-    float automotive_min_yaw_stddev; /**< 0 -> 5 deg default */
+    float automotive_min_yaw_stddev; /**< 0 -> default */
 
     /* Non-holonomic lateral velocity constraint (REQ-NAV-077): a synthetic
      * measurement stating that a wheeled vehicle does not travel sideways,
@@ -819,17 +838,7 @@ typedef struct
      * ins_measurements_t.speed, which carries only the per-sample noise: the
      * two terms here describe the INSTALLATION, which the sensor cannot report.
      *
-     * The error of this sensor class splits into a per-sample part that does
-     * not grow with speed (an OBD-II PID 0x0D value is quantized to 1 km/h) and
-     * a multiplicative part that does (the vehicle's speed signal carries a
-     * scale error of a few percent from rolling radius, tyre wear and the
-     * scaling the ECU applies, and its sign is not predictable: the
-     * type-approval margin that keeps an indicated speed from ever falling
-     * below the true one constrains the DASHBOARD, not this reading). Fusing
-     * the raw value against the per-sample noise alone would present that
-     * systematic bias as independent evidence and pull the velocity states
-     * permanently off, so speed_scale removes the calibrated part and
-     * speed_stddev_rel prices what is left:
+     * Model:
      *
      *     z = speed_scale * speed_mps
      *     R = stddev_mps^2 + (speed_stddev_rel * z)^2
@@ -893,11 +902,12 @@ typedef struct
      * antenna lever arm adds under rotation (REQ-NAV-076), since what the
      * receiver averaged is the motion of the phase centre.
      *
-     * A Doppler velocity is the average over the receiver's measurement
-     * interval while the filter fuses it against an instantaneous state. The
-     * two differ by roughly a*T/2 under acceleration - a systematic error the
-     * reported accuracy cannot contain, because it belongs to the platform
-     * rather than to the signal.
+     * A GNSS Doppler/carrier-phase velocity is the average over the receiver's
+     * measurement interval while the filter fuses it against an instantaneous
+     * state. The two differ by roughly a*T/2 under acceleration - a systematic
+     * error the reported accuracy cannot contain. Basically trust the IMU
+     * more during dynamic GNSS antenna movements - and downweight the
+     * GNSS velocity measurement(s).
      *
      * Stated in the stddev domain, [m/s] of extra velocity noise per [m/s^2]
      * of acceleration. Raise both for a receiver whose velocity is
@@ -953,6 +963,11 @@ typedef struct
      * line of sight keeps growing, the ranges stop counting and the window
      * expires as it would without them. */
     float range_aiding_max_hpos_stddev_m; /**< [m] (0 -> default) */
+
+    /* IMU loss (REQ-NAV-089): once the last IMU sample is this old, on any
+     * epoch, the filter stops and re-arms with its biases carried. nav_suite
+     * hands the same value to the ARS/AHRS and baro_alt. */
+    float imu_loss_timeout_sec; /**< [s] (0 -> default) */
 } ins_options_t;
 
 /** @brief Nominal state vector (float-only, local n-frame). */
@@ -970,21 +985,30 @@ typedef struct
                              (estimate_mag_bias), zero otherwise. */
 } ins_state_t;
 
-/** @brief History item (for delayed-measurement fusion). */
+/** @brief History item (for delayed-measurement fusion).
+ *
+ *  Only the nominal state is kept. A delayed measurement forms its residual
+ *  from the state at its time of validity and is fused with the CURRENT
+ *  covariance into the current state, assuming the error state stays
+ *  constant over the delay (Phi ~ I, REQ-NAV-008). */
 typedef struct
 {
-    ins_time_us_t time;       /**< epoch timestamp [us] */
-    ins_state_t   state;      /**< nominal state at this epoch */
-    double        latlonh[3]; /**< absolute position anchor at this epoch
-                                   (lat,lon [rad], h [m]), needed to form
-                                   delayed GNSS position residuals. */
-    /* Covariance as UDU factors (saved for history). Sized to the
-       compile-time maximum; the active leading dimension is the
-       instance's runtime state size (ins_t.n). */
-    float U[INS_UNKNOWNS_MAX * INS_UNKNOWNS_MAX]; /**< unit upper triangular factor */
-    float d[INS_UNKNOWNS_MAX];                    /**< diagonal factor */
-    float omega_b_nb[3];                          /**< body rotation rate at this epoch [rad/s] */
-    float R_b_to_n[9]; /**< body-to-NED rotation at this epoch (column-major) */
+    ins_time_us_t time;  /**< epoch timestamp [us] */
+    ins_state_t   state; /**< nominal state at this epoch */
+    bool          valid; /**< slot holds a saved state (false: never
+                              written or cleared). Sits in the padding
+                              before latlonh. */
+    double latlonh[3];   /**< absolute position anchor at this epoch
+                              (lat,lon [rad], h [m]), needed to form
+                              delayed GNSS position residuals. */
+    /* Up to 1.4.1 every entry also held a copy of the covariance factors,
+       U (INS_UNKNOWNS_MAX x INS_UNKNOWNS_MAX) and d (INS_UNKNOWNS_MAX),
+       and the rotation matrix R_b_to_n, all written every INS_HISTORY_DT_MS
+       and never read (see above, the attitude at the time of validity is
+       interpolated from state.qbn), about 42 kB of ins_t in all. Removed
+       after 1.4.1, valid above took over the one use left, the empty-slot
+       test on d[0]. */
+    float omega_b_nb[3]; /**< body rotation rate at this epoch [rad/s] */
 } ins_history_item_t;
 
 /* @satisfies REQ-NAV-019 */
@@ -1117,7 +1141,30 @@ typedef struct
     uint16_t last_range_anchor_id; /**< anchor_id of the last fused entry */
     uint32_t n_range_pos_aiding;   /**< epochs whose ranges counted as position
                                         aiding (REQ-NAV-085) */
+    uint32_t n_imu_loss;           /**< IMU losses that stopped the filter
+                                        (REQ-NAV-089) */
 } ins_diag_t;
+
+/** @brief Accelerometer leveling window (REQ-NAV-047, REQ-SUITE-028): the
+ *  newest INS_AUTOINIT_SAMPLES_MAX IMU samples, oldest dropped first. Shared by
+ *  the ins auto-init and the ARS/AHRS bootstrap of nav_suite. */
+typedef struct
+{
+    int count; /**< samples held */
+    struct
+    {
+        ins_time_us_t t;             /**< sample timestamp */
+        float         acc[3];        /**< specific force [m/s^2] */
+        float         gyr[3];        /**< angular rate [rad/s] */
+    } buf[INS_AUTOINIT_SAMPLES_MAX]; /**< oldest first */
+} ins_level_window_t;
+
+/** @brief Stages of the deferred Earth parameter refresh (REQ-NAV-094),
+ *  ins_t.meta_refresh_stage. Each runs in its own free epoch. */
+#define INS_EARTH_REFRESH_IDLE      (0) /**< no refresh pending */
+#define INS_EARTH_REFRESH_CURVATURE (1) /**< next: Earth radii of curvature */
+#define INS_EARTH_REFRESH_GRAVITY   (2) /**< next: normal gravity */
+#define INS_EARTH_REFRESH_MAGNETIC  (3) /**< next: WMM reference field */
 
 /** @brief Main filter instance.
  *
@@ -1126,7 +1173,7 @@ typedef struct
  *
  * The fields are grouped by topic (configuration, covariance, earth model,
  * per-epoch context, auto-init, ...), not by alignment. That leaves 47 bytes of
- * padding in a 51.6 kB struct; packing it out would interleave the groups for a
+ * padding in an 11 kB struct; packing it out would interleave the groups for a
  * negligible gain, so the padding check is switched off for this struct. */
 /* NOLINTNEXTLINE(clang-analyzer-optin.performance.Padding) */
 typedef struct
@@ -1166,7 +1213,8 @@ typedef struct
 
     /* Cached Earth-curvature terms for the incremental latlonh book-keeping.
        Together with gravity_n these change by only ~d/R_earth per meter of
-       travel, so they are refreshed every INS_EARTH_REFRESH_DIST_M. The
+       travel, so they are refreshed every INS_EARTH_REFRESH_DIST_M, staged
+       and outside the epochs that update the covariance (REQ-NAV-094). The
        NED->ECEF rotation is deliberately NOT among them: nothing on the epoch
        path needs it, so it is built on request in ins_get_velocity_ecef()
        instead of being refreshed inside the worst-case epoch (REQ-NAV-080). */
@@ -1181,6 +1229,17 @@ typedef struct
     bool mag_heading_usable;      /**< false inside a dip pole exclusion zone,
                                        where magnetometer fusion is dropped.
                                        True until a position says otherwise */
+    uint8_t meta_refresh_stage;   /**< next pending INS_EARTH_REFRESH_*
+                                       stage (REQ-NAV-094) */
+    bool gravity_user;            /**< gravity_n came from
+                                       ins_set_world_model, never refreshed
+                                       (REQ-NAV-032) */
+    bool mag_model_tracked;       /**< magnetic_n follows the WMM at
+                                       latlonh (REQ-NAV-027) */
+    float    mag_model_year;      /**< decimal year of the tracked WMM */
+    uint32_t mag_model_refreshes; /**< WMM evaluations at the filter's own
+                                       position, lets nav_suite follow them
+                                       (REQ-SUITE-029) */
     float last_omega_b_nb[3];     /**< last computed omega_b_nb */
     float last_acc_n[3];          /**< last body accel in n-frame */
     float acc_n_avg[3];           /**< last_acc_n averaged over
@@ -1220,11 +1279,16 @@ typedef struct
         bool dr_frozen;        /**< restrict fusion to the position re-anchor channels */
         bool range_pos_aiding; /**< this epoch's ranges counted as position
                                     aiding (REQ-NAV-085) */
+        bool busy;             /**< this epoch propagated the covariance or ran
+                                    a Kalman update, no Earth refresh stage
+                                    (REQ-NAV-094) */
     } step_ctx;                /**< per-epoch scratch handed from ins_predict_step() to
                                     ins_correct_step() */
 
     /* Timing / status */
     ins_time_us_t t_last_kalman_predict;  /**< last Kalman prediction step */
+    ins_time_us_t t_last_imu;             /**< last IMU sample (REQ-NAV-089) */
+    bool          have_last_imu;          /**< t_last_imu is set */
     uint32_t      time_dropped_run;       /**< consecutive epochs dropped as
                                                 older than INS_MAX_DELAY_MS,
                                                 cleared by any epoch that is
@@ -1246,20 +1310,13 @@ typedef struct
        coherent (REQ-NAV-033). t_pending_imu / t_pending_fix track the last-seen
        IMU sample and usable position fix so the start gate can check their
        temporal alignment. */
-    bool          is_collecting;    /**< true while waiting for the start gate */
-    bool          have_pending_imu; /**< an IMU sample was seen this epoch */
-    bool          have_pending_fix; /**< a usable position fix was seen this epoch */
-    ins_time_us_t t_pending_imu;    /**< timestamp of the last-seen IMU sample */
-    ins_time_us_t t_pending_fix;    /**< timestamp of the last-seen usable fix */
-    int           autoinit_count;   /**< samples collected in autoinit_buf so far */
-    struct
-    {
-        ins_time_us_t t;                      /**< sample timestamp */
-        float         acc[3];                 /**< bias-corrected specific force [m/s^2] */
-        float         gyr[3];                 /**< bias-corrected angular rate [rad/s] */
-    } autoinit_buf[INS_AUTOINIT_SAMPLES_MAX]; /**< static-window buffer for
-                                                      the auto-init leveling
-                                                      bootstrap */
+    bool               is_collecting;    /**< true while waiting for the start gate */
+    bool               have_pending_imu; /**< an IMU sample was seen this epoch */
+    bool               have_pending_fix; /**< a usable position fix was seen this epoch */
+    ins_time_us_t      t_pending_imu;    /**< timestamp of the last-seen IMU sample */
+    ins_time_us_t      t_pending_fix;    /**< timestamp of the last-seen usable fix */
+    ins_level_window_t autoinit_win;     /**< bias-corrected IMU samples for the
+                                              auto-init leveling bootstrap */
 
     /* Most recent magnetometer sample seen while still uninitialized, cached so
        the auto-init heading bootstrap can use it even when the bootstrap fix
@@ -1356,16 +1413,19 @@ typedef struct
                                        bad fixes is not broken by the gaps
                                        between them */
 
-    /* IMU biases carried across a quality-loss re-arm (REQ-NAV-061). Only that
-       re-arm populates this; ins_rearm_collecting clears it, so a health
-       shutdown or a time-jump reset can never inherit one. */
+    /* IMU and magnetometer biases carried across a quality-loss or IMU-loss
+       re-arm (REQ-NAV-061). Only those re-arms populate this;
+       ins_rearm_collecting clears it, so a health shutdown or a restarted time
+       source can never inherit one. */
     struct
     {
         bool  valid;
         float acc_bias[3];          /**< [m/s^2] as of the exit epoch */
         float gyr_bias[3];          /**< [rad/s] as of the exit epoch */
+        float mag_bias[3];          /**< [uT] as of the exit epoch, 18-state only */
         float acc_bias_stddev_mps2; /**< already inflated and clamped */
         float gyr_bias_stddev_rps;  /**< already inflated and clamped */
+        float mag_bias_stddev_ut;   /**< already inflated and clamped */
     } bias_carry;                   /**< IMU bias carried across a quality-loss re-arm
                                          (REQ-NAV-061) */
 
@@ -1433,9 +1493,13 @@ typedef struct
                                               always hold a real average by
                                               the time the first trigger can
                                               fire */
+    bool auto_zupt_dwelled;               /**< the current stillness run has
+                                              passed the dwell time, cleared
+                                              with auto_zupt_var_since
+                                              (ins_auto_zupt_active, REQ-NAV-013) */
     ins_time_us_t t_last_auto_zupt;       /**< time of the last
-                                              auto-triggered update
-                                              (0 = never) */
+                                               auto-triggered update
+                                               (0 = never) */
     float auto_zupt_gyr_sum[3];           /**< raw gyro sum over the current
                                             stillness run, fused as an average
                                             by the zero-rotation update.
@@ -1748,6 +1812,35 @@ extern "C"
      *  ins_diag_t), or NULL if @p f is NULL. */
     const ins_diag_t* ins_get_diag(const ins_t* f);
 
+    /** @brief Add one IMU sample to a leveling window, dropping the oldest
+     *  once it is full.
+     *
+     *  @param[in,out] w The window.
+     *  @param[in] t Sample timestamp [us].
+     *  @param[in] acc Specific force [m/s^2].
+     *  @param[in] gyr Angular rate [rad/s]. */
+    void ins_level_window_push(ins_level_window_t* w, ins_time_us_t t, const float acc[3],
+                               const float gyr[3]);
+
+    /** @brief Accelerometer leveling over the samples of the last
+     *  opt->auto_init_window_sec (REQ-NAV-047): roll/pitch from the median
+     *  specific force, classified as quasi-static with
+     *  opt->auto_init_static_gyr_rps / auto_init_static_acc_mps2.
+     *
+     *  @param[in] w The window.
+     *  @param[in] opt Options holding the window/threshold fields (0 -> default).
+     *  @param[in] require_full Only solve once the window spans its full
+     *  length (or the buffer is full).
+     *  @param[out] roll Roll [rad].
+     *  @param[out] pitch Pitch [rad].
+     *  @param[out] rp_stddev_floor 0 if quasi-static, else the minimum
+     *  roll/pitch 1-sigma the caller has to report
+     *  (opt->auto_init_moving_rpy_stddev_rad) [rad].
+     *  @return false if the window holds too few samples. */
+    bool ins_level_window_solve(const ins_level_window_t* w, const ins_options_t* opt,
+                                bool require_full, float* roll, float* pitch,
+                                float* rp_stddev_floor);
+
     /** @brief Report whether the automatic ZUPT/ZARU detector
      *  (opt.auto_zupt_*, see ins_auto_zupt_detect) currently considers
      *  the filter stationary (dwelled long enough to be feeding the
@@ -1888,6 +1981,12 @@ extern "C"
     bool ins_get_acc_n(const ins_t* f, float acc_n_mps2[3]);
 
     /** Update the gravity/magnetic model (e.g. from WMM).
+     *
+     *  A vector set here is the caller's: the filter's own Earth refresh
+     *  never overwrites it, and a magnetic vector ends the model tracking
+     *  started by ins_set_magnetic_model_from_position(). NULL leaves a
+     *  vector, and who owns it, unchanged.
+     *
      *  @param[in,out] f The filter instance.
      *  @param[in] gravity_n Gravity vector in NED [m/s^2].
      *  @param[in] magnetic_n Magnetic model vector in NED. */
@@ -1905,6 +2004,12 @@ extern "C"
      *  a first GNSS fix (or any coarse position) becomes available. Until
      *  then the filter uses the magnetic_n supplied at init (if any). A
      *  non-finite argument is ignored.
+     *
+     *  One call is enough: from then on the filter re-evaluates the model
+     *  at its own position, with this year, as it travels (alongside the
+     *  gravity refresh, in an epoch without covariance work), and at
+     *  initialization and re-acquisition. ins_set_world_model() with a
+     *  magnetic vector ends that.
      *
      *  @param[in,out] f The filter instance.
      *  @param[in] lat_rad Latitude [rad].

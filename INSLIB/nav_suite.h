@@ -20,8 +20,9 @@
  *            rotation comes from the best available attitude source.
  *   - local_gnss: 1-state offset filter estimating the ellipsoid height of the
  *            NED origin, fed from epochs carrying both a GNSS position and a
- *            local height; enables an absolute height during GNSS outages
- *            (nav_suite_get_height_ellipsoid).
+ *            GNSS-independent local height (barometer, or ins under local
+ *            position aiding); enables an absolute height during GNSS
+ *            outages (nav_suite_get_height_ellipsoid). Idle under GNSS alone.
  *
  * Height systems:
  *
@@ -193,6 +194,25 @@ typedef struct
        known value instead of the arbitrary 0 (REQ-SUITE-002). */
     bool ars_yaw_from_init; /**< true -> ARS yaw seeded from a known heading, not 0 */
 
+    /* Manual init (opt.auto_init == false): the start attitude is prescribed,
+       so the first ARS/AHRS start takes it instead of leveling
+       (REQ-SUITE-002). Cleared once used, and by an IMU loss. */
+    bool ars_att_from_init;  /**< next ARS start uses the prescribed attitude */
+    bool ahrs_att_from_init; /**< next AHRS start uses the prescribed attitude */
+
+    /** World Magnetic Model position for the magnetometer AHRS
+     *  (REQ-SUITE-029). The AHRS only takes a position while it runs and
+     *  loses it when it restarts, so the suite keeps the latest one and
+     *  hands it over on every AHRS start. */
+    struct
+    {
+        bool     valid;         /**< a position has been set since nav_suite_init */
+        float    lat_rad;       /**< latitude [rad] */
+        float    lon_rad;       /**< longitude [rad] */
+        float    year;          /**< decimal year */
+        uint32_t ins_refreshes; /**< ins.mag_model_refreshes last followed */
+    } mag_model;
+
     /** Heading carry-over across an ins re-initialization (REQ-SUITE-022): the
      *  last 3D heading INS held while converged, paired with the ARS yaw of
      *  that same epoch. Refreshed every epoch INS is ready, so after a shutdown
@@ -227,9 +247,22 @@ typedef struct
        the plausible pressure samples seen in a short window at bootstrap, so
        one glitched startup reading cannot skew the vertical datum. The
        accumulator resets whenever baro_alt is not initialized and idle. */
-    double             baro_boot_p_sum; /**< sum of collected pressures [Pa] */
-    uint32_t           baro_boot_count; /**< samples in the sum (0 -> idle) */
-    baro_alt_time_us_t baro_boot_t0;    /**< timestamp of the first collected sample */
+    uint32_t           baro_boot_count;  /**< samples in the sum (0 -> idle) */
+    double             baro_boot_p_sum;  /**< sum of collected pressures [Pa] */
+    baro_alt_time_us_t baro_boot_t0;     /**< timestamp of the first collected sample */
+    bool               baro_datum_known; /**< baro_alt has run: a re-bootstrap keeps its datum
+                                              (baro_alt.h0_baro_m, REQ-SUITE-027) */
+
+    /* IMU loss (REQ-SUITE-027): the suite sees the epochs without IMU that the
+       ARS/AHRS and baro_alt never get, so it stops them itself. */
+    bool          have_last_imu; /**< t_last_imu is set */
+    uint32_t      n_imu_loss;    /**< IMU losses that stopped the filters */
+    ins_time_us_t t_last_imu;    /**< last IMU epoch */
+
+    ins_level_window_t level_win; /**< leveling window for the ARS/AHRS
+                                       bootstrap (REQ-SUITE-028) */
+    uint32_t n_att_boot_moving;   /**< ARS/AHRS bootstraps that were not
+                                       quasi-static (REQ-SUITE-028) */
 
     /* Handoff from nav_suite_predict_step() to nav_suite_correct_step() for one
        epoch (REQ-SUITE-021): only the caller's original, unmodified measurement
@@ -264,6 +297,9 @@ typedef struct
         bool last_ins_initialized;          /**< ins.is_initialized as of the
                                                   previous nav_suite_update()
                                                   call, to spot a shutdown */
+        bool last_ins_ready;                /**< ins_is_ready() as of the previous
+                                                 epoch (edge detection for the
+                                                 carry-over log, REQ-SUITE-022) */
     } log_state;
 } nav_suite_t;
 
@@ -314,6 +350,23 @@ extern "C"
     void nav_suite_set_init_att_hint(nav_suite_t* s, float roll_rad, float pitch_rad,
                                      float stddev_roll_pitch_rad, float yaw_rad,
                                      float stddev_yaw_rad);
+
+    /** @brief Set the World Magnetic Model position for both attitude
+     *  sources, so that their yaw refers to true north (REQ-SUITE-029).
+     *
+     *  ins takes it at once (NED magnetic reference and field gate). The
+     *  suite keeps the position and applies it to the magnetometer AHRS now
+     *  if it runs, and again on every AHRS start or restart. Callable at any
+     *  time, right after nav_suite_init() included, and again whenever the
+     *  position has moved far enough to matter. Non-finite input is
+     *  dropped.
+     *
+     *  @param[in,out] s The suite instance.
+     *  @param[in] lat_rad Latitude [rad].
+     *  @param[in] lon_rad Longitude [rad].
+     *  @param[in] year Decimal year (e.g. 2026.5). */
+    void nav_suite_set_magnetic_model_position(nav_suite_t* s, double lat_rad, double lon_rad,
+                                               float year);
 
     /** @brief Feed one measurement epoch to all three filters.
      *
@@ -423,6 +476,14 @@ extern "C"
      *  (REQ-SUITE-022, the same heading INS is re-initialized from), and
      *  the ARS's raw, only-relative yaw where it is not, e.g. before INS
      *  has ever run. nav_suite_get_rpy_ars() always reports the raw one.
+     *
+     *  The sources are independent estimators and nothing reconciles them
+     *  at a switch. While they agree the yaw is continuous. When they do
+     *  not (a disturbed compass, an unaided INS heading) the yaw steps by
+     *  the difference at the switch and can step back at the next one:
+     *  INS to AHRS follows the magnetometer, AHRS to ARS returns to the
+     *  carried INS heading. A consumer that cannot take a heading step
+     *  has to look at nav_suite_get_mode() and the per-source accessors.
      *  @param[in] s The suite instance.
      *  @param[out] roll_rad Roll [rad].
      *  @param[out] pitch_rad Pitch [rad].

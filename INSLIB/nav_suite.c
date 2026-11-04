@@ -4,7 +4,9 @@
  * @brief Wrapper running ins, two AHRS filters and a baro/accel
  *        vertical filter in parallel.
  *
- * See nav_suite.h for the overall design.
+ * See nav_suite.h for the overall design. The reduced filters it runs next to
+ * the full one are covered in Zwiener 2019 (J. Zwiener, TU Darmstadt, 2019),
+ * "Reduzierte Zustandsschaetzung".
  */
 
 #include <math.h>
@@ -13,6 +15,7 @@
 #include "nav_suite.h"
 #include "geodetic_toolbox.h"
 #include "linalg.h" /* SQRTF */
+#include "sensor_defaults.h"
 #include "log.h"
 
 /* Diagnostics only (see log.h): how far the ARS's independently
@@ -157,7 +160,7 @@ static void nav_suite_latch_datum_origin(nav_suite_t* s)
     s->datum_offset_t_last  = 0;
 }
 
-/* @satisfies REQ-SUITE-004 REQ-SUITE-011 REQ-SUITE-020 */
+/* @satisfies REQ-SUITE-004 REQ-SUITE-011 REQ-SUITE-020 REQ-SUITE-029 */
 int nav_suite_init(nav_suite_t* s, const ins_init_t* init, const ins_options_t* opt)
 {
     if (s == NULL || init == NULL || opt == NULL) { return -1; }
@@ -183,6 +186,17 @@ int nav_suite_init(nav_suite_t* s, const ins_init_t* init, const ins_options_t* 
     s->ahrs_cfg.chi2_disable       = opt->chi2_disable;
     s->baro_cfg.chi2_disable       = opt->chi2_disable;
     s->local_gnss_cfg.chi2_disable = opt->chi2_disable;
+
+    /* One IMU loss threshold for every filter (REQ-SUITE-027). */
+    s->ars_cfg.imu_loss_timeout_sec  = opt->imu_loss_timeout_sec;
+    s->ahrs_cfg.imu_loss_timeout_sec = opt->imu_loss_timeout_sec;
+    s->baro_cfg.imu_loss_timeout_sec = opt->imu_loss_timeout_sec;
+    s->have_last_imu                 = false;
+    s->n_imu_loss                    = 0;
+    s->level_win.count               = 0;
+    s->n_att_boot_moving             = 0;
+    s->baro_datum_known              = false;
+    s->mag_model.valid               = false; /* REQ-SUITE-029 */
 
     /* Stillness definition (REQ-SUITE-020): same reasoning as the chi2 flag
        above, for the question "is the platform standing still". ins, the two
@@ -224,7 +238,9 @@ int nav_suite_init(nav_suite_t* s, const ins_init_t* init, const ins_options_t* 
        best-available attitude reflects the true heading during the
        ATTITUDE_ONLY window. Roll/pitch stay accelerometer-derived. The
        magnetometer AHRS is unaffected. */
-    s->ars_yaw_from_init = !opt->auto_init;
+    s->ars_yaw_from_init  = !opt->auto_init;
+    s->ars_att_from_init  = !opt->auto_init;
+    s->ahrs_att_from_init = !opt->auto_init;
     if (s->ars_yaw_from_init) { s->ars_cfg.rpy_init_rad[2] = init->rpy_init_rad[2]; }
 
     const int rc = ins_init(&s->ins, init, opt);
@@ -240,18 +256,76 @@ int nav_suite_init(nav_suite_t* s, const ins_init_t* init, const ins_options_t* 
     return rc;
 }
 
-/* Bootstrap an AHRS instance from the current epoch: roll/pitch from
- * accelerometer leveling; yaw from the magnetometer (AHRS mode), or (unless
+/* Start an ARS/AHRS instance. The magnetometer AHRS forgets a World Magnetic
+ * Model position on every (re)start, so the kept one is handed over again
+ * right after ahrs_init (REQ-SUITE-029). Its start yaw comes from the
+ * magnetometer, so the declination re-frame of ahrs_set_position turns that
+ * magnetic heading into a true one. */
+/* @satisfies REQ-SUITE-029 */
+static void nav_suite_ahrs_start(nav_suite_t* s, ahrs_t* a, const ahrs_config_t* cfg,
+                                 ins_time_us_t t)
+{
+    (void)ahrs_init(a, cfg, t);
+    if (a == &s->ahrs && s->mag_model.valid)
+    {
+        ahrs_set_position(a, s->mag_model.lat_rad, s->mag_model.lon_rad, s->mag_model.year);
+    }
+}
+
+/* Bootstrap an AHRS instance once the leveling window is full: roll/pitch from
+ * accelerometer leveling over the window, widened if it was not quasi-static
+ * (REQ-SUITE-028); yaw from the magnetometer (AHRS mode), or (unless
  * keep_init_yaw) 0 (ARS mode without a known initial attitude). keep_init_yaw
  * preserves whatever is already in cfg->rpy_init_rad[2] (the ARS's known
  * initial yaw, see nav_suite_t.ars_yaw_from_init) and is only ever true for the
- * ARS call site, never for the magnetometer AHRS. */
-/* @satisfies REQ-SUITE-002 */
-static void nav_suite_ahrs_bootstrap(ahrs_t* a, ahrs_config_t* cfg, const ins_measurements_t* m,
-                                     const float* mag_b, bool keep_init_yaw)
+ * ARS call site, never for the magnetometer AHRS. A gyro bias the instance
+ * kept from an IMU loss seeds the restart (REQ-SUITE-027). */
+/* @satisfies REQ-SUITE-002 REQ-SUITE-027 REQ-SUITE-028 */
+static void nav_suite_ahrs_bootstrap(nav_suite_t* s, ahrs_t* a, ahrs_config_t* cfg,
+                                     const ins_measurements_t* m, const float* mag_b,
+                                     bool keep_init_yaw)
 {
-    float roll, pitch;
-    ahrs_leveling_from_acc(m->acc.data, &roll, &pitch);
+    bool* const from_init = (a == &s->ars) ? &s->ars_att_from_init : &s->ahrs_att_from_init;
+    if (*from_init)
+    {
+        /* Manual init: the start state is prescribed, there is nothing to
+           estimate (REQ-SUITE-002). The ARS takes roll/pitch and their 1-sigma
+           from the init block as resolved by ins_init, its yaw from its seed
+           (the init yaw or a later static hint). The AHRS still waits for the
+           magnetometer and takes roll/pitch from the ARS started that way,
+           which tracked them since, and its yaw from the magnetometer. */
+        ahrs_config_t c = *cfg;
+        float         sd_y;
+        *from_init = false;
+        if (a == &s->ars)
+        {
+            int i;
+            for (i = 0; i < 2; ++i)
+            {
+                c.rpy_init_rad[i]        = s->ins.init.rpy_init_rad[i];
+                c.rpy_init_stddev_rad[i] = NAV_SUITE_AHRS_INIT_RP_STDDEV;
+            }
+            nav_suite_ahrs_start(s, a, &c, m->timestamp);
+            return;
+        }
+        if (mag_b != NULL &&
+            ahrs_get_rpy(&s->ars, &c.rpy_init_rad[0], &c.rpy_init_rad[1], &c.rpy_init_rad[2]) &&
+            ahrs_get_rpy_stddev(&s->ars, &c.rpy_init_stddev_rad[0], &c.rpy_init_stddev_rad[1],
+                                &sd_y))
+        {
+            c.rpy_init_rad[2] = ahrs_mag_heading(mag_b, c.rpy_init_rad[0], c.rpy_init_rad[1]);
+            c.rpy_init_stddev_rad[2] = NAV_SUITE_AHRS_INIT_YAW_STDDEV;
+            nav_suite_ahrs_start(s, a, &c, m->timestamp);
+            return;
+        }
+        /* No ARS to take it from: level like any other start. */
+    }
+
+    float roll, pitch, rp_floor;
+    if (!ins_level_window_solve(&s->level_win, &s->ins.opt, true, &roll, &pitch, &rp_floor))
+    {
+        return;
+    }
 
     cfg->rpy_init_rad[0] = roll;
     cfg->rpy_init_rad[1] = pitch;
@@ -259,11 +333,43 @@ static void nav_suite_ahrs_bootstrap(ahrs_t* a, ahrs_config_t* cfg, const ins_me
     {
         cfg->rpy_init_rad[2] = (mag_b != NULL) ? ahrs_mag_heading(mag_b, roll, pitch) : 0.0f;
     }
-    cfg->rpy_init_stddev_rad[0] = NAV_SUITE_AHRS_INIT_RP_STDDEV;
-    cfg->rpy_init_stddev_rad[1] = NAV_SUITE_AHRS_INIT_RP_STDDEV;
+    cfg->rpy_init_stddev_rad[0] = fmaxf(NAV_SUITE_AHRS_INIT_RP_STDDEV, rp_floor);
+    cfg->rpy_init_stddev_rad[1] = fmaxf(NAV_SUITE_AHRS_INIT_RP_STDDEV, rp_floor);
     cfg->rpy_init_stddev_rad[2] = NAV_SUITE_AHRS_INIT_YAW_STDDEV;
+    if (rp_floor > 0.0f) { s->n_att_boot_moving++; }
 
-    (void)ahrs_init(a, cfg, m->timestamp);
+    ahrs_config_t c = *cfg;
+    (void)ahrs_get_bias_carry(a, c.gyr_bias_init_rps, c.gyr_bias_init_stddev_rps);
+    nav_suite_ahrs_start(s, a, &c, m->timestamp);
+}
+
+/* IMU loss (REQ-SUITE-027): the ARS/AHRS and baro_alt never see the epochs
+ * without IMU, so the suite stops them on the first one that finds the IMU
+ * stale (ins stops itself, REQ-NAV-089). Each keeps its biases for the
+ * restart, the heading carry-over is gone with the ARS yaw it tracked. */
+/* @satisfies REQ-SUITE-026 REQ-SUITE-027 */
+static void nav_suite_check_imu_loss(nav_suite_t* s, ins_time_us_t t)
+{
+    if (!s->have_last_imu || (float)(t - s->t_last_imu) * 1.0e-6f < s->ins.opt.imu_loss_timeout_sec)
+    {
+        return;
+    }
+    if (!s->ars.is_initialized && !s->ahrs.is_initialized && !s->baro_alt.is_initialized)
+    {
+        return; /* already stopped */
+    }
+    ahrs_stop_imu_loss(&s->ars);
+    ahrs_stop_imu_loss(&s->ahrs);
+    baro_alt_stop_imu_loss(&s->baro_alt);
+    s->yaw_carry.valid     = false;
+    s->yaw_carry.out_valid = false;
+    s->ars_att_from_init   = false; /* the prescribed start no longer holds */
+    s->ahrs_att_from_init  = false;
+    s->level_win.count     = 0;
+    s->baro_boot_count     = 0;
+    s->n_imu_loss++;
+    LOG_WARN("nav_suite: no IMU sample for %.2f s, all filters stopped",
+             (double)((float)(t - s->t_last_imu) * 1.0e-6f));
 }
 
 /* Attitude source for consumers that need a quaternion: same fallback order as
@@ -326,8 +432,12 @@ static void nav_suite_align_vertical_datum(nav_suite_t* s)
  * baro_alt comes first even when ins is running and better right now: the
  * offset has to absorb the barometer's drift against the ellipsoid while GNSS
  * is up, because the barometer is what remains when GNSS drops. Without a
- * barometer the ins local height is the reference, and the offset degenerates
- * to the datum's ellipsoid height. */
+ * barometer the ins local height is the reference, but only while an external
+ * local position source drives it. Under GNSS alone ins's height IS a GNSS
+ * height: the offset would merely re-estimate the datum origin's ellipsoid
+ * height, which ins already knows exactly, and add that filter's noise to
+ * every absolute height during an outage. There is then no reference, the
+ * offset filter stays idle and a coasting ins reports the absolute height. */
 typedef struct
 {
     float h_m;      /**< height above the NED origin [m], positive up */
@@ -352,7 +462,8 @@ static bool nav_suite_local_ref(const nav_suite_t* s, float baro_stddev_m, nav_s
     }
 
     float pos_ned[3];
-    if (ins_is_ready(&s->ins) && ins_get_position_local(&s->ins, pos_ned))
+    if (s->local_frame_external && ins_is_ready(&s->ins) &&
+        ins_get_position_local(&s->ins, pos_ned))
     {
         r->h_m = -pos_ned[2];
         /* stddev_m stays 0 -> the offset filter's configured default. ins's
@@ -418,11 +529,10 @@ static void nav_suite_update_local_gnss(nav_suite_t* s, const ins_measurements_t
     /* If the GNSS measurement is delayed, evaluate the local height at
        the GNSS time of validity using the reference's climb rate: both
        sides of the pair must refer to the same instant. */
-    float h_local = ref.h_m;
-    if (m->gnss_delay_ms > 0 && ref.has_v)
-    {
-        h_local -= ref.v_up_mps * (float)m->gnss_delay_ms * 0.001f;
-    }
+    float         h_local = ref.h_m;
+    const int64_t age_us  = ((m->gnss_delay_ms > 0) ? (int64_t)m->gnss_delay_ms * 1000 : 0) +
+                           ((m->gnss_delay_us > 0) ? (int64_t)m->gnss_delay_us : 0);
+    if (age_us > 0 && ref.has_v) { h_local -= ref.v_up_mps * (float)age_us * 1e-6f; }
 
     if (!s->local_gnss.is_initialized)
     {
@@ -598,7 +708,10 @@ static bool nav_suite_carried_yaw(const nav_suite_t* s, ins_time_us_t t, float* 
  * While ins is not initialized, two further fallbacks fill in what the live
  * filters cannot offer: the caller's static initial hint (REQ-SUITE-017) and,
  * for a filter that has run before, its own last converged heading advanced by
- * the ARS (REQ-SUITE-022). Both only ever ADD to the resolved hint.
+ * the ARS (REQ-SUITE-022). The latter also applies while an initialized ins is
+ * not ready (its coasting window expired, the state frozen), where the next
+ * usable fix re-acquires with this hint. Both only ever ADD to the resolved
+ * hint.
  *
  * @satisfies REQ-SUITE-016 */
 static void nav_suite_build_att_hint(const nav_suite_t* s, ins_time_us_t t,
@@ -659,20 +772,22 @@ static void nav_suite_build_att_hint(const nav_suite_t* s, ins_time_us_t t,
             hint->stddev_roll_rad  = s->init_att_hint.stddev_roll_rad;
             hint->stddev_pitch_rad = s->init_att_hint.stddev_pitch_rad;
         }
+    }
 
-        /* Carried-over heading (REQ-SUITE-022): ins ran before, held a
-           converged 3D heading, and was shut down. Restore it, advanced by the
-           ARS's tracked yaw change. Last in line because a magnetometer AHRS
-           measures the heading while this only reconstructs it. */
-        if (hint->stddev_yaw_rad <= 0.0f)
+    /* Carried-over heading (REQ-SUITE-022): ins held a converged 3D heading
+       and was then shut down, or froze once its coasting window expired, which
+       the re-acquisition answers with "heading unknown" unless the hint
+       carries one (REQ-NAV-059). Restore it, advanced by the ARS's tracked yaw
+       change. Last in line because a magnetometer AHRS measures the heading
+       while this only reconstructs it. */
+    if (hint->stddev_yaw_rad <= 0.0f && !ins_is_ready(&s->ins))
+    {
+        float carried_yaw, carried_sd;
+        if (nav_suite_carried_yaw(s, t, &carried_yaw, &carried_sd))
         {
-            float carried_yaw, carried_sd;
-            if (nav_suite_carried_yaw(s, t, &carried_yaw, &carried_sd))
-            {
-                hint->is_valid       = true;
-                hint->yaw_rad        = carried_yaw;
-                hint->stddev_yaw_rad = carried_sd;
-            }
+            hint->is_valid       = true;
+            hint->yaw_rad        = carried_yaw;
+            hint->stddev_yaw_rad = carried_sd;
         }
     }
 }
@@ -715,6 +830,51 @@ void nav_suite_set_init_att_hint(nav_suite_t* s, float roll_rad, float pitch_rad
     }
 }
 
+/* @satisfies REQ-SUITE-029 */
+void nav_suite_set_magnetic_model_position(nav_suite_t* s, double lat_rad, double lon_rad,
+                                           float year)
+{
+    if (s == NULL) { return; }
+    /* float is plenty for a magnetic model lookup on a grid of degrees, and
+       NaN and Inf survive the conversion for the check below. */
+    const float lat_f = (float)lat_rad;
+    const float lon_f = (float)lon_rad;
+    if (!isfinite(lat_f) || !isfinite(lon_f) || !isfinite(year))
+    {
+        return; /* drop non-finite input at the API boundary */
+    }
+    s->mag_model.valid   = true;
+    s->mag_model.lat_rad = lat_f;
+    s->mag_model.lon_rad = lon_f;
+    s->mag_model.year    = year;
+
+    /* Both attitude sources on the same yaw datum (true north): ins gets the
+       full NED reference vector and field gate, the AHRS its declination
+       re-frame. A no-op for the AHRS while it is not running, the kept
+       position reaches it on its next start (nav_suite_ahrs_start). */
+    ins_set_magnetic_model_from_position(&s->ins, lat_rad, lon_rad, year);
+    ahrs_set_position(&s->ahrs, lat_f, lon_f, year);
+    s->mag_model.ins_refreshes = s->ins.mag_model_refreshes;
+}
+
+/* ins re-evaluates the tracked model at its own position as it travels
+ * (REQ-NAV-027), in an epoch without covariance work (REQ-NAV-094). Follow
+ * each such refresh: the kept position becomes ins' current one, and a
+ * running AHRS gets it in this same epoch. */
+/* @satisfies REQ-SUITE-029 */
+static void nav_suite_follow_mag_model(nav_suite_t* s)
+{
+    if (!s->mag_model.valid || !s->ins.mag_model_tracked ||
+        s->ins.mag_model_refreshes == s->mag_model.ins_refreshes)
+    {
+        return;
+    }
+    s->mag_model.ins_refreshes = s->ins.mag_model_refreshes;
+    s->mag_model.lat_rad       = (float)s->ins.latlonh[0];
+    s->mag_model.lon_rad       = (float)s->ins.latlonh[1];
+    ahrs_set_position(&s->ahrs, s->mag_model.lat_rad, s->mag_model.lon_rad, s->mag_model.year);
+}
+
 /* @satisfies REQ-SUITE-001 REQ-SUITE-003 REQ-SUITE-021 */
 int nav_suite_predict_step(nav_suite_t* s, const ins_measurements_t* m, float* phi_out)
 {
@@ -755,6 +915,7 @@ void nav_suite_correct_step(nav_suite_t* s)
     const ins_measurements_t* m = &s->step_ctx.m;
 
     ins_correct_step(&s->ins);
+    nav_suite_follow_mag_model(s);
 
     /* The static initial-hint (nav_suite_set_init_att_hint, REQ-SUITE-017) is
        consumed exactly once: cleared as soon as ins has bootstrapped, so a
@@ -778,6 +939,18 @@ void nav_suite_correct_step(nav_suite_t* s)
                  (double)RAD2DEG(s->yaw_carry.stddev_rad));
     }
     s->log_state.last_ins_initialized = s->ins.is_initialized;
+    {
+        const bool ins_ready = ins_is_ready(&s->ins);
+        if (s->log_state.last_ins_ready && !ins_ready && s->ins.is_initialized &&
+            s->yaw_carry.valid)
+        {
+            LOG_INFO("nav_suite: ins not ready, heading carry-over armed at %.0f deg "
+                     "(stddev %.1f deg) for its re-acquisition, tracked by the ARS from here",
+                     (double)RAD2DEG(s->yaw_carry.yaw_ins_rad),
+                     (double)RAD2DEG(s->yaw_carry.stddev_rad));
+        }
+        s->log_state.last_ins_ready = ins_ready;
+    }
 
     /* Freeze the local-frame offset once ins has locked the datum at its
        bootstrap: from now on it is the fixed frame relation, not a moving
@@ -807,10 +980,22 @@ void nav_suite_correct_step(nav_suite_t* s)
         }
     }
 
+    nav_suite_check_imu_loss(s, m->timestamp);
     if (!m->acc.is_valid || !m->gyr.is_valid)
     {
         return; /* the AHRS filters are pure IMU(+mag) filters */
     }
+    /* A sample no inertial sensor can have produced is no sample at all: it
+       must not reach the leveling window, the bootstrap or the stillness
+       detectors either. ins and the filters apply the same bound themselves,
+       this keeps it out of the suite's own bookkeeping. */
+    if (!ins_vec3_within(m->acc.data, INS_IMU_ACC_ABS_MAX_MPS2) ||
+        !ins_vec3_within(m->gyr.data, INS_IMU_GYR_ABS_MAX_RPS))
+    {
+        return;
+    }
+    s->t_last_imu    = m->timestamp;
+    s->have_last_imu = true;
 
     /* The ARS/AHRS/baro filters run the SAME physical sensors as ins, so they
        must see the same calibrated signal (REQ-SUITE-012). ins calibrates its
@@ -818,7 +1003,8 @@ void nav_suite_correct_step(nav_suite_t* s)
        copy here to drive the parallel filters. */
     ins_measurements_t mc = *m;
     ins_apply_calibration(&s->ins.opt, &mc);
-    m                  = &mc;
+    m = &mc;
+    ins_level_window_push(&s->level_win, m->timestamp, m->acc.data, m->gyr.data);
     const float* mag_b = m->mag.is_valid ? m->mag.data : NULL;
 
     /* Zero-rotation trigger for the ARS/AHRS (REQ-SUITE-009): the caller's
@@ -837,7 +1023,7 @@ void nav_suite_correct_step(nav_suite_t* s)
            not a tracked rotation: the carry-over loses its reference
            (REQ-SUITE-022). */
         s->yaw_carry.valid = false;
-        nav_suite_ahrs_bootstrap(&s->ars, &s->ars_cfg, m, NULL, s->ars_yaw_from_init);
+        nav_suite_ahrs_bootstrap(s, &s->ars, &s->ars_cfg, m, NULL, s->ars_yaw_from_init);
     }
     else { ahrs_update(&s->ars, m->timestamp, m->gyr.data, m->acc.data, NULL, zaru_trigger); }
 
@@ -846,7 +1032,7 @@ void nav_suite_correct_step(nav_suite_t* s)
         /* The heading bootstrap needs a magnetometer sample. The
            magnetometer AHRS has its own independent heading reference,
            unaffected by ars_yaw_from_init (see nav_suite_ahrs_bootstrap). */
-        if (mag_b != NULL) { nav_suite_ahrs_bootstrap(&s->ahrs, &s->ahrs_cfg, m, mag_b, false); }
+        if (mag_b != NULL) { nav_suite_ahrs_bootstrap(s, &s->ahrs, &s->ahrs_cfg, m, mag_b, false); }
     }
     else { ahrs_update(&s->ahrs, m->timestamp, m->gyr.data, m->acc.data, mag_b, zaru_trigger); }
 
@@ -970,14 +1156,24 @@ void nav_suite_correct_step(nav_suite_t* s)
                        converged solution. Waiting for readiness would anchor at
                        0 while ins's local height had already moved away from
                        it, leaving a permanent datum offset. */
-                    float h_init = 0.0f;
-                    float pos_ned[3];
-                    if (ins_get_position_local(&s->ins, pos_ned)) { h_init = -pos_ned[2]; }
+                    float       h_init = 0.0f;
+                    float       pos_ned[3];
                     const float p_mean = (float)(s->baro_boot_p_sum / (double)s->baro_boot_count);
-                    if (baro_alt_init(&s->baro_alt, &s->baro_cfg, m->timestamp, p_mean, h_init,
-                                      0.0f) == 0)
+                    if (s->baro_datum_known)
                     {
-                        s->baro_boot_count = 0; /* reset for a future re-bootstrap */
+                        /* Re-bootstrap: the datum never moves (REQ-SUITE-007,
+                           REQ-SUITE-027), so the height comes from the
+                           pressure under the previous datum zero point. */
+                        h_init = baro_alt_pressure_to_altitude(p_mean) - s->baro_alt.h0_baro_m;
+                    }
+                    else if (ins_get_position_local(&s->ins, pos_ned)) { h_init = -pos_ned[2]; }
+                    baro_alt_config_t c = s->baro_cfg;
+                    (void)baro_alt_get_bias_carry(&s->baro_alt, &c.acc_bias_init_mps2,
+                                                  &c.acc_bias_init_stddev_mps2);
+                    if (baro_alt_init(&s->baro_alt, &c, m->timestamp, p_mean, h_init, 0.0f) == 0)
+                    {
+                        s->baro_boot_count  = 0; /* reset for a future re-bootstrap */
+                        s->baro_datum_known = true;
                     }
                 }
             }

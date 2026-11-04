@@ -11,7 +11,22 @@
  *
  * Prediction runs at the IMU rate (a 3-state UDU predict is cheap and the state
  * propagation has to run per sample anyway). The barometer fusion is
- * sample-driven.
+ * sample-driven. Outlier downweighting follows
+ * Chang 2014: G. Chang, Robust Kalman filtering based on Mahalanobis distance as
+ * outlier judging criterion, Journal of Geodesy 88(4), pp. 391-401, 2014.
+ *
+ * Primary source for the Kalman filter and inertial navigation fundamentals:
+ * J. Wendel, Integrierte Navigationssysteme: Sensordatenfusion, GPS und
+ * Inertiale Navigation, 2nd ed., Oldenbourg, 2011 (cited as Wendel, 2nd ed.).
+ * O. Meister, Entwurf und Realisierung einer Aufklaerungsplattform auf Basis
+ * eines unbemannten Minihelikopters mit autonomen Flugfaehigkeiten, Logos
+ * Verlag Berlin, 2010 (cited as Meister 2010).
+ *
+ * The model (height, vertical velocity, vertical bias) is described in
+ * J. Zwiener, Robuste Zustandsschaetzung zur Navigation und Regelung autonomer und
+ * bemannter Multikopter mit verteilten Sensoren, TU Darmstadt, 2019 (cited as
+ * Zwiener 2019, chapter titles in quotes).
+ * See "Reduzierte Zustandsschaetzung", "Hoehenbestimmung".
  */
 
 #include <math.h>
@@ -36,13 +51,12 @@
 #define BARO_ALT_LOG_GAP_WARN_SEC   (5.0f)
 #define BARO_ALT_LOG_GAP_REPEAT_SEC (10.0f)
 
-/* Initial bias-prior consistency check (see log.h, REQ-BARO-024). While the
-   caller feeds zero-velocity updates the platform stands still, so the
+/* Initial bias initial std.-dev. consistency check (see log.h, REQ-BARO-024).
+   While the caller feeds zero-velocity updates the platform stands still, so the
    up-acceleration input a_up (specific force rotated to NED, gravity removed)
    is the vertical accelerometer bias itself, up to the sensor noise. Averaged
    over a long enough window it can be held against the configured 1-sigma prior
-   cfg.acc_bias_init_stddev_mps2; a gross mismatch means that prior was written
-   for a different sensor.
+   cfg.acc_bias_init_stddev_mps2.
      - SIGMA_FACTOR: sigma the averaged evidence may exceed before the prior
        counts as mis-specified.
      - MIN_DWELL_SEC / MIN_SAMPLES: window long and dense enough for the white
@@ -58,29 +72,22 @@
 /* Gravity [m/s^2]. */
 #define BARO_ALT_GRAVITY INS_GRAVITY_NOMINAL
 
-/* Don't propagate the state over longer time periods (sensor outage). */
-#define BARO_ALT_MAX_DT_SEC (0.5f)
-
 /* Config defaults. sigma_a/sigma_b are continuous-time spectral noise densities
  * [X/sqrt(Hz)], scaled by dt_sec in baro_alt_predict.
  *
- * sigma_a is deliberately not shared with ins.c's accelerometer VRW density
- * (sensor_defaults.h): a_up_mps2 here is a full 3D-to-vertical projection (body
- * specific force rotated to NED via the supplied attitude, gravity removed,
- * REQ-BARO-002), so roll/pitch error leaks in as additional apparent noise and
- * a much larger effective density is needed.
+ * sigma_a is not shared with ins.c's accelerometer VRW density
+ * (sensor_defaults.h): a_up_mps2 here is a full 3D-to-vertical projection
+ * (body specific force rotated to NED via the supplied attitude, gravity
+ * removed, REQ-BARO-002), so roll/pitch error leaks in as additional apparent
+ * noise and a much larger effective value is needed.
  *
  * sigma_h (direct process noise on h) is meant to stay small: a safety margin
- * against the discretization/model-mismatch gap described at
- * baro_alt_predict, not a primary noise source.
+ * against a discretization/model-mismatch gap.
  *
- * The a_b prior and sigma_b are sized for an UNCALIBRATED accelerometer, which
- * is what the filter has to survive: a sensitivity error of a percent already
- * lands well over 0.1 m/s^2 in a_up, and a prior far below that leaves the
- * residual in v, where it stands out as a vertical velocity that never decays.
+ * The a_b prior and sigma_b are sized for an UNCALIBRATED accelerometer.
  * sigma_b is what lets a_b keep tracking a residual that moves with orientation
  * or temperature instead of freezing at its first estimate. Both are therefore
- * loose relative to the pure sensor-datasheet numbers. */
+ * NOT the pure sensor-datasheet numbers. */
 #define BARO_ALT_DEFAULT_H_STDDEV_M             (0.8f)
 #define BARO_ALT_DEFAULT_V_STDDEV_MPS           (0.20f)
 #define BARO_ALT_DEFAULT_AB_STDDEV_MPS2         (0.1f)
@@ -188,6 +195,9 @@ static void baro_alt_resolve_config(const baro_alt_config_t* in, baro_alt_config
         out->acc_bias_drift_mps2_sqrthz = BARO_ALT_DEFAULT_BIAS_DRIFT_MPS2_SQRTHZ;
     if (!(out->h_process_noise_m_sqrthz > 0.0f) || !isfinite(out->h_process_noise_m_sqrthz))
         out->h_process_noise_m_sqrthz = BARO_ALT_DEFAULT_H_NOISE_M_SQRTHZ;
+    if (!(out->imu_loss_timeout_sec > 0.0f) || !isfinite(out->imu_loss_timeout_sec))
+        out->imu_loss_timeout_sec = INS_DEFAULT_IMU_LOSS_TIMEOUT_SEC;
+    if (!isfinite(out->acc_bias_init_mps2)) out->acc_bias_init_mps2 = 0.0f;
     if (!(out->baro_stddev_m > 0.0f) || !isfinite(out->baro_stddev_m))
         out->baro_stddev_m = BARO_ALT_DEFAULT_BARO_STDDEV_M;
     if (!(out->chi2_threshold > 0.0f) || !isfinite(out->chi2_threshold))
@@ -269,6 +279,7 @@ int baro_alt_init(baro_alt_t* b, const baro_alt_config_t* cfg, baro_alt_time_us_
        starts there and the datum zero point in ISA altitude is anchor - h_init.
        Diagonal initial covariance as UDU factors: U = I, d = variances. */
     b->x[0] = h_init_m;
+    b->x[2] = b->cfg.acc_bias_init_mps2;
     mateye(b->U, BARO_ALT_STATES);
     b->d[0] = bsquare(b->cfg.h_init_stddev_m);
     b->d[1] = bsquare(b->cfg.v_init_stddev_mps);
@@ -490,6 +501,22 @@ static void baro_alt_check_precision(baro_alt_t* b)
     }
 }
 
+/* Accelerometer loss (REQ-BARO-027): the attitude the specific force is
+ * projected with is re-derived after the gap, so the filter stops. Only a_b
+ * survives, with its 1-sigma widened and clamped to the cold-start prior. */
+/* @satisfies REQ-BARO-027 */
+void baro_alt_stop_imu_loss(baro_alt_t* b)
+{
+    if (b == NULL || !b->is_initialized) { return; }
+    b->bias_carry.acc_bias_mps2 = b->x[2];
+    b->bias_carry.acc_bias_stddev_mps2 =
+        fminf(INS_DEFAULT_BIAS_CARRY_STDDEV_INFLATION * SQRTF(baro_alt_state_var(b, 2)),
+              b->cfg.acc_bias_init_stddev_mps2);
+    b->bias_carry.valid = true;
+    b->is_initialized   = false;
+    LOG_WARN("baro_alt: accelerometer lost, filter stopped, a_b kept for the restart");
+}
+
 /* ============================================================================
  * Public API: update
  * ============================================================================
@@ -504,12 +531,13 @@ int baro_alt_predict_step(baro_alt_t* b, baro_alt_time_us_t t, const float acc_m
 
     /* Non-finite inputs (NaN/Inf) must not reach the math (a NaN passes every
        chi2/variance gate because NaN comparisons are false). Drop the epoch;
-       the next epoch's dt spans the gap, which the MAX_DT gate handles. */
-    if (!isfinite(acc_mps2[0]) || !isfinite(acc_mps2[1]) || !isfinite(acc_mps2[2]) ||
-        !isfinite(q_bn[0]) || !isfinite(q_bn[1]) || !isfinite(q_bn[2]) || !isfinite(q_bn[3]))
+       the next epoch's dt spans the gap, which the loss gate handles. */
+    if (!ins_vec3_within(acc_mps2, INS_IMU_ACC_ABS_MAX_MPS2) || !isfinite(q_bn[0]) ||
+        !isfinite(q_bn[1]) || !isfinite(q_bn[2]) || !isfinite(q_bn[3]))
     {
         b->n_invalid_input++;
-        LOG_WARN("baro_alt: non-finite accel/attitude input dropped (%u total since init)",
+        LOG_WARN("baro_alt: non-finite or out-of-range accel/attitude input dropped (%u total "
+                 "since init)",
                  (unsigned int)b->n_invalid_input);
         b->step_ctx.active = false;
         return BARO_ALT_EPOCH_DROPPED;
@@ -531,6 +559,12 @@ int baro_alt_predict_step(baro_alt_t* b, baro_alt_time_us_t t, const float acc_m
     {
         b->step_ctx.active = false;
         return BARO_ALT_EPOCH_DROPPED; /* time jumped backwards: re-anchor the clock, skip */
+    }
+    if (dt_sec >= b->cfg.imu_loss_timeout_sec)
+    {
+        baro_alt_stop_imu_loss(b);
+        b->step_ctx.active = false;
+        return BARO_ALT_EPOCH_DROPPED;
     }
 
     /* Barometer-gap diagnostics (see log.h): t_last_baro_fix is set at
@@ -561,7 +595,7 @@ int baro_alt_predict_step(baro_alt_t* b, baro_alt_time_us_t t, const float acc_m
      * Measured up-acceleration: rotate the body-frame specific force to NED and
      * remove gravity. NED z is down, h is up: a_up = -(f_n_z + g). */
     int status = 0;
-    if (dt_sec > 0.0f && dt_sec < BARO_ALT_MAX_DT_SEC)
+    if (dt_sec > 0.0f)
     {
         float R_b_to_n[9];
         ins_quat_to_rotmat(q_bn, R_b_to_n);
@@ -696,6 +730,14 @@ bool baro_alt_get_velocity(const baro_alt_t* b, float* v_mps)
 {
     if (b == NULL || !b->is_initialized) { return false; }
     *v_mps = b->x[1];
+    return true;
+}
+
+bool baro_alt_get_bias_carry(const baro_alt_t* b, float* acc_bias_mps2, float* acc_bias_stddev_mps2)
+{
+    if (b == NULL || !b->bias_carry.valid) { return false; }
+    *acc_bias_mps2        = b->bias_carry.acc_bias_mps2;
+    *acc_bias_stddev_mps2 = b->bias_carry.acc_bias_stddev_mps2;
     return true;
 }
 

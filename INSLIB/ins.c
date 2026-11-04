@@ -4,6 +4,20 @@
  * @brief 15/18-state error-state Kalman filter for 3D navigation.
  *
  * See ins.h for the state-vector layout and overall design.
+ *
+ * Primary source for the error-state formulation, strapdown mechanization,
+ * lever arm handling and GNSS/INS integration:
+ * J. Wendel, Integrierte Navigationssysteme: Sensordatenfusion, GPS und
+ * Inertiale Navigation, 2nd ed., Oldenbourg, 2011 (cited as Wendel, 2nd ed.).
+ *
+ * Background: the error-state formulation, strapdown, lever arm, delay and
+ * ZUPT/ZARU handling also follow
+ * J. Zwiener, Robuste Zustandsschaetzung zur Navigation und Regelung autonomer und
+ * bemannter Multikopter mit verteilten Sensoren, TU Darmstadt, 2019 (cited as
+ * Zwiener 2019, chapter titles in quotes). The chi2 based downweighting of
+ * outliers follows
+ * Chang 2014: G. Chang, Robust Kalman filtering based on Mahalanobis distance as
+ * outlier judging criterion, Journal of Geodesy 88(4), pp. 391-401, 2014.
  */
 
 #include <math.h>
@@ -204,6 +218,10 @@ _Static_assert(KALMAN_MAX_NOISE_SIZE >= INS_NOISE_COLS_MAX,
    i.e. ~1.6e-5 relative per 100 m of travel. */
 #define INS_EARTH_REFRESH_DIST_M (100.0f)
 
+/* A refresh that found no free epoch (REQ-NAV-094) runs anyway, all stages
+   at once, once the travel reaches this many refresh distances. */
+#define INS_EARTH_REFRESH_FORCE_FACTOR (10.0f)
+
 /* The initial local n-frame is not supposed to jump around. When the carry of
    REQ-NAV-062 is refused, the bootstrap fix only defines a fresh origin if it
    cannot be the same platform, i.e. reaching it from the last known position
@@ -221,6 +239,11 @@ _Static_assert(KALMAN_MAX_NOISE_SIZE >= INS_NOISE_COLS_MAX,
    after a frozen coasting window (REQ-NAV-059), which is the same state:
    "nothing in the filter knows where the platform points". */
 #define INS_YAW_UNKNOWN_STDDEV (3.14159265f)
+/* Velocity stddev at a re-acquisition without a velocity measurement
+   (REQ-NAV-091): the frozen velocity dates from the start of the outage and
+   says nothing about the platform at its end, so it is kept only as a value
+   and the next position fixes determine the velocity. */
+#define INS_VEL_UNKNOWN_STDDEV_MPS (30.0f)
 /* Acceptance band for absolute heading inputs (REQ-NAV-060): the yaw
    measurement and the attitude hint's yaw. Any single-turn convention is
    accepted ([-pi, pi], [0, 2pi), ...) and normalized to [-pi, pi] at the API
@@ -424,10 +447,10 @@ _Static_assert(KALMAN_MAX_NOISE_SIZE >= INS_NOISE_COLS_MAX,
 #define INS_DEFAULT_RANGE_AIDING_MAX_HPOS_STDDEV_M (50.0f)
 
 /* How much the carried IMU-bias 1-sigma is widened at the re-bootstrap
-   after a quality-loss re-arm (REQ-NAV-061). The consumption site clamps
+   after a quality-loss or IMU-loss re-arm (REQ-NAV-061). The consumption site clamps
    the result to the cold-start prior, so this factor only decides how much
    BETTER than a cold start the carry is still allowed to claim. */
-#define INS_BIAS_CARRY_STDDEV_INFLATION (3.0f)
+#define INS_BIAS_CARRY_STDDEV_INFLATION INS_DEFAULT_BIAS_CARRY_STDDEV_INFLATION
 
 /* Maximum age of a cached barometer sample used to anchor a height. A
    barometer that delivered once and then stopped must not latch a filter into
@@ -476,6 +499,17 @@ static int index_mod(int index, int array_length)
 static inline float vec3_norm(const float v[3])
 {
     return SQRTF(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+}
+
+static inline float vec3_norm2(const float v[3]) { return v[0] * v[0] + v[1] * v[1] + v[2] * v[2]; }
+
+/* |sqrt(norm2) - ref| <= tol evaluated on the squared norm, so a threshold
+ * gate on a vector length costs no square root. NaN fails the test. */
+static inline bool norm2_within(float norm2, float ref, float tol)
+{
+    const float lo = ref - tol;
+    const float hi = ref + tol;
+    return norm2 >= ((lo > 0.0f) ? lo * lo : 0.0f) && norm2 <= hi * hi;
 }
 
 /* Range comparison instead of isfinite(): MinGW's isfinite macro narrows
@@ -677,27 +711,104 @@ static inline float ins_kalman_dt(const ins_t* f)
  * ============================================================================
  */
 
-/* Recompute the slowly-varying Earth-dependent quantities: gravity and the
- * cached curvature terms for the incremental latlonh book-keeping. Called at
- * init, afterwards throttled to once every INS_EARTH_REFRESH_DIST_M meters of
- * travel (see ins_update_meta). */
-static void ins_refresh_earth_params(ins_t* f)
+/* Curvature terms for the incremental latlonh book-keeping: the
+ * dNED->dlatlonh mapping for unit north/east steps (the mapping is
+ * component-wise). Restarts the travel count. */
+static void ins_refresh_curvature(ins_t* f)
 {
-    /* Curvature terms: evaluate the dNED->dlatlonh mapping for unit
-       north/east steps (the mapping is component-wise). */
     const float unit_ne[3] = {1.0f, 1.0f, 0.0f};
     double      dllh[3];
     ins_dned_to_dlatlonh(unit_ne, f->latlonh[0], f->latlonh[2], dllh);
     f->meta_dlat_per_dN = dllh[0];
     f->meta_dlon_per_dE = dllh[1];
     f->meta_travel_m    = 0.0f;
+}
 
-    /* Refresh gravity at the new position if the user did not supply one
-     * explicitly (i.e. if the init gravity was zero). Otherwise keep
-     * the user-supplied value (e.g. from a WMM-style model). */
-    if (vec3_norm(f->init.gravity_n) < 1e-4f)
+/* Gravity at the current position if the user did not supply one, neither at
+ * init (a zero init gravity) nor through ins_set_world_model (REQ-NAV-032).
+ * Otherwise keep the user-supplied value. */
+static void ins_refresh_gravity(ins_t* f)
+{
+    if (!f->gravity_user && vec3_norm(f->init.gravity_n) < 1e-4f)
     {
         ins_gravity_ned((float)f->latlonh[0], (float)f->latlonh[2], f->gravity_n);
+    }
+}
+
+/* World Magnetic Model reference at lat/lon [deg] for the tracked year: NED
+ * field, field-strength gate and the dip pole zone (REQ-NAV-027,
+ * REQ-SYS-018). */
+static void ins_apply_magnetic_model(ins_t* f, float lat_deg, float lon_deg)
+{
+    f->mag_model_refreshes++;
+
+    /* Inside a dip pole exclusion zone the declination that orients the
+       reference field is meaningless, so magnetometer fusion is dropped until
+       the position leaves the zone (REQ-SYS-018). Keep the last reference
+       rather than overwriting it with a bogus one. */
+    const bool was_usable = f->mag_heading_usable;
+    f->mag_heading_usable = magnetic_heading_reference_valid(lat_deg, lon_deg);
+    if (!f->mag_heading_usable)
+    {
+        if (was_usable)
+        {
+            LOG_INFO("ins: magnetic dip pole zone entered, magnetometer fusion suspended");
+        }
+        return;
+    }
+    if (!was_usable) { LOG_INFO("ins: magnetic dip pole zone left, magnetometer fusion resumed"); }
+
+    float b_ned[3];
+    magnetic_field_ned_uT(lat_deg, lon_deg, f->mag_model_year, b_ned);
+    vec3_copy(b_ned, f->magnetic_n);
+    /* Keep the init copy consistent so a later auto-init yaw bootstrap
+       (which reads init.magnetic_n) uses the same reference field. */
+    vec3_copy(b_ned, f->init.magnetic_n);
+    f->mag_field_expected_uT = magnetic_field_strength_uT(lat_deg, lon_deg);
+}
+
+/* The tracked magnetic model at the filter's own position (REQ-NAV-027). */
+static void ins_refresh_magnetic(ins_t* f)
+{
+    if (f->mag_model_tracked)
+    {
+        ins_apply_magnetic_model(f, (float)RAD2DEG(f->latlonh[0]), (float)RAD2DEG(f->latlonh[1]));
+    }
+}
+
+/* Recompute all slowly-varying Earth-dependent quantities at once. Used where
+ * the position was just set (init, re-acquisition) and as the forced refresh
+ * of REQ-NAV-094, the regular refresh runs staged (ins_refresh_earth_stage). */
+static void ins_refresh_earth_params(ins_t* f)
+{
+    ins_refresh_curvature(f);
+    ins_refresh_gravity(f);
+    ins_refresh_magnetic(f);
+    f->meta_refresh_stage = INS_EARTH_REFRESH_IDLE;
+}
+
+/* Run the next pending refresh stage, one per call. Called only from an
+ * epoch that neither propagates the covariance nor runs a Kalman update
+ * (REQ-NAV-094). */
+/* @satisfies REQ-NAV-094 */
+static void ins_refresh_earth_stage(ins_t* f)
+{
+    switch (f->meta_refresh_stage)
+    {
+    case INS_EARTH_REFRESH_CURVATURE:
+        ins_refresh_curvature(f);
+        f->meta_refresh_stage = INS_EARTH_REFRESH_GRAVITY;
+        break;
+    case INS_EARTH_REFRESH_GRAVITY:
+        ins_refresh_gravity(f);
+        f->meta_refresh_stage =
+            f->mag_model_tracked ? INS_EARTH_REFRESH_MAGNETIC : INS_EARTH_REFRESH_IDLE;
+        break;
+    case INS_EARTH_REFRESH_MAGNETIC:
+        ins_refresh_magnetic(f);
+        f->meta_refresh_stage = INS_EARTH_REFRESH_IDLE;
+        break;
+    default: break;
     }
 }
 
@@ -705,8 +816,9 @@ static void ins_refresh_earth_params(ins_t* f)
  * position (latlonh, double) is book-kept incrementally from the n-frame
  * deltas. Every position change arrives here as dxyz_n_delta (the delta that
  * was *applied* to pos_local), pass NULL if only the orientation changed. The
- * trigonometry only runs every INS_EARTH_REFRESH_DIST_M meters of travel. */
-/* @satisfies REQ-NAV-020 */
+ * trigonometry is only requested every INS_EARTH_REFRESH_DIST_M meters of
+ * travel, and runs later in a free epoch (REQ-NAV-094). */
+/* @satisfies REQ-NAV-020 REQ-NAV-094 */
 static void ins_update_meta(ins_t* f, bool orientation_changed,
                             const float* dxyz_n_delta) /* delta in n-frame, m */
 {
@@ -720,7 +832,15 @@ static void ins_update_meta(ins_t* f, bool orientation_changed,
 
         f->meta_travel_m +=
             fabsf(dxyz_n_delta[0]) + fabsf(dxyz_n_delta[1]) + fabsf(dxyz_n_delta[2]);
-        if (f->meta_travel_m > INS_EARTH_REFRESH_DIST_M) { ins_refresh_earth_params(f); }
+        if (f->meta_travel_m > INS_EARTH_REFRESH_FORCE_FACTOR * INS_EARTH_REFRESH_DIST_M)
+        {
+            ins_refresh_earth_params(f);
+        }
+        else if (f->meta_travel_m > INS_EARTH_REFRESH_DIST_M &&
+                 f->meta_refresh_stage == INS_EARTH_REFRESH_IDLE)
+        {
+            f->meta_refresh_stage = INS_EARTH_REFRESH_CURVATURE;
+        }
     }
 }
 
@@ -879,6 +999,7 @@ static void ins_apply_correction(ins_t* f, const float dx[INS_UNKNOWNS_MAX])
  * velocity, trapezoidal position). On return f->state is at epoch k+1,
  * f->last_omega_b_nb and f->last_acc_n are updated, and dpos_n_out holds the
  * n-frame position delta (used by ins_update_meta for the latlonh book-keeping).
+ * Background: Zwiener 2019, "Strapdown Rechnung".
  * ============================================================================
  */
 
@@ -1108,6 +1229,7 @@ static void ins_compute_Phi(float dt_sec, const float f_b_ib[3], const float R[9
     }
 }
 
+/* Error-state prediction, see Zwiener 2019, "Vorhersagemodell". */
 /* @satisfies REQ-NAV-002 REQ-NAV-004 REQ-NAV-069 */
 static void ins_predict(ins_t* f, float dt_sec, const float Qll_acc_diag[3],
                         const float Qll_gyr_diag[3], float* phi_out)
@@ -1255,7 +1377,7 @@ static bool ins_fuse_is_outlier(const ins_t* f, const float* z, const float* R, 
  * whitened in-place with decorrelate() first, so the scalar Bierman updates
  * inside kalman_udu() see independent unit-variance measurements. Returns 0 on
  * success. */
-/* @satisfies REQ-NAV-002 REQ-NAV-035 REQ-NAV-036 */
+/* @satisfies REQ-NAV-002 REQ-NAV-035 REQ-NAV-036 REQ-NAV-090 REQ-NAV-093 */
 static int ins_fuse(ins_t* f, float* z, float* R, float* Ht, int m_count, float chi2_threshold,
                     int downweight_outlier)
 {
@@ -1309,6 +1431,7 @@ static int ins_fuse(ins_t* f, float* z, float* R, float* Ht, int m_count, float 
     }
 
     memset(dx, 0, sizeof(dx));
+    f->step_ctx.busy = true; /* no Earth refresh stage this epoch (REQ-NAV-094) */
     if (downweight_outlier && ins_fuse_is_outlier(f, z, R_use, Ht, m_count, chi2_threshold))
     {
         f->diag.n_downweighted++;
@@ -1324,30 +1447,150 @@ static int ins_fuse(ins_t* f, float* z, float* R, float* Ht, int m_count, float 
     return rc;
 }
 
-/* Find the history item closest to t_target. Returns NULL if the history
- * holds no usable entry near that time. */
-/* @satisfies REQ-NAV-008 */
-static const ins_history_item_t* ins_find_history(const ins_t* f, ins_time_us_t t_target)
+/* Total age of a measurement [us] from its whole-ms and its us part
+ * (REQ-NAV-092). Non-positive parts count as zero. */
+static ins_time_us_t ins_meas_age_us(int delay_ms, int32_t delay_us)
 {
-    const ins_history_item_t* best    = NULL;
-    ins_time_us_t             best_dt = 0;
+    ins_time_us_t age = 0;
+    if (delay_ms > 0) { age += (ins_time_us_t)delay_ms * INS_US_PER_MS; }
+    if (delay_us > 0) { age += (ins_time_us_t)delay_us; }
+    return age;
+}
 
-    int i;
+/* Two bracketing states further apart than this are not interpolated (a gap
+   in the history, e.g. after a time jump): the nearer one is used instead. */
+#define INS_TOV_MAX_SPAN_US (2 * INS_HISTORY_MATCH_TOL_US)
+
+/* Nominal state at a measurement's time of validity (REQ-NAV-008,
+ * REQ-NAV-092). Copies, since it is generally interpolated. */
+typedef struct
+{
+    double latlonh[3];    /* absolute position */
+    float  pos_local[3];  /* local NED position */
+    float  vel_ned[3];    /* velocity */
+    float  R_b_to_n[9];   /* attitude */
+    float  omega_b_nb[3]; /* body rate (lever-arm velocity) */
+    float  dt_sec;        /* time of validity minus the time of the state
+                             above [s]. 0 when interpolated, nonzero only when
+                             the time of validity is not bracketed and the
+                             nearest state stands in. Position callers then
+                             carry the position over it at first order. */
+} ins_tov_state_t;
+
+/* One state the time of validity is interpolated from: a history entry or the
+ * current state. */
+typedef struct
+{
+    ins_time_us_t t;
+    const double* latlonh;
+    const float*  pos_local;
+    const float*  vel_ned;
+    const float*  qbn;
+    const float*  omega_b_nb;
+} ins_tov_src_t;
+
+static void ins_tov_src_history(const ins_history_item_t* h, ins_tov_src_t* s)
+{
+    s->t          = h->time;
+    s->latlonh    = h->latlonh;
+    s->pos_local  = h->state.pos_local;
+    s->vel_ned    = h->state.vel_ned;
+    s->qbn        = h->state.qbn;
+    s->omega_b_nb = h->omega_b_nb;
+}
+
+/* out = a + w * (b - a), attitude by normalized linear quaternion
+ * interpolation (shorter arc), which is exact enough for the few degrees
+ * one history step spans. */
+static void ins_tov_interp(const ins_tov_src_t* a, const ins_tov_src_t* b, float w,
+                           ins_tov_state_t* out)
+{
+    const float  w0 = 1.0f - w;
+    const double wd = (double)w;
+    int          i;
+    for (i = 0; i < 3; ++i)
+    {
+        out->latlonh[i]    = a->latlonh[i] + wd * (b->latlonh[i] - a->latlonh[i]);
+        out->pos_local[i]  = w0 * a->pos_local[i] + w * b->pos_local[i];
+        out->vel_ned[i]    = w0 * a->vel_ned[i] + w * b->vel_ned[i];
+        out->omega_b_nb[i] = w0 * a->omega_b_nb[i] + w * b->omega_b_nb[i];
+    }
+    float dot = 0.0f;
+    for (i = 0; i < 4; ++i) { dot += a->qbn[i] * b->qbn[i]; }
+    const float wb = (dot < 0.0f) ? -w : w;
+    float       q[4];
+    for (i = 0; i < 4; ++i) { q[i] = w0 * a->qbn[i] + wb * b->qbn[i]; }
+    ins_quat_normalize(q);
+    ins_quat_to_rotmat(q, out->R_b_to_n);
+    out->dt_sec = 0.0f;
+}
+
+/* State at the time of validity t_now - age_us (REQ-NAV-008, REQ-NAV-092),
+ * linearly interpolated between the two states around it: two history
+ * entries, or the newest entry and the current state (valid at t_now). The
+ * history grid is INS_HISTORY_DT_MS coarse, a measurement is generally valid
+ * in between. If the time of validity is not bracketed within
+ * INS_TOV_MAX_SPAN_US, the nearer of the two stands in with the remaining
+ * offset in dt_sec. Returns false if no state lies within
+ * INS_HISTORY_MATCH_TOL_US of the time of validity (the measurement cannot be
+ * placed in time). Delayed measurements: Zwiener 2019, "Einbeziehung von
+ * Messdaten mit verzoegerter Verfuegbarkeit". */
+/* @satisfies REQ-NAV-008 REQ-NAV-092 */
+static bool ins_state_at_tov(const ins_t* f, ins_time_us_t t_now, ins_time_us_t age_us,
+                             ins_tov_state_t* out)
+{
+    ins_tov_src_t cur;
+    cur.t          = t_now;
+    cur.latlonh    = f->latlonh;
+    cur.pos_local  = f->state.pos_local;
+    cur.vel_ned    = f->state.vel_ned;
+    cur.qbn        = f->state.qbn;
+    cur.omega_b_nb = f->last_omega_b_nb;
+    if (age_us <= 0)
+    {
+        ins_tov_interp(&cur, &cur, 0.0f, out);
+        return true;
+    }
+
+    /* Newest state at or before the time of validity (lo) and oldest one
+       after it (hi, the current state unless a history entry is closer). */
+    const ins_time_us_t       t_tov = t_now - age_us;
+    const ins_history_item_t* lo    = NULL;
+    const ins_history_item_t* hi    = NULL;
+    int                       i;
     for (i = 0; i < INS_HISTORY_ITEMS_MAX; ++i)
     {
         const ins_history_item_t* h = &f->history[i];
-        if (h->d[0] <= 0.0f) { continue; /* empty (never written) ring buffer slot */ }
-        ins_time_us_t dt = h->time - t_target;
-        if (dt < 0) dt = -dt;
-        if (best == NULL || dt < best_dt)
+        if (!h->valid) { continue; /* empty (never written or cleared) ring buffer slot */ }
+        if (h->time > t_now) { continue; /* stale, from before a backward time jump */ }
+        if (h->time <= t_tov)
         {
-            best    = h;
-            best_dt = dt;
+            if (lo == NULL || h->time > lo->time) { lo = h; }
         }
+        else if (hi == NULL || h->time < hi->time) { hi = h; }
     }
 
-    if (best != NULL && best_dt > INS_HISTORY_MATCH_TOL_US) { return NULL; }
-    return best;
+    ins_tov_src_t b = cur;
+    if (hi != NULL) { ins_tov_src_history(hi, &b); }
+    if (lo != NULL)
+    {
+        ins_tov_src_t a;
+        ins_tov_src_history(lo, &a);
+        if (b.t - a.t <= INS_TOV_MAX_SPAN_US)
+        {
+            const float w = (b.t > a.t) ? (float)(t_tov - a.t) / (float)(b.t - a.t) : 0.0f;
+            ins_tov_interp(&a, &b, w, out);
+            return true;
+        }
+        /* Not bracketed closely enough: the nearer state stands in. */
+        if (t_tov - a.t < b.t - t_tov) { b = a; }
+    }
+    const ins_time_us_t dt_us  = t_tov - b.t;
+    const ins_time_us_t dt_abs = (dt_us < 0) ? -dt_us : dt_us;
+    if (dt_abs > INS_HISTORY_MATCH_TOL_US) { return false; }
+    ins_tov_interp(&b, &b, 0.0f, out);
+    out->dt_sec = (float)dt_us * (1.0f / INS_US_PER_SEC);
+    return true;
 }
 
 /* Fuse a scalar yaw-error residual (n-frame, [rad]) for the absolute-yaw
@@ -1372,6 +1615,9 @@ static int ins_fuse_yaw_residual(ins_t* f, float dyaw, float R_yaw, float chi2_t
  * (leveling comes from the accelerometer). Only the yaw column
  *   H(:,yaw) = R' * (magnetic_n x e_D)
  * is kept, so the measurement can only rotate the estimate about the vertical.
+ *
+ * Measurement model: Zwiener 2019, "Magnetometer" (fusion equations) and
+ * "Messung der magnetischen Flussdichte".
  *
  * Field-strength disturbance gate: once a position has been supplied
  * (mag_field_expected_uT > 0) the measured field magnitude is compared against
@@ -1510,21 +1756,17 @@ static void ins_fuse_yaw(ins_t* f, const ins_measurements_t* m)
     if (!m->yaw.is_valid) return;
     if (m->yaw.stddev_rad <= 0.0f) return;
 
-    const int delay_ms = (m->yaw_delay_ms > 0) ? m->yaw_delay_ms : 0;
-    if (delay_ms > INS_MAX_DELAY_MS) return;
+    const ins_time_us_t age_us = ins_meas_age_us(m->yaw_delay_ms, m->yaw_delay_us);
+    if (age_us > INS_MAX_DELAY_MS * INS_US_PER_MS) return;
 
-    /* Attitude at time-of-validity. */
-    const float* R_tov = f->R_b_to_n;
-    if (delay_ms > 0)
+    /* Attitude at time-of-validity (REQ-NAV-008, REQ-NAV-092). */
+    ins_tov_state_t tov;
+    if (!ins_state_at_tov(f, m->timestamp, age_us, &tov))
     {
-        const ins_history_item_t* h = ins_find_history(f, m->timestamp - delay_ms * INS_US_PER_MS);
-        if (h == NULL)
-        {
-            LOG_INFO("ins: cannot anchor yaw measurement in history -> skip");
-            return;
-        }
-        R_tov = h->R_b_to_n;
+        LOG_INFO("ins: cannot anchor yaw measurement in history -> skip");
+        return;
     }
+    const float* R_tov = tov.R_b_to_n;
 
     /* Yaw is ill-defined near pitch = +/-90 deg -> skip. */
     const float sp = -MAT_ELEM(R_tov, 2, 0, 3, 3);
@@ -1544,7 +1786,8 @@ static void ins_fuse_yaw(ins_t* f, const ins_measurements_t* m)
     }
 }
 
-/* Zero-velocity update: direct measurement of the velocity states.
+/* Zero-velocity update: direct measurement of the velocity states
+ * (Zwiener 2019, "Zero Velocity Update").
  * Rate-limited to one fusion per nominal Kalman period. `trigger` is
  * m->zero_velocity_update OR'd with the automatic ZUPT detector. */
 /* @satisfies REQ-NAV-012 */
@@ -1570,13 +1813,12 @@ static void ins_fuse_zero_velocity(ins_t* f, const ins_measurements_t* m, bool t
     if (ins_fuse(f, z, R, Ht, 3, 0.0f, 0) == 0) { f->t_last_zero_vel_fusion = m->timestamp; }
 }
 
-/* Zero-rotation update: with omega_b_nb == 0 the gyro should read the gyro bias
- * plus the n-frame rotation (Earth rate + transport rate) seen in the body
- * frame -> direct measurement of the gyro bias states. Rate-limited to one
- * fusion per nominal Kalman period. `trigger` is m->zero_rotation_update OR'd
- * with the automatic ZARU detector. The fused measurement is the auto-ZUPT
- * detector's average over the current stillness run where available, so the
- * vibration of a still-but-idling platform stays out of the bias states. */
+/* Zero-rotation update (Zwiener 2019, "Zero Rotation Update"): with omega_b_nb == 0 the gyro should
+ * read the gyro bias plus the n-frame rotation (Earth rate + transport rate) seen in the body frame
+ * -> direct measurement of the gyro bias states. Rate-limited to one fusion per nominal Kalman
+ * period. `trigger` is m->zero_rotation_update OR'd with the automatic ZARU detector. The fused
+ * measurement is the auto-ZUPT detector's average over the current stillness run where available,
+ * so the vibration of a still-but-idling platform stays out of the bias states. */
 /* @satisfies REQ-NAV-012 REQ-NAV-014 */
 static void ins_fuse_zero_rotation(ins_t* f, const ins_measurements_t* m, bool trigger)
 {
@@ -1904,7 +2146,7 @@ static void ins_reacquire(ins_t* f, const ins_measurements_t* m, const float pos
  * of pos_local (+ sensor lever arm), no coordinate conversion needed since the
  * measurement lives in the same local n-frame as the position state. Delayed
  * measurements are anchored in the history, like GNSS. */
-/* @satisfies REQ-NAV-011 REQ-NAV-024 */
+/* @satisfies REQ-NAV-011 REQ-NAV-024 REQ-NAV-091 */
 static void ins_fuse_local_pos(ins_t* f, const ins_measurements_t* m)
 {
     if (!m->local_pos.is_valid) return;
@@ -1921,7 +2163,7 @@ static void ins_fuse_local_pos(ins_t* f, const ins_measurements_t* m)
             pos_new[i]    = m->local_pos.pos_ned[i] - la_n[i];
             const float v = MAT_ELEM(m->local_pos.Qll_ned, i, i, 3, 3);
             pos_var[i]    = (v > 0.0f) ? v : qsquare(f->init.pos_init_stddev_m);
-            vel_var[i]    = qsquare(f->init.vel_init_stddev_mps);
+            vel_var[i]    = qsquare(INS_VEL_UNKNOWN_STDDEV_MPS); /* REQ-NAV-091 */
         }
         /* REQ-NAV-066: under the barometric height source the height comes
            from the barometer, not from this measurement. */
@@ -1931,23 +2173,17 @@ static void ins_fuse_local_pos(ins_t* f, const ins_measurements_t* m)
         return;
     }
 
-    const int delay_ms = (m->local_pos_delay_ms > 0) ? m->local_pos_delay_ms : 0;
-    if (delay_ms > INS_MAX_DELAY_MS) return;
+    const ins_time_us_t age_us = ins_meas_age_us(m->local_pos_delay_ms, m->local_pos_delay_us);
+    if (age_us > INS_MAX_DELAY_MS * INS_US_PER_MS) return;
 
-    /* State at time-of-validity. */
-    const float* pos_tov = f->state.pos_local;
-    const float* R_tov   = f->R_b_to_n;
-    if (delay_ms > 0)
+    /* State at time-of-validity (REQ-NAV-008, REQ-NAV-092). */
+    ins_tov_state_t tov;
+    if (!ins_state_at_tov(f, m->timestamp, age_us, &tov))
     {
-        const ins_history_item_t* h = ins_find_history(f, m->timestamp - delay_ms * INS_US_PER_MS);
-        if (h == NULL)
-        {
-            LOG_WARN("ins: State not found in history.");
-            return; /* cannot anchor the residual in time -> skip */
-        }
-        pos_tov = h->state.pos_local;
-        R_tov   = h->R_b_to_n;
+        LOG_WARN("ins: State not found in history.");
+        return; /* cannot anchor the residual in time -> skip */
     }
+    const float* R_tov = tov.R_b_to_n;
 
     /* Predicted sensor position: body position + lever arm. */
     float la_n[3];
@@ -1967,9 +2203,13 @@ static void ins_fuse_local_pos(ins_t* f, const ins_measurements_t* m)
     int i, j;
     for (i = 0; i < 3; ++i)
     {
-        z[i] = pos_tov[i] + la_n[i] - m->local_pos.pos_ned[i];
+        /* dt_sec is 0 for an interpolated state, else the stand-in state is
+           carried to the time of validity (REQ-NAV-092), first order, so the
+           velocity also enters H. */
+        z[i] = tov.pos_local[i] + tov.vel_ned[i] * tov.dt_sec + la_n[i] - m->local_pos.pos_ned[i];
 
         MAT_ELEM(Ht, INS_IDX_POS + i, i, f->n, 3) = 1.0f;
+        MAT_ELEM(Ht, INS_IDX_VEL + i, i, f->n, 3) = tov.dt_sec;
         for (j = 0; j < 3; ++j)
         {
             /* Ht stored transposed: Ht[state, meas] = H[meas, state]. */
@@ -2324,10 +2564,29 @@ static void ins_track_gnss_mode_gates(ins_t* f, const ins_measurements_t* m)
 
 /* GNSS position + velocity fusion (with lever arm and measurement delay).
  *
- * The residual is anchored at the state the filter had at the measurement's
- * time-of-validity (from the history ring buffer), the covariance update is
- * applied to the *current* U,d. A good approximation for delayed measurements:
- * the error-state is nearly constant over the delay (Phi ~ I for a few 100 ms). */
+ * A measurement valid at epoch k-n but available at epoch k is fused after
+ * Wendel, 2nd ed., ch. 8.4, p. 235, eq. 8.168 to 8.170:
+ *
+ *   K*    = C_{k,k-n} H_{k-n}' (H_{k-n} P_{k-n}^- H_{k-n}' + R_{k-n})^-1
+ *   x_k^+ = x_k^- - K* (H_{k-n} x_{k-n}^- - y_k^{k-n})
+ *   P_k^+ = P_k^- - K* H_{k-n} C_{k,k-n}'
+ *
+ * with Wendel's approximation (eq. 8.171) C_{k,k-n} ~ P_k^- ~ P_{k-n}^-, which
+ * holds when the estimation error barely changes between time of validity and
+ * arrival (delays up to INS_MAX_DELAY_MS). With it, this is a plain Kalman update on
+ * the current covariance:
+ *
+ *   K     = P_k^- H_{k-n}' (H_{k-n} P_k^- H_{k-n}' + R_{k-n})^-1
+ *   P_k^+ = P_k^- - K H_{k-n} P_k^-
+ *
+ * So the residual and H_{k-n} (lever-arm attitude coupling) are formed from
+ * the state at the time of validity (ins_state_at_tov, interpolated from the
+ * history ring buffer), while K, the chi2 gate and the covariance update use
+ * the current U,d and the correction goes to the current state. This is why
+ * the history holds no covariance (REQ-NAV-008).
+ * See also Zwiener 2019, "Sensorfusionsgleichungen fuer verteilte Sensoren"
+ * (GNSS, lever arm) and "Einbeziehung von Messdaten mit verzoegerter
+ * Verfuegbarkeit". */
 /* @satisfies REQ-NAV-005 REQ-NAV-006 REQ-NAV-008 REQ-NAV-023 REQ-NAV-024 REQ-NAV-055
  * @satisfies REQ-NAV-079 */
 static void ins_fuse_gnss(ins_t* f, const ins_measurements_t* m)
@@ -2470,7 +2729,7 @@ static void ins_fuse_gnss(ins_t* f, const ins_measurements_t* m)
                reported one. usable gates guarantee positive variances. */
             pos_var[i] = MAT_ELEM(f->step_ctx.gnss_pos_Qll_fuse, i, i, 3, 3);
             vel_var[i] = use_vel ? MAT_ELEM(f->step_ctx.gnss_vel_Qll_fuse, i, i, 3, 3)
-                                 : qsquare(f->init.vel_init_stddev_mps);
+                                 : qsquare(INS_VEL_UNKNOWN_STDDEV_MPS); /* REQ-NAV-091 */
         }
         /* REQ-NAV-054/055/066: height is barometric, never re-anchored
            from the GNSS position whose vertical row this filter does not
@@ -2514,41 +2773,33 @@ static void ins_fuse_gnss(ins_t* f, const ins_measurements_t* m)
         return;
     }
 
-    int delay_ms = 0;
-    if (m->gnss_delay_ms > 0) { delay_ms = m->gnss_delay_ms; }
+    const ins_time_us_t age_us = ins_meas_age_us(m->gnss_delay_ms, m->gnss_delay_us);
     if (!f->log_state.gnss_delay_logged)
     {
         f->log_state.gnss_delay_logged = true;
-        LOG_INFO("ins: first GNSS fix carries a %d ms measurement delay "
-                 "(anchored via the history buffer)",
-                 delay_ms);
+        LOG_INFO("ins: first GNSS fix has a %.3f ms measurement delay "
+                 "(used for history buffer)",
+                 (double)age_us * 1e-3);
     }
-    if (delay_ms > INS_MAX_DELAY_MS)
+    if (age_us > INS_MAX_DELAY_MS * INS_US_PER_MS)
     {
         f->diag.n_gnss_no_anchor++; /* too old to place in the history */
         return;
     }
 
-    /* State at time-of-validity (fall back to the current state for
-       delay 0). */
-    const double* latlonh_tov = f->latlonh;
-    const float*  vel_tov     = f->state.vel_ned;
-    const float*  R_tov       = f->R_b_to_n;
-    const float*  omg_tov     = f->last_omega_b_nb;
-    if (delay_ms > 0)
+    /* State at time-of-validity (REQ-NAV-008, REQ-NAV-092): the current
+       state or a history entry, plus the remaining offset to it. */
+    ins_tov_state_t tov;
+    if (!ins_state_at_tov(f, m->timestamp, age_us, &tov))
     {
-        const ins_history_item_t* h = ins_find_history(f, m->timestamp - delay_ms * INS_US_PER_MS);
-        if (h == NULL)
-        {
-            LOG_WARN("ins: State not found in history.");
-            f->diag.n_gnss_no_anchor++;
-            return; /* cannot anchor the residual in time -> skip */
-        }
-        latlonh_tov = h->latlonh;
-        vel_tov     = h->state.vel_ned;
-        R_tov       = h->R_b_to_n;
-        omg_tov     = h->omega_b_nb;
+        LOG_WARN("ins: State not found in history.");
+        f->diag.n_gnss_no_anchor++;
+        return; /* cannot anchor the residual in time -> skip */
     }
+    const double* latlonh_tov = tov.latlonh;
+    const float*  vel_tov     = tov.vel_ned;
+    const float*  R_tov       = tov.R_b_to_n;
+    const float*  omg_tov     = tov.omega_b_nb;
 
     /* Assemble the combined measurement: z (mm x 1), full R (mm x mm) and Ht
        (n x mm). R is built from the 3x3 NED blocks, plus the optional
@@ -2599,8 +2850,12 @@ static void ins_fuse_gnss(ins_t* f, const ins_measurements_t* m)
 
         for (i = 0; i < pos_rows; ++i)
         {
-            z[row + i]                                       = dz_n[i] + la_n[i];
+            /* dt_sec is 0 for an interpolated state. Otherwise vel_tov * dt_sec
+               carries the stand-in state to the time of validity (REQ-NAV-092),
+               first order, so the velocity also enters H. */
+            z[row + i] = dz_n[i] + vel_tov[i] * tov.dt_sec + la_n[i];
             MAT_ELEM(Ht, INS_IDX_POS + i, row + i, f->n, mm) = 1.0f;
+            MAT_ELEM(Ht, INS_IDX_VEL + i, row + i, f->n, mm) = tov.dt_sec;
             /* Attitude coupling uses the full 3x3 Sla regardless of pos_rows:
                dropping the vertical row does not stop the remaining (N, E) rows
                observing attitude through the lever arm. */
@@ -2682,6 +2937,9 @@ static void ins_fuse_gnss(ins_t* f, const ins_measurements_t* m)
                           : time_diff_sec(m->timestamp, f->log_state.t_last_large_pos_res_log);
             if (first_log || since_sec >= INS_LOG_LARGE_POS_REPEAT_SEC)
             {
+                /* Both branches only log, so they are identical once
+                   LOG_INFO is compiled out by the LOG_LEVEL. */
+                /* NOLINTNEXTLINE(bugprone-branch-clone) */
                 if (pos_rows > 2)
                 {
                     LOG_INFO("large GNSS position correction %.1f m pending "
@@ -2726,13 +2984,12 @@ static void ins_fuse_gnss(ins_t* f, const ins_measurements_t* m)
     }
 }
 
-/* Barometric height (REQ-NAV-054): fuses the datum-referenced barometric
- * altitude directly as a scalar measurement of the vertical position state, on
- * the anchor f->baro_h0_m established at bootstrap (REQ-NAV-053) and kept
- * consistent across an origin relocation (ins_shift_origin_down). Like every
- * other fusion it only runs while the filter is live: an expired coasting
- * window makes the instance inert (REQ-NAV-064) and the height is picked back
- * up from the barometer at the re-anchor (REQ-NAV-066).
+/* Barometric height (REQ-NAV-054, Zwiener 2019, "Barometrische Hoehenmessung"): fuses the
+ * datum-referenced barometric altitude directly as a scalar measurement of the vertical position
+ * state, on the anchor f->baro_h0_m established at bootstrap (REQ-NAV-053) and kept consistent
+ * across an origin relocation (ins_shift_origin_down). Like every other fusion it only runs while
+ * the filter is live: an expired coasting window makes the instance inert (REQ-NAV-064) and the
+ * height is picked back up from the barometer at the re-anchor (REQ-NAV-066).
  *
  * h = -pos_local[2] (down-positive state, up-positive height), so the residual
  * and its Jacobian carry a sign flip: */
@@ -2823,24 +3080,19 @@ static void ins_fuse_speed(ins_t* f, const ins_measurements_t* m)
 
     /* Velocity at the time of validity. A Bluetooth OBD-II round-trip is
        tens of ms, so the delayed case is the normal one here. */
-    const int delay_ms = (m->speed_delay_ms > 0) ? m->speed_delay_ms : 0;
-    if (delay_ms > INS_MAX_DELAY_MS)
+    const ins_time_us_t age_us = ins_meas_age_us(m->speed_delay_ms, m->speed_delay_us);
+    if (age_us > INS_MAX_DELAY_MS * INS_US_PER_MS)
     {
         f->diag.n_speed_skipped++;
         return;
     }
-    const float* vel_tov = f->state.vel_ned;
-    if (delay_ms > 0)
+    ins_tov_state_t tov;
+    if (!ins_state_at_tov(f, m->timestamp, age_us, &tov))
     {
-        const ins_history_item_t* h =
-            ins_find_history(f, m->timestamp - (ins_time_us_t)delay_ms * INS_US_PER_MS);
-        if (h == NULL)
-        {
-            f->diag.n_speed_skipped++;
-            return;
-        }
-        vel_tov = h->state.vel_ned;
+        f->diag.n_speed_skipped++;
+        return;
     }
+    const float* vel_tov = tov.vel_ned;
 
     const float sp =
         SQRTF(vel_tov[0] * vel_tov[0] + vel_tov[1] * vel_tov[1] + vel_tov[2] * vel_tov[2]);
@@ -2973,26 +3225,20 @@ static void ins_fuse_ranges(ins_t* f, const ins_measurements_t* m)
         f->diag.n_range_seen++;
 
         /* State at the time of validity, per entry. */
-        const int     delay_ms = (r->delay_ms > 0) ? r->delay_ms : 0;
-        const double* llh_tov  = f->latlonh;
-        const float*  R_tov    = f->R_b_to_n;
-        if (delay_ms > INS_MAX_DELAY_MS)
+        const ins_time_us_t age_us = ins_meas_age_us(r->delay_ms, 0);
+        if (age_us > INS_MAX_DELAY_MS * INS_US_PER_MS)
         {
             f->diag.n_range_skipped++;
             continue;
         }
-        if (delay_ms > 0)
+        ins_tov_state_t tov;
+        if (!ins_state_at_tov(f, m->timestamp, age_us, &tov))
         {
-            const ins_history_item_t* h =
-                ins_find_history(f, m->timestamp - (ins_time_us_t)delay_ms * INS_US_PER_MS);
-            if (h == NULL)
-            {
-                f->diag.n_range_skipped++;
-                continue;
-            }
-            llh_tov = h->latlonh;
-            R_tov   = h->R_b_to_n;
+            f->diag.n_range_skipped++;
+            continue;
         }
+        const double* llh_tov = tov.latlonh;
+        const float*  R_tov   = tov.R_b_to_n;
 
         float la_n[3];
         mat3_mul_vec3(R_tov, m->range_leverarm_b, la_n);
@@ -3081,19 +3327,15 @@ static void ins_fuse_gnss_course_yaw(ins_t* f, const ins_measurements_t* m)
     if (stddev < min_yaw_stddev) { stddev = min_yaw_stddev; }
 
     /* Attitude at time-of-validity */
-    const int delay_ms = (m->gnss_delay_ms > 0) ? m->gnss_delay_ms : 0;
-    if (delay_ms > INS_MAX_DELAY_MS) { return; }
-    const float* R_tov = f->R_b_to_n;
-    if (delay_ms > 0)
+    const ins_time_us_t age_us = ins_meas_age_us(m->gnss_delay_ms, m->gnss_delay_us);
+    if (age_us > INS_MAX_DELAY_MS * INS_US_PER_MS) { return; }
+    ins_tov_state_t tov;
+    if (!ins_state_at_tov(f, m->timestamp, age_us, &tov))
     {
-        const ins_history_item_t* h = ins_find_history(f, m->timestamp - delay_ms * INS_US_PER_MS);
-        if (h == NULL)
-        {
-            LOG_WARN("ins: State not found in history.");
-            return;
-        }
-        R_tov = h->R_b_to_n;
+        LOG_WARN("ins: State not found in history.");
+        return;
     }
+    const float* R_tov = tov.R_b_to_n;
 
     /* Yaw is ill-defined near pitch = +/-90 deg (gimbal lock) -> skip. */
     const float sp = -MAT_ELEM(R_tov, 2, 0, 3, 3);
@@ -3238,10 +3480,8 @@ static void ins_save_state(ins_t* f, ins_time_us_t tnow, bool enforce)
     h->latlonh[0]         = f->latlonh[0];
     h->latlonh[1]         = f->latlonh[1];
     h->latlonh[2]         = f->latlonh[2];
-    memcpy(h->U, f->U, sizeof(h->U));
-    memcpy(h->d, f->d, sizeof(h->d));
+    h->valid              = true;
     vec3_copy(f->last_omega_b_nb, h->omega_b_nb);
-    memcpy(h->R_b_to_n, f->R_b_to_n, sizeof(h->R_b_to_n));
 
     f->history_index = (f->history_index + 1) % INS_HISTORY_ITEMS_MAX;
 }
@@ -3258,10 +3498,10 @@ static void ins_save_state(ins_t* f, ins_time_us_t tnow, bool enforce)
 static void ins_rearm_collecting(ins_t* f)
 {
     f->is_collecting       = true;
-    f->autoinit_count      = 0;
+    f->autoinit_win.count  = 0;
     f->autoinit_mag.valid  = false; /* don't reuse a pre-failure heading */
     f->autoinit_baro.valid = false; /* don't reuse a pre-failure pressure sample */
-    f->bias_carry.valid    = false; /* only the quality exit sets one (REQ-NAV-061) */
+    f->bias_carry.valid    = false; /* only ins_rearm_with_carry sets one (REQ-NAV-061) */
     f->origin_carry.valid  = false; /* ditto for the n-frame origin (REQ-NAV-062) */
     f->height_from_baro    = false; /* re-decided at the next bootstrap (REQ-NAV-053) */
     f->baro_h0_m           = 0.0f;
@@ -3304,24 +3544,14 @@ static void ins_fail_health(ins_t* f)
     }
 }
 
-/* GNSS quality-loss shutdown (REQ-NAV-052). Unlike ins_fail_health this is not
- * a corruption: the state was fine, the aiding stopped being good enough for a
- * 3D solution. IMU biases (REQ-NAV-061) and the n-frame origin (REQ-NAV-062)
- * are kept, position/velocity/attitude are re-derived by the next bootstrap.
- * @satisfies REQ-NAV-052 REQ-NAV-061 REQ-NAV-062 REQ-NAV-088 */
-static void ins_fail_gnss_quality(ins_t* f, ins_time_us_t t)
+/* Re-arm into the collecting state, carrying the IMU and magnetometer biases
+ * (REQ-NAV-061) and the n-frame origin (REQ-NAV-062) into the next bootstrap.
+ * Position/velocity/attitude are re-derived there. Shared by the GNSS
+ * quality loss and the IMU loss: in neither case is the state corrupt. */
+/* @satisfies REQ-NAV-061 REQ-NAV-062 REQ-NAV-088 */
+static void ins_rearm_with_carry(ins_t* f, ins_time_us_t t, const char* why)
 {
-    if (f->opt.auto_reacquire_disable || !f->opt.auto_init)
-    {
-        f->gnss_quality_ok    = false;
-        f->gnss_bad_since     = 0;
-        f->gnss_bad_last      = 0;
-        f->gnss_bad_accum_sec = 0.0f;
-        f->gnss_dwell_since   = 0; /* the entry dwell has to be re-earned */
-        f->gnss_dwell_count   = 0;
-        return;
-    }
-
+    (void)why; /* log only */
     /* Worst axis, so the seed is never optimistic about any one of them. */
     float diag[INS_UNKNOWNS_MAX];
     udu_get_diag(f->U, f->d, diag, f->n);
@@ -3329,10 +3559,15 @@ static void ins_fail_gnss_quality(ins_t* f, ins_time_us_t t)
         SQRTF(fmaxf(fmaxf(diag[INS_IDX_ACC + 0], diag[INS_IDX_ACC + 1]), diag[INS_IDX_ACC + 2]));
     const float gyr_sd =
         SQRTF(fmaxf(fmaxf(diag[INS_IDX_GYR + 0], diag[INS_IDX_GYR + 1]), diag[INS_IDX_GYR + 2]));
-    float        acc_b[3], gyr_b[3], pos_at_exit[3];
+    const bool   has_mag = (f->n > INS_IDX_MAG);
+    const float  mag_sd = has_mag ? SQRTF(fmaxf(fmaxf(diag[INS_IDX_MAG + 0], diag[INS_IDX_MAG + 1]),
+                                                diag[INS_IDX_MAG + 2]))
+                                  : 0.0f;
+    float        acc_b[3], gyr_b[3], mag_b[3], pos_at_exit[3];
     const double llh_at_exit[3] = {f->latlonh[0], f->latlonh[1], f->latlonh[2]};
     vec3_copy(f->state.acc_bias, acc_b);
     vec3_copy(f->state.gyr_bias, gyr_b);
+    vec3_copy(f->state.mag_bias, mag_b);
     vec3_copy(f->state.pos_local, pos_at_exit);
 
     /* REQ-NAV-062: the origin of a running instance is sound by construction,
@@ -3370,18 +3605,62 @@ static void ins_fail_gnss_quality(ins_t* f, ins_time_us_t t)
 
     vec3_copy(acc_b, f->bias_carry.acc_bias);
     vec3_copy(gyr_b, f->bias_carry.gyr_bias);
+    vec3_copy(mag_b, f->bias_carry.mag_bias);
     f->bias_carry.acc_bias_stddev_mps2 =
         fminf(INS_BIAS_CARRY_STDDEV_INFLATION * acc_sd, f->init.acc_bias_init_stddev_mps2);
     f->bias_carry.gyr_bias_stddev_rps =
         fminf(INS_BIAS_CARRY_STDDEV_INFLATION * gyr_sd, f->init.gyr_bias_init_stddev_rps);
+    f->bias_carry.mag_bias_stddev_ut =
+        fminf(INS_BIAS_CARRY_STDDEV_INFLATION * mag_sd, f->init.mag_bias_init_stddev_ut);
     f->bias_carry.valid = true;
 
-    LOG_WARN("ins: re-arming after the GNSS quality loss, position/velocity/attitude are "
+    LOG_WARN("ins: re-arming after the %s, position/velocity/attitude are "
              "re-derived at the next bootstrap, imu biases carried over with stddev "
              "acc %.4f m/s^2, gyr %.4f deg/s, n-frame origin %s",
-             (double)f->bias_carry.acc_bias_stddev_mps2,
+             why, (double)f->bias_carry.acc_bias_stddev_mps2,
              (double)RAD2DEG(f->bias_carry.gyr_bias_stddev_rps),
              origin_ok ? "carried over" : "implausible, will be re-established");
+}
+
+/* GNSS quality-loss shutdown (REQ-NAV-052). Unlike ins_fail_health this is not
+ * a corruption: the state was fine, the aiding stopped being good enough for a
+ * 3D solution. */
+/* @satisfies REQ-NAV-052 */
+static void ins_fail_gnss_quality(ins_t* f, ins_time_us_t t)
+{
+    if (f->opt.auto_reacquire_disable || !f->opt.auto_init)
+    {
+        f->gnss_quality_ok    = false;
+        f->gnss_bad_since     = 0;
+        f->gnss_bad_last      = 0;
+        f->gnss_bad_accum_sec = 0.0f;
+        f->gnss_dwell_since   = 0; /* the entry dwell has to be re-earned */
+        f->gnss_dwell_count   = 0;
+        return;
+    }
+    ins_rearm_with_carry(f, t, "GNSS quality loss");
+}
+
+/* IMU loss (REQ-NAV-089), also the forward time jump of REQ-NAV-016: the
+ * motion of the gap is unknown, so the filter stops. It re-arms with its biases
+ * and origin carried if auto-init may run, else it stays down. */
+/* @satisfies REQ-NAV-016 REQ-NAV-089 */
+static void ins_fail_imu_loss(ins_t* f, ins_time_us_t t)
+{
+    f->diag.n_imu_loss++;
+    if (f->opt.auto_reacquire_disable || !f->opt.auto_init)
+    {
+        f->is_initialized = false;
+        LOG_WARN("ins: IMU lost, filter stopped");
+        return;
+    }
+    ins_rearm_with_carry(f, t, "IMU loss");
+}
+
+/* True once the last IMU sample is opt.imu_loss_timeout_sec old (REQ-NAV-089). */
+static bool ins_imu_lost(const ins_t* f, ins_time_us_t t)
+{
+    return f->have_last_imu && time_diff_sec(t, f->t_last_imu) >= f->opt.imu_loss_timeout_sec;
 }
 
 /* @satisfies REQ-SYS-005 REQ-NAV-031 REQ-NAV-042 */
@@ -3436,27 +3715,42 @@ static void ins_check_overconfidence(ins_t* f)
     float diag[INS_UNKNOWNS_MAX];
     udu_get_diag(f->U, f->d, diag, f->n);
 
-    /* Smallest per-axis 1-sigma in each group: the first channel to look
-       "too good" is what trips. */
-    float pos =
-        SQRTF(fminf(fminf(diag[INS_IDX_POS + 0], diag[INS_IDX_POS + 1]), diag[INS_IDX_POS + 2]));
-    float vel =
-        SQRTF(fminf(fminf(diag[INS_IDX_VEL + 0], diag[INS_IDX_VEL + 1]), diag[INS_IDX_VEL + 2]));
-    float att = RAD2DEG(
-        SQRTF(fminf(fminf(diag[INS_IDX_RPY + 0], diag[INS_IDX_RPY + 1]), diag[INS_IDX_RPY + 2])));
+    /* Smallest per-axis variance in each group: the first channel to look
+       "too good" is what trips. Everything is compared as a variance, the
+       square root is only taken on the rare paths that need a 1-sigma (a new
+       minimum, the warning). A negative variance (broken covariance) never
+       counts as overconfident here. */
+    const float pos_var =
+        fminf(fminf(diag[INS_IDX_POS + 0], diag[INS_IDX_POS + 1]), diag[INS_IDX_POS + 2]);
+    const float vel_var =
+        fminf(fminf(diag[INS_IDX_VEL + 0], diag[INS_IDX_VEL + 1]), diag[INS_IDX_VEL + 2]);
+    const float att_var =
+        fminf(fminf(diag[INS_IDX_RPY + 0], diag[INS_IDX_RPY + 1]), diag[INS_IDX_RPY + 2]);
 
-    if (pos < f->diag.min_pos_stddev_m) { f->diag.min_pos_stddev_m = pos; }
-    if (vel < f->diag.min_vel_stddev_mps) { f->diag.min_vel_stddev_mps = vel; }
-    if (att < f->diag.min_att_stddev_deg) { f->diag.min_att_stddev_deg = att; }
+    if (pos_var >= 0.0f && pos_var < qsquare(f->diag.min_pos_stddev_m))
+    {
+        f->diag.min_pos_stddev_m = SQRTF(pos_var);
+    }
+    if (vel_var >= 0.0f && vel_var < qsquare(f->diag.min_vel_stddev_mps))
+    {
+        f->diag.min_vel_stddev_mps = SQRTF(vel_var);
+    }
+    const float min_att_deg = f->diag.min_att_stddev_deg;
+    if (att_var >= 0.0f && att_var < qsquare(DEG2RAD(min_att_deg)))
+    {
+        f->diag.min_att_stddev_deg = RAD2DEG(SQRTF(att_var));
+    }
 
-    if (pos < INS_OVERCONF_POS_STDDEV_M || vel < INS_OVERCONF_VEL_STDDEV_MPS ||
-        att < INS_OVERCONF_ATT_STDDEV_DEG)
+    if ((pos_var >= 0.0f && pos_var < qsquare(INS_OVERCONF_POS_STDDEV_M)) ||
+        (vel_var >= 0.0f && vel_var < qsquare(INS_OVERCONF_VEL_STDDEV_MPS)) ||
+        (att_var >= 0.0f && att_var < qsquare(DEG2RAD(INS_OVERCONF_ATT_STDDEV_DEG))))
     {
         if (!f->diag.overconfident)
         {
             LOG_WARN("ins: covariance overconfidence detected (pos %.2g m, vel %.2g m/s, "
                      "att %.2g deg 1-sigma) - possible covariance collapse",
-                     (double)pos, (double)vel, (double)att);
+                     (double)SQRTF(fmaxf(pos_var, 0.0f)), (double)SQRTF(fmaxf(vel_var, 0.0f)),
+                     (double)RAD2DEG(SQRTF(fmaxf(att_var, 0.0f))));
         }
         f->diag.overconfident = true;
         f->diag.n_overconfident++;
@@ -3556,11 +3850,14 @@ static void ins_finalize_init(ins_t* f, const float rpy[3], const double origin_
     }
     if (f->n > INS_IDX_MAG)
     {
+        /* Hard iron starts unknown, unless carried (REQ-NAV-061). */
         for (i = 0; i < 3; ++i)
         {
-            diag_init[INS_IDX_MAG + i] = qsquare(f->init.mag_bias_init_stddev_ut);
+            diag_init[INS_IDX_MAG + i] =
+                qsquare(carry ? f->bias_carry.mag_bias_stddev_ut : f->init.mag_bias_init_stddev_ut);
         }
-        vec3_zero(f->state.mag_bias); /* hard iron starts unknown */
+        if (carry) { vec3_copy(f->bias_carry.mag_bias, f->state.mag_bias); }
+        else { vec3_zero(f->state.mag_bias); }
     }
     udu_set_diag(f->U, f->d, diag_init, f->n);
 
@@ -3943,6 +4240,10 @@ int ins_init(ins_t* f, const ins_init_t* init, const ins_options_t* opt)
     {
         f->opt.max_prediction_time_sec = INS_DEFAULT_MAX_PREDICTION_TIME_SEC;
     }
+    if (!(f->opt.imu_loss_timeout_sec > 0.0f))
+    {
+        f->opt.imu_loss_timeout_sec = INS_DEFAULT_IMU_LOSS_TIMEOUT_SEC;
+    }
     if (f->opt.gnss_max_horizontal_pos_stddev_m <= 0.0f)
     {
         f->opt.gnss_max_horizontal_pos_stddev_m = INS_DEFAULT_GNSS_MAX_HPOS_STDDEV_M;
@@ -4147,7 +4448,7 @@ int ins_init(ins_t* f, const ins_init_t* init, const ins_options_t* opt)
     f->t_init             = init->time; /* provisional, restamped at start */
     f->is_collecting      = true;
     f->is_initialized     = false;
-    f->autoinit_count     = 0;
+    f->autoinit_win.count = 0;
     f->gnss_quality_ok    = true; /* until the running solution loses it (REQ-NAV-052) */
     f->gnss_bad_since     = 0;
     f->gnss_bad_last      = 0;
@@ -4206,8 +4507,18 @@ void ins_shutdown(ins_t* f)
 void ins_set_world_model(ins_t* f, const float gravity_n[3], const float magnetic_n[3])
 {
     if (f == NULL) return;
-    if (gravity_n != NULL) vec3_copy(gravity_n, f->gravity_n);
-    if (magnetic_n != NULL) vec3_copy(magnetic_n, f->magnetic_n);
+    /* The caller's vectors stay the caller's: the Earth refresh leaves them
+       alone (REQ-NAV-094), and a magnetic one ends the WMM tracking. */
+    if (gravity_n != NULL)
+    {
+        vec3_copy(gravity_n, f->gravity_n);
+        f->gravity_user = true;
+    }
+    if (magnetic_n != NULL)
+    {
+        vec3_copy(magnetic_n, f->magnetic_n);
+        f->mag_model_tracked = false;
+    }
 }
 
 /* @satisfies REQ-NAV-027 */
@@ -4224,29 +4535,11 @@ void ins_set_magnetic_model_from_position(ins_t* f, double lat_rad, double lon_r
         return; /* drop at the API boundary */
     }
 
-    /* Inside a dip pole exclusion zone the declination that orients the
-       reference field is meaningless, so magnetometer fusion is dropped until
-       the position leaves the zone (REQ-SYS-018). Keep the last reference
-       rather than overwriting it with a bogus one. */
-    const bool was_usable = f->mag_heading_usable;
-    f->mag_heading_usable = magnetic_heading_reference_valid(lat_deg, lon_deg);
-    if (!f->mag_heading_usable)
-    {
-        if (was_usable)
-        {
-            LOG_INFO("ins: magnetic dip pole zone entered, magnetometer fusion suspended");
-        }
-        return;
-    }
-    if (!was_usable) { LOG_INFO("ins: magnetic dip pole zone left, magnetometer fusion resumed"); }
-
-    float b_ned[3];
-    magnetic_field_ned_uT(lat_deg, lon_deg, year, b_ned);
-    vec3_copy(b_ned, f->magnetic_n);
-    /* Keep the init copy consistent so a later auto-init yaw bootstrap
-       (which reads init.magnetic_n) uses the same reference field. */
-    vec3_copy(b_ned, f->init.magnetic_n);
-    f->mag_field_expected_uT = magnetic_field_strength_uT(lat_deg, lon_deg);
+    /* From here on the Earth refresh keeps the model current at the
+       filter's own position, in a stage of its own (REQ-NAV-094). */
+    f->mag_model_year    = year;
+    f->mag_model_tracked = true;
+    ins_apply_magnetic_model(f, lat_deg, lon_deg);
 }
 
 /* Pure vertical datum shift: the absolute position stays constant because the
@@ -4307,8 +4600,13 @@ const ins_diag_t* ins_get_diag(const ins_t* f)
 /* @satisfies REQ-NAV-013 */
 bool ins_auto_zupt_active(const ins_t* f)
 {
+    /* The dwell time is a criterion of the detector like the gates and the
+       variance verdict, so a stillness run that has not dwelled yet is not
+       reported either (the rate limit is not: it throttles the updates, the
+       platform is still all the same). */
     return f != NULL && f->is_initialized && !f->opt.auto_zupt_disable &&
-           f->auto_zupt_static_since != 0 && f->static_var_ok;
+           f->auto_zupt_static_since != 0 && f->auto_zupt_var_since != 0 && f->auto_zupt_dwelled &&
+           f->static_var_ok;
 }
 
 /* @satisfies REQ-NAV-013 */
@@ -4323,6 +4621,7 @@ void ins_set_auto_zupt_disable(ins_t* f, bool disable)
            after the next ins_update. */
         f->auto_zupt_static_since = 0;
         f->auto_zupt_var_since    = 0;
+        f->auto_zupt_dwelled      = false;
         f->auto_zupt_gyr_count    = 0;
         f->bias_prior_count       = 0;
         f->static_var_count       = 0;
@@ -4370,20 +4669,87 @@ static void ins_autoinit_push(ins_t* f, const ins_measurements_t* m)
 
     if (!(m->acc.is_valid && m->gyr.is_valid)) return;
 
-    if (f->autoinit_count >= INS_AUTOINIT_SAMPLES_MAX)
+    /* Corrected with the biases the bootstrap is going to seed (REQ-NAV-061). */
+    const float* ab     = f->bias_carry.valid ? f->bias_carry.acc_bias : f->init.acc_bias_init_mps2;
+    const float* gb     = f->bias_carry.valid ? f->bias_carry.gyr_bias : f->init.gyr_bias_init_rps;
+    const float  acc[3] = {m->acc.data[0] - ab[0], m->acc.data[1] - ab[1], m->acc.data[2] - ab[2]};
+    const float  gyr[3] = {m->gyr.data[0] - gb[0], m->gyr.data[1] - gb[1], m->gyr.data[2] - gb[2]};
+    ins_level_window_push(&f->autoinit_win, m->timestamp, acc, gyr);
+}
+
+void ins_level_window_push(ins_level_window_t* w, ins_time_us_t t, const float acc[3],
+                           const float gyr[3])
+{
+    if (w->count >= INS_AUTOINIT_SAMPLES_MAX)
     {
-        memmove(&f->autoinit_buf[0], &f->autoinit_buf[1],
-                sizeof(f->autoinit_buf[0]) * (INS_AUTOINIT_SAMPLES_MAX - 1));
-        f->autoinit_count = INS_AUTOINIT_SAMPLES_MAX - 1;
+        memmove(&w->buf[0], &w->buf[1], sizeof(w->buf[0]) * (INS_AUTOINIT_SAMPLES_MAX - 1));
+        w->count = INS_AUTOINIT_SAMPLES_MAX - 1;
     }
-    const int k          = f->autoinit_count++;
-    f->autoinit_buf[k].t = m->timestamp;
-    int i;
-    for (i = 0; i < 3; ++i)
+    const int k = w->count++;
+    w->buf[k].t = t;
+    vec3_copy(acc, w->buf[k].acc);
+    vec3_copy(gyr, w->buf[k].gyr);
+}
+
+/* @satisfies REQ-NAV-047 REQ-SUITE-028 */
+bool ins_level_window_solve(const ins_level_window_t* w, const ins_options_t* opt,
+                            bool require_full, float* roll, float* pitch, float* rp_stddev_floor)
+{
+    if (w->count < 1) return false;
+
+    /* Collect the samples inside the leveling window (newest .. -window). */
+    const float         win   = (opt->auto_init_window_sec > 0.0f) ? opt->auto_init_window_sec
+                                                                   : INS_AUTOINIT_DEFAULT_WINDOW_SEC;
+    const ins_time_us_t t_new = w->buf[w->count - 1].t;
+    const ins_time_us_t t_min = t_new - (ins_time_us_t)(win * (float)INS_US_PER_SEC);
+    if (require_full && w->count < INS_AUTOINIT_SAMPLES_MAX && w->buf[0].t > t_min) return false;
+
+    float ax[INS_AUTOINIT_SAMPLES_MAX];
+    float ay[INS_AUTOINIT_SAMPLES_MAX];
+    float az[INS_AUTOINIT_SAMPLES_MAX];
+    float gmax = 0.0f;
+    int   cnt  = 0, i;
+    for (i = 0; i < w->count; ++i)
     {
-        f->autoinit_buf[k].acc[i] = m->acc.data[i] - f->init.acc_bias_init_mps2[i];
-        f->autoinit_buf[k].gyr[i] = m->gyr.data[i] - f->init.gyr_bias_init_rps[i];
+        if (w->buf[i].t < t_min) continue;
+        ax[cnt]        = w->buf[i].acc[0];
+        ay[cnt]        = w->buf[i].acc[1];
+        az[cnt]        = w->buf[i].acc[2];
+        const float gn = vec3_norm(w->buf[i].gyr);
+        if (gn > gmax) gmax = gn;
+        ++cnt;
     }
+    if (cnt < 3) return false; /* not enough IMU in the window yet */
+
+    /* Quasi-static classification: leveling assumes the specific force is ~
+       gravity and the platform is nearly not rotating. Movement does not
+       defer the bootstrap (a boat or a taxiing aircraft must still be able to
+       start), instead the caller widens the roll/pitch uncertainty to the floor
+       returned here (REQ-NAV-047). */
+    const float max_gyr = (opt->auto_init_static_gyr_rps > 0.0f) ? opt->auto_init_static_gyr_rps
+                                                                 : INS_AUTOINIT_DEFAULT_STATIC_GYR;
+    const float max_acc = (opt->auto_init_static_acc_mps2 > 0.0f) ? opt->auto_init_static_acc_mps2
+                                                                  : INS_AUTOINIT_DEFAULT_STATIC_ACC;
+
+    const float fx = ins_medianf(ax, cnt);
+    const float fy = ins_medianf(ay, cnt);
+    const float fz = ins_medianf(az, cnt);
+    const bool  is_quasi_static =
+        (gmax <= max_gyr) &&
+        (fabsf(SQRTF(fx * fx + fy * fy + fz * fz) - INS_GRAVITY_NOMINAL) <= max_acc);
+
+    /* Accelerometer leveling. Static: R_b_to_n * f_b = -g_n, so in the body
+       frame f_b = [ g sin(pitch), -g sin(roll) cos(pitch),
+                     -g cos(roll) cos(pitch) ]. Under motion this is only
+       approximate (the median partially rejects it), which is why the
+       roll/pitch stddev is widened then. */
+    *roll            = atan2f(-fy, -fz);
+    *pitch           = atan2f(fx, SQRTF(fy * fy + fz * fz));
+    *rp_stddev_floor = is_quasi_static ? 0.0f
+                       : (opt->auto_init_moving_rpy_stddev_rad > 0.0f)
+                           ? opt->auto_init_moving_rpy_stddev_rad
+                           : INS_AUTOINIT_DEFAULT_MOVING_RPY_STDDEV;
+    return true;
 }
 
 /* Resolve the bootstrap yaw. Priority: external heading measurement, then an
@@ -4549,7 +4915,7 @@ static bool ins_autoinit_try(ins_t* f, const ins_measurements_t* m)
     const bool have_gnss  = m->gnss_pos.is_valid && ins_gnss_entry_quality_ok(f, m);
     const bool have_local = m->local_pos.is_valid;
     if (!have_gnss && !have_local) return false;
-    if (f->autoinit_count < 1) return false;
+    if (f->autoinit_win.count < 1) return false;
 
     /* GNSS-stability dwell (REQ-NAV-045): do not enter 3D until the fix stream
        has passed the entry gate continuously for gnss_init_dwell_sec AND
@@ -4561,67 +4927,20 @@ static bool ins_autoinit_try(ins_t* f, const ins_measurements_t* m)
        the newest buffered IMU sample, otherwise the attitude/origin would be
        bootstrapped from temporally incoherent data. */
     {
-        ins_time_us_t gap = m->timestamp - f->autoinit_buf[f->autoinit_count - 1].t;
+        ins_time_us_t gap = m->timestamp - f->autoinit_win.buf[f->autoinit_win.count - 1].t;
         if (gap < 0) gap = -gap;
         if (gap > (ins_time_us_t)(f->opt.max_prediction_time_sec * (float)INS_US_PER_SEC))
             return false;
     }
 
-    /* Collect the samples inside the leveling window (newest .. -window). */
-    const float         win   = (f->opt.auto_init_window_sec > 0.0f) ? f->opt.auto_init_window_sec
-                                                                     : INS_AUTOINIT_DEFAULT_WINDOW_SEC;
-    const ins_time_us_t t_new = f->autoinit_buf[f->autoinit_count - 1].t;
-    const ins_time_us_t t_min = t_new - (ins_time_us_t)(win * (float)INS_US_PER_SEC);
-
-    float ax[INS_AUTOINIT_SAMPLES_MAX];
-    float ay[INS_AUTOINIT_SAMPLES_MAX];
-    float az[INS_AUTOINIT_SAMPLES_MAX];
-    float gmax = 0.0f;
-    int   cnt  = 0, i;
-    for (i = 0; i < f->autoinit_count; ++i)
+    float roll = 0.0f, pitch = 0.0f, moving_floor = 0.0f;
+    if (!ins_level_window_solve(&f->autoinit_win, &f->opt, false, &roll, &pitch, &moving_floor))
     {
-        if (f->autoinit_buf[i].t < t_min) continue;
-        ax[cnt]        = f->autoinit_buf[i].acc[0];
-        ay[cnt]        = f->autoinit_buf[i].acc[1];
-        az[cnt]        = f->autoinit_buf[i].acc[2];
-        const float gn = vec3_norm(f->autoinit_buf[i].gyr);
-        if (gn > gmax) gmax = gn;
-        ++cnt;
+        return false;
     }
-    if (cnt < 3) return false; /* not enough IMU in the window yet */
+    const bool is_quasi_static = !(moving_floor > 0.0f);
 
-    /* Quasi-static classification: leveling assumes the specific force is ~
-       gravity and the platform is nearly not rotating. Movement no longer
-       defers the bootstrap (a boat or a taxiing aircraft must still be able to
-       auto-init), instead the roll/pitch uncertainty below is widened when this
-       does not hold (REQ-NAV-047). */
-    const float max_gyr = (f->opt.auto_init_static_gyr_rps > 0.0f)
-                              ? f->opt.auto_init_static_gyr_rps
-                              : INS_AUTOINIT_DEFAULT_STATIC_GYR;
-    const float max_acc = (f->opt.auto_init_static_acc_mps2 > 0.0f)
-                              ? f->opt.auto_init_static_acc_mps2
-                              : INS_AUTOINIT_DEFAULT_STATIC_ACC;
-
-    const float fx = ins_medianf(ax, cnt);
-    const float fy = ins_medianf(ay, cnt);
-    const float fz = ins_medianf(az, cnt);
-    const bool  is_quasi_static =
-        (gmax <= max_gyr) &&
-        (fabsf(SQRTF(fx * fx + fy * fy + fz * fz) - INS_GRAVITY_NOMINAL) <= max_acc);
-
-    /* Accelerometer leveling. Static: R_b_to_n * f_b = -g_n, so in the body
-       frame f_b = [ g sin(pitch), -g sin(roll) cos(pitch),
-                     -g cos(roll) cos(pitch) ]. Under motion this is only
-       approximate (the median partially rejects it), which is why the
-       resulting roll/pitch stddev is widened below. */
-    float roll  = atan2f(-fy, -fz);
-    float pitch = atan2f(fx, SQRTF(fy * fy + fz * fz));
-
-    /* @satisfies REQ-NAV-047 */
-    const float moving_floor = (f->opt.auto_init_moving_rpy_stddev_rad > 0.0f)
-                                   ? f->opt.auto_init_moving_rpy_stddev_rad
-                                   : INS_AUTOINIT_DEFAULT_MOVING_RPY_STDDEV;
-    float       roll_var, pitch_var;
+    float roll_var, pitch_var;
     /* REQ-NAV-048: an external attitude hint (e.g. nav_suite's ARS/AHRS) has
        integrated far more history than this single leveling window and, unlike
        the median above, isn't defeated by real motion during it. */
@@ -4838,9 +5157,28 @@ static bool ins_autoinit_try(ins_t* f, const ins_measurements_t* m)
  * road/engine vibration a moving vehicle puts on the IMU.
  *
  * A usable fix also has to be accurate enough
- * (opt.auto_zupt_max_vel_stddev_mps, 1-sigma per axis). */
-static bool ins_auto_zupt_velocity_gate_ok(ins_t* f, const ins_measurements_t* m, float max_vel,
-                                           float max_vel_stddev)
+ * (opt.auto_zupt_max_vel_stddev_mps, 1-sigma per axis), see
+ * ins_auto_zupt_record_ext_vel. */
+static bool ins_auto_zupt_velocity_gate_ok(const ins_t* f, const ins_measurements_t* m,
+                                           float max_vel)
+{
+    if (f->auto_zupt_ext_vel_time != 0 &&
+        time_diff_sec(m->timestamp, f->auto_zupt_ext_vel_time) <= INS_AUTOZUPT_EXT_VEL_MAX_AGE_SEC)
+    {
+        return f->auto_zupt_ext_vel_mps <= max_vel;
+    }
+    return true;
+}
+
+/* Remember a GNSS velocity observation for the velocity gate. Called on every
+ * epoch before any IMU criterion is looked at: a fix arriving while the IMU
+ * shows motion (or on an epoch without an IMU sample) is just as much evidence
+ * of the platform's speed, and dropping it lets the observation age out
+ * during motion so the gate opens on the next IMU-quiet stretch, e.g. a steady
+ * turn (REQ-NAV-013). */
+/* @satisfies REQ-NAV-013 */
+static void ins_auto_zupt_record_ext_vel(ins_t* f, const ins_measurements_t* m,
+                                         float max_vel_stddev)
 {
     if (ins_gnss_vel_usable(f, &m->gnss_vel) &&
         ins_cov_stddev_within(m->gnss_vel.Qll_ned, max_vel_stddev, max_vel_stddev))
@@ -4848,12 +5186,6 @@ static bool ins_auto_zupt_velocity_gate_ok(ins_t* f, const ins_measurements_t* m
         f->auto_zupt_ext_vel_mps  = vec3_norm(m->gnss_vel.vel_ned);
         f->auto_zupt_ext_vel_time = m->timestamp;
     }
-    if (f->auto_zupt_ext_vel_time != 0 &&
-        time_diff_sec(m->timestamp, f->auto_zupt_ext_vel_time) <= INS_AUTOZUPT_EXT_VEL_MAX_AGE_SEC)
-    {
-        return f->auto_zupt_ext_vel_mps <= max_vel;
-    }
-    return true;
 }
 
 /* Decide whether this epoch should arm a synthetic zero_velocity_update /
@@ -4995,6 +5327,14 @@ static void ins_check_bias_prior(ins_t* f, const ins_measurements_t* m)
 
 static bool ins_auto_zupt_detect(ins_t* f, const ins_measurements_t* m)
 {
+    /* First, ahead of every early return below: the velocity evidence does
+       not depend on this epoch's IMU verdict, nor on the detector being
+       enabled right now (a runtime re-enable must see the latest fix). */
+    const float max_vel_stddev = (f->opt.auto_zupt_max_vel_stddev_mps > 0.0f)
+                                     ? f->opt.auto_zupt_max_vel_stddev_mps
+                                     : INS_AUTOZUPT_DEFAULT_MAX_VEL_STDDEV_MPS;
+    ins_auto_zupt_record_ext_vel(f, m, max_vel_stddev);
+
     if (f->opt.auto_zupt_disable)
     {
         /* Self-heals every call while disabled (mirrors ahrs_auto_zaru_detect):
@@ -5003,6 +5343,7 @@ static bool ins_auto_zupt_detect(ins_t* f, const ins_measurements_t* m)
            window survive into re-enablement. */
         f->auto_zupt_static_since = 0;
         f->auto_zupt_var_since    = 0;
+        f->auto_zupt_dwelled      = false;
         f->auto_zupt_gyr_count    = 0;
         f->bias_prior_count       = 0;
         f->static_var_count       = 0;
@@ -5022,19 +5363,16 @@ static bool ins_auto_zupt_detect(ins_t* f, const ins_measurements_t* m)
         return false;
     }
 
-    const float max_gyr = (f->opt.auto_zupt_static_gyr_rps > 0.0f)
-                              ? f->opt.auto_zupt_static_gyr_rps
-                              : INS_AUTOZUPT_DEFAULT_STATIC_GYR;
-    const float max_acc = (f->opt.auto_zupt_static_acc_mps2 > 0.0f)
-                              ? f->opt.auto_zupt_static_acc_mps2
-                              : INS_AUTOZUPT_DEFAULT_STATIC_ACC;
-    const float max_vel = (f->opt.auto_zupt_max_vel_mps > 0.0f) ? f->opt.auto_zupt_max_vel_mps
-                                                                : INS_AUTOZUPT_DEFAULT_MAX_VEL_MPS;
-    const float max_vel_stddev   = (f->opt.auto_zupt_max_vel_stddev_mps > 0.0f)
-                                       ? f->opt.auto_zupt_max_vel_stddev_mps
-                                       : INS_AUTOZUPT_DEFAULT_MAX_VEL_STDDEV_MPS;
-    const float dwell_sec        = (f->opt.auto_zupt_dwell_sec > 0.0f) ? f->opt.auto_zupt_dwell_sec
-                                                                       : INS_AUTOZUPT_DEFAULT_DWELL_SEC;
+    const float max_gyr   = (f->opt.auto_zupt_static_gyr_rps > 0.0f)
+                                ? f->opt.auto_zupt_static_gyr_rps
+                                : INS_AUTOZUPT_DEFAULT_STATIC_GYR;
+    const float max_acc   = (f->opt.auto_zupt_static_acc_mps2 > 0.0f)
+                                ? f->opt.auto_zupt_static_acc_mps2
+                                : INS_AUTOZUPT_DEFAULT_STATIC_ACC;
+    const float max_vel   = (f->opt.auto_zupt_max_vel_mps > 0.0f) ? f->opt.auto_zupt_max_vel_mps
+                                                                  : INS_AUTOZUPT_DEFAULT_MAX_VEL_MPS;
+    const float dwell_sec = (f->opt.auto_zupt_dwell_sec > 0.0f) ? f->opt.auto_zupt_dwell_sec
+                                                                : INS_AUTOZUPT_DEFAULT_DWELL_SEC;
     const float min_interval_sec = (f->opt.auto_zupt_min_interval_sec > 0.0f)
                                        ? f->opt.auto_zupt_min_interval_sec
                                        : INS_AUTOZUPT_DEFAULT_MIN_INTERVAL_SEC;
@@ -5054,14 +5392,15 @@ static bool ins_auto_zupt_detect(ins_t* f, const ins_measurements_t* m)
        gravity into the velocity states fast enough that the velocity gate can
        slam shut before the detector ever arms. */
     const bool var_static = ins_static_variance_update(f, m);
-    const bool is_static  = (vec3_norm(gyr_c) <= max_gyr) &&
-                           (fabsf(vec3_norm(acc_c) - g_nom) <= max_acc) &&
-                           ins_auto_zupt_velocity_gate_ok(f, m, max_vel, max_vel_stddev);
+    const bool is_static  = (vec3_norm2(gyr_c) <= max_gyr * max_gyr) &&
+                           norm2_within(vec3_norm2(acc_c), g_nom, max_acc) &&
+                           ins_auto_zupt_velocity_gate_ok(f, m, max_vel);
 
     if (!is_static)
     {
         f->auto_zupt_static_since = 0;
         f->auto_zupt_var_since    = 0;
+        f->auto_zupt_dwelled      = false;
         f->auto_zupt_gyr_count    = 0;
         f->bias_prior_count       = 0;
         return false;
@@ -5075,6 +5414,7 @@ static bool ins_auto_zupt_detect(ins_t* f, const ins_measurements_t* m)
     if (!var_static)
     {
         f->auto_zupt_var_since = 0;
+        f->auto_zupt_dwelled   = false;
         f->auto_zupt_gyr_count = 0;
         f->bias_prior_count    = 0;
         return false;
@@ -5126,6 +5466,7 @@ static bool ins_auto_zupt_detect(ins_t* f, const ins_measurements_t* m)
     {
         return false; /* not still long enough yet */
     }
+    f->auto_zupt_dwelled = true;
 
     const ins_time_us_t min_interval_us = (ins_time_us_t)(min_interval_sec * (float)INS_US_PER_SEC);
     if (f->t_last_auto_zupt != 0 && m->timestamp - f->t_last_auto_zupt < min_interval_us)
@@ -5417,12 +5758,12 @@ static void ins_sanitize_measurements(ins_t* f, const ins_measurements_t* in,
         out->strapdown_dt_sec = 0.0f;
         f->diag.n_invalid_input++;
     }
-    if (out->acc.is_valid && !ins_vec3_finite(out->acc.data))
+    if (out->acc.is_valid && !ins_vec3_within(out->acc.data, INS_IMU_ACC_ABS_MAX_MPS2))
     {
         out->acc.is_valid = false;
         f->diag.n_invalid_input++;
     }
-    if (out->gyr.is_valid && !ins_vec3_finite(out->gyr.data))
+    if (out->gyr.is_valid && !ins_vec3_within(out->gyr.data, INS_IMU_GYR_ABS_MAX_RPS))
     {
         out->gyr.is_valid = false;
         f->diag.n_invalid_input++;
@@ -5576,6 +5917,17 @@ int ins_predict_step(ins_t* f, const ins_measurements_t* m_in, float* phi_out)
     ins_measurements_t m_sane;
     ins_sanitize_measurements(f, m_in, &m_sane);
     const ins_measurements_t* m = &m_sane;
+
+    /* IMU loss (REQ-NAV-089), checked on every epoch and before anything else:
+       barometer, GNSS or magnetometer epochs keep arriving in an IMU gap, and
+       none of them may be fused against the attitude from before it. */
+    if (f->is_initialized && ins_imu_lost(f, m->timestamp)) { ins_fail_imu_loss(f, m->timestamp); }
+    if (m->acc.is_valid && m->gyr.is_valid && (!f->have_last_imu || m->timestamp > f->t_last_imu))
+    {
+        f->t_last_imu    = m->timestamp;
+        f->have_last_imu = true;
+    }
+
     if (!f->is_initialized)
     {
         /* Not started yet: consume until the streams are coherent
@@ -5670,32 +6022,21 @@ int ins_predict_step(ins_t* f, const ins_measurements_t* m_in, float* phi_out)
            here, so a reordering burst can never accumulate into a restart
            reset across the quiet stretches between bursts (REQ-NAV-070). */
         f->time_dropped_run = 0;
-        if (dt_ms > 0 && !f->opt.allow_unlimited_deadreckoning)
+        if (dt_ms > 0)
         {
+            /* A forward jump this long is a gap in the IMU stream as well, with
+               or without allow_unlimited_deadreckoning: the motion of the gap
+               was never measured (REQ-NAV-016, REQ-NAV-089). */
             f->diag.n_time_jump_reset++;
             LOG_WARN("ins: forward time jump of %d ms exceeds max_prediction_time_sec, "
                      "filter reset",
                      dt_ms);
-            f->is_initialized = false;
-            /* Without this, is_collecting also stays false (it was cleared at
-               start-up and this path never sets it), so the filter would be
-               permanently dead until an external ins_init(), unlike every
-               other shutdown path (REQ-NAV-042). */
-            if (!f->opt.auto_reacquire_disable && f->opt.auto_init) { ins_rearm_collecting(f); }
+            ins_fail_imu_loss(f, m->timestamp);
             f->step_ctx.active = false;
             return INS_EPOCH_DROPPED;
         }
         if (m->acc.is_valid || m->gyr.is_valid)
         {
-            if (dt_ms > 0)
-            {
-                /* Unlimited dead reckoning coasting through a forward gap
-                   (e.g. a stalled IMU link): re-baseline instead of just
-                   skipping this epoch. t_last_kalman_predict is otherwise only
-                   advanced by a successful predict step, which this branch
-                   bypasses, so time_jump would latch true forever. */
-                f->t_last_kalman_predict = m->timestamp;
-            }
             /* Skip IMU on backwards-time jumps. */
             f->step_ctx.active = false;
             return INS_EPOCH_DROPPED;
@@ -5796,6 +6137,7 @@ int ins_predict_step(ins_t* f, const ins_measurements_t* m_in, float* phi_out)
     f->step_ctx.active     = true;
     f->step_ctx.run_fusion = !time_jump;
     f->step_ctx.dr_frozen  = dr_frozen;
+    f->step_ctx.busy       = (status & INS_EPOCH_COV_PROPAGATED) != 0;
     if (dr_frozen) status |= INS_EPOCH_DR_FROZEN;
     return status;
 }
@@ -5853,6 +6195,12 @@ void ins_correct_step(ins_t* f)
         ins_track_gnss_mode_gates(f, m);
     }
 
+    /* -------- Deferred Earth refresh (REQ-NAV-094) -------- */
+    /* After the fusion, so busy also knows about every Kalman update of this
+       epoch. A filter the fusion has just shut down may run a stage on its
+       stale position, harmless, since every (re)start refreshes everything. */
+    if (!f->step_ctx.busy) { ins_refresh_earth_stage(f); }
+
     /* -------- History save + health check -------- */
     ins_save_state(f, m->timestamp, false);
     ins_check_health(f);
@@ -5863,16 +6211,19 @@ void ins_correct_step(ins_t* f)
         const float yaw_aid_gap_sec = time_diff_sec(m->timestamp, f->log_state.t_last_yaw_aid);
         /* Only the yaw element of the diagonal is used below (both here and
          * by the runaway tracker further down, so this can't be skipped when
-         * yaw_aid_gap_sec is small) -- extract that one element instead of
+         * yaw_aid_gap_sec is small) - extract that one element instead of
          * the full O(n^2) diagonal. */
         const float yaw_var_rad2 = udu_get_diag_one(f->U, f->d, f->n, INS_IDX_RPY + 2);
         /* Split off the variance above instead of nesting the call inside RAD2DEG:
          * cppcheck 2.7, the version the CI image pins, cannot build an AST for a
          * _Generic whose controlling expression is a call taking struct members. */
-        const float yaw_stddev_deg = RAD2DEG(SQRTF(yaw_var_rad2));
+        const float yaw_warn_rad = DEG2RAD(INS_LOG_YAW_STDDEV_WARN_DEG);
         if (yaw_aid_gap_sec >= INS_LOG_YAW_AID_GAP_WARN_SEC &&
-            yaw_stddev_deg >= INS_LOG_YAW_STDDEV_WARN_DEG)
+            yaw_var_rad2 >= qsquare(yaw_warn_rad))
         {
+            const float yaw_stddev_rad = SQRTF(yaw_var_rad2);
+            const float yaw_stddev_deg = RAD2DEG(yaw_stddev_rad);
+            (void)yaw_stddev_deg; /* log only */
             const bool  first_warn = (f->log_state.t_last_yaw_stddev_warn == 0);
             const float since_warn_sec =
                 first_warn ? 0.0f
@@ -5891,15 +6242,18 @@ void ins_correct_step(ins_t* f)
            diverging even while still nominally aided. */
         if (f->log_state.t_yaw_stddev_window == 0)
         {
+            const float yaw_stddev_rad         = SQRTF(yaw_var_rad2);
             f->log_state.t_yaw_stddev_window   = m->timestamp;
-            f->log_state.yaw_stddev_window_deg = yaw_stddev_deg;
+            f->log_state.yaw_stddev_window_deg = RAD2DEG(yaw_stddev_rad);
         }
         else
         {
             const float window_sec = time_diff_sec(m->timestamp, f->log_state.t_yaw_stddev_window);
             if (window_sec >= INS_LOG_RUNAWAY_WINDOW_SEC)
             {
-                const float growth_deg = yaw_stddev_deg - f->log_state.yaw_stddev_window_deg;
+                const float yaw_stddev_rad = SQRTF(yaw_var_rad2);
+                const float yaw_stddev_deg = RAD2DEG(yaw_stddev_rad);
+                const float growth_deg     = yaw_stddev_deg - f->log_state.yaw_stddev_window_deg;
                 if (growth_deg >= INS_LOG_YAW_RUNAWAY_DEG)
                 {
                     LOG_WARN("ins: yaw stddev runaway: grew %.1f deg in %.1f s (%.2f deg/s) "
