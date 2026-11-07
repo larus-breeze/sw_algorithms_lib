@@ -1,67 +1,74 @@
 #include "flexible_file_format.h"
 #include <flexible_log_file.h>
 #include "CRC16.h"
+#include "CRC32.h"
 
-bool flexible_log_file_t::append_record ( flexible_log_file_record_type type, uint32_t *data, uint32_t data_size_words)
+bool flexible_log_file_t::append_record ( flexible_log_file_record_type type, uint32_t *data, uint32_t data_size_words, uint32_t version)
 {
   uint32_t block_identifier;
-  uint32_t crc;
-  if( type > 254 || data_size_words > 254) // in this case we use two more words for identifier and length
+    block_identifier = type;
+    uint32_t size = data_size_words + 1;
+    block_identifier |= (size << 8);
+    switch( version)
     {
-      block_identifier = 0x0000ffff; // id=len=0xff
-
-      uint32_t long_identifier = type;
-      uint32_t long_size = data_size_words + 3; // including node, extended id and size
-
-      crc = CRC16( (uint16_t)long_identifier, CRC_SEED);
-      crc = CRC16( (uint16_t)(long_identifier >> 16), (uint16_t)crc);
-      crc = CRC16( (uint16_t)(long_size), (uint16_t)crc);
-      crc = CRC16( (uint16_t)(long_size >> 16), (uint16_t)crc);
-
-      block_identifier |= (crc << 16);
-
-      write_block( &block_identifier, 1);
-      write_block( (uint32_t *)&long_identifier, 1);
-      write_block( (uint32_t *)&long_size, 1);
-      write_block( data, data_size_words);
+      case 1:
+	{
+	  uint32_t crc;
+	  crc = CRC16( (uint16_t)block_identifier, CRC_SEED);
+	  block_identifier |= (crc << 16);
+	  break;
+	}
+      case 2:
+	{
+	  CRC32 crc;
+	  crc.update( block_identifier);
+	  crc.update( data, data_size_words);
+	  uint32_t folded_crc = crc.get_value_16bits();
+	  block_identifier |= (folded_crc << 16);
+	  break;
+	}
+      default:
+	break;
     }
-  else
-    {
-      block_identifier = type;
-      uint32_t size = data_size_words + 1;
-      block_identifier |= (size << 8);
-      crc = CRC16( (uint16_t)block_identifier, CRC_SEED);
-      block_identifier |= (crc << 16);
-      write_block( &block_identifier, 1);
-      write_block( data, data_size_words);
-    }
+    write_block( &block_identifier, 1);
+    write_block( data, data_size_words);
 
   return true;
 }
 
-uint32_t flexible_log_file_t::verify_record_get_size( uint32_t block_identifier)
+uint32_t flexible_log_file_t::verify_record_get_size( uint32_t *record, uint32_t version)
 {
-  uint32_t type = block_identifier & 0xff;
-  uint32_t size = (block_identifier & 0xff00) >> 8;
-  uint16_t info = (uint16_t)((size << 8) | type);
+  unsigned data_size_words;
+  unsigned total_size_words;
 
-  if( type == 255 and size == 255) // extended record
-    return 255;
+  total_size_words = (record[0] >> 8) & 0xff;
+  data_size_words = total_size_words - 1;
 
-  uint32_t crc_computed = CRC16( info, CRC_SEED);
-  if( crc_computed != (block_identifier >> 16))
-    return 0; // wrong CRC !
-  else
-    return size - 1; // return data size w/o node
-}
-
-uint32_t flexible_log_file_t::verify_extended_record_get_size ( uint32_t record, uint32_t extended_id, uint32_t extended_size)
-{
-  uint16_t crc = CRC16( (uint16_t)extended_id, CRC_SEED);
-  crc = CRC16( (uint16_t)(extended_id >> 16), crc);
-  crc = CRC16( (uint16_t)(extended_size), crc);
-  crc = CRC16( (uint16_t)(extended_size >> 16), crc);
-  if( ( (record & 0xffff) != 0xffff) || (crc != (record >> 16)))
-    return 0;
-  return extended_size - 3;
+  switch( version)
+  {
+	case 1:
+	  {
+	    uint32_t crc_computed = CRC16( (uint16_t)(*record), CRC_SEED);
+	    if( crc_computed != (*record >> 16))
+	      return 0; // wrong CRC !
+	    else
+	      return data_size_words;
+	    break;
+	  }
+	case 2:
+	  {
+	    CRC32 crc;
+	    crc.update( record[0] & 0xffff); // crc zeroed out
+	    crc.update( record + 1, data_size_words);
+	    uint32_t folded_crc = crc.get_value_16bits();
+	    if( (*record >> 16) != folded_crc)
+	      return 0;
+	    else
+	      return data_size_words;
+	    break;
+	  }
+	default:
+	  break;
+  }
+  return 0;
 }

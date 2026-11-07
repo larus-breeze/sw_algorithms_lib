@@ -11,7 +11,7 @@ class flexible_log_file_t
   friend class flexible_log_file_implementation_t;
 
 public:
-  enum{ FLEXIBLE_LOG_FILE_FORMAT_VERSION = 1};
+  enum{ FLEXIBLE_LOG_FILE_FORMAT_VERSION = 2};
 
   flexible_log_file_t ( uint32_t * buf, unsigned size_words)
   : buffer( buf),
@@ -24,12 +24,11 @@ public:
   {
   }
 
-  bool append_record ( flexible_log_file_record_type type, uint32_t *data, uint32_t data_size_words);
+  bool append_record ( flexible_log_file_record_type type, uint32_t *data, uint32_t data_size_words, uint32_t _version = 1);
   virtual bool open( char * file_name) = 0;
   virtual bool close( void) = 0;
 
-  static uint32_t verify_record_get_size( uint32_t input);
-  static uint32_t verify_extended_record_get_size( uint32_t record, uint32_t extended_id, uint32_t extended_size);
+  static uint32_t verify_record_get_size( uint32_t * record, uint32_t _version = 1);
 
 private:
   enum {CRC_SEED = 0xfff1};
