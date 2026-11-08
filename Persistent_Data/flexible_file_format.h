@@ -1,6 +1,8 @@
 #ifndef PERSISTENT_DATA_FLEXIBLE_FILE_FORMAT_H_
 #define PERSISTENT_DATA_FLEXIBLE_FILE_FORMAT_H_
 
+#include "stdint.h"
+
   enum flexible_log_file_record_type
   {
     FILE_FORMAT_VERSION = 1,	//!< Larus flexible file format version (enumerated)
@@ -24,7 +26,14 @@
     SYSTEM_STATE_VECTOR = 42,	//!< All significant state-vector variables
     FLASH_DUMP_SECTION = 43,	//!< raw FLASH section data (start-address, data ...)
 
-    EXTENDED_RECORD = 255	//!< long records with 32bit id and length
+//  EXTENDED_RECORD = 255	//!< long records with 32bit id and length
   };
+
+  typedef struct
+    {
+      uint8_t record_type; // flexible_log_file_record_type
+      uint8_t total_size;
+      uint16_t folded_CRC;
+    } record_header_t;
 
 #endif /* PERSISTENT_DATA_FLEXIBLE_FILE_FORMAT_H_ */

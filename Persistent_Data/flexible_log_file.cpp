@@ -61,7 +61,7 @@ uint32_t flexible_log_file_t::verify_record_get_size( uint32_t *record, uint32_t
 	    crc.update( record[0] & 0xffff); // crc zeroed out
 	    crc.update( record + 1, data_size_words);
 	    uint32_t folded_crc = crc.get_value_16bits();
-	    if( (*record >> 16) != folded_crc)
+	    if( (record[0] >> 16) != folded_crc)
 	      return 0;
 	    else
 	      return data_size_words;
