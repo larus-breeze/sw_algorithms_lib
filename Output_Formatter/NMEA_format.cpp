@@ -345,9 +345,8 @@ void format_PLARS ( float value, parameter_type type, char * &p)
       break;
     case BUGS:  //BUGS Bugs in % (0 - 50)
       value = CLIP( value, 1.0f, 1.5f);
-      value = (value - 1.0f) * 100.0f + 0.5f; // Scale CAN
       append_string( p, PLARS_BUGS);
-      to_ascii_n_decimals( value, 2, p);
+      format_integer( p, (int) round( (value - 1.0f) * 100.0f)); // CAN factor -> whole percent
         break;
     case QNH:  //QNH in Pa
       append_string( p, PLARS_QNH);
