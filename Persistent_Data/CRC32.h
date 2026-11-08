@@ -53,7 +53,7 @@ public:
 
   uint16_t get_value_16bits( void)
   {
-    uint16_t retv = crc ^ crc >> 16;
+    uint16_t retv = (uint16_t)(crc ^ (crc >> 16));
     return retv;
   }
 
