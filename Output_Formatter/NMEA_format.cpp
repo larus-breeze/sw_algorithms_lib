@@ -344,6 +344,8 @@ void format_PLARS ( float value, parameter_type type, char * &p)
       to_ascii_n_decimals( value, 3, p);
       break;
     case BUGS:  //BUGS Bugs in % (0 - 50)
+      if( value != value) // NaN passes CLIP, and converting it to int is undefined
+	value = 1.0f;
       value = CLIP( value, 1.0f, 1.5f);
       append_string( p, PLARS_BUGS);
       format_integer( p, (int) round( (value - 1.0f) * 100.0f)); // CAN factor -> whole percent
