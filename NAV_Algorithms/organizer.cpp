@@ -208,14 +208,14 @@ acceleration_calibrator_state organizer_t::manage_acceleration_calibration( cons
     {
       float calibration[6];
 
-      calibration[0] = (acceleration_sums[FRONT_UP] + acceleration_sums[FRONT_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT / GRAVITY;
-      calibration[1] = (acceleration_sums[FRONT_UP] - acceleration_sums[FRONT_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT / GRAVITY;
+      calibration[0] = (acceleration_sums[FRONT_UP] + acceleration_sums[FRONT_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT;
+      calibration[1] = ONE / ((acceleration_sums[FRONT_UP] - acceleration_sums[FRONT_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT / GRAVITY);
 
-      calibration[2] = (acceleration_sums[RIGHT_UP] + acceleration_sums[RIGHT_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT / GRAVITY;
-      calibration[3] = (acceleration_sums[RIGHT_UP] - acceleration_sums[RIGHT_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT / GRAVITY;
+      calibration[2] = (acceleration_sums[RIGHT_UP] + acceleration_sums[RIGHT_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT;
+      calibration[3] = ONE /((acceleration_sums[RIGHT_UP] - acceleration_sums[RIGHT_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT / GRAVITY);
 
-      calibration[4] = (acceleration_sums[BOTTOM_UP] + acceleration_sums[BOTTOM_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT / GRAVITY;
-      calibration[5] = (acceleration_sums[BOTTOM_UP] - acceleration_sums[BOTTOM_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT / GRAVITY;
+      calibration[4] = (acceleration_sums[BOTTOM_UP] + acceleration_sums[BOTTOM_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT;
+      calibration[5] = ONE / ((acceleration_sums[BOTTOM_UP] - acceleration_sums[BOTTOM_DOWN]) * 0.5f / ACCELERATION_CALIBRATION_COUNT / GRAVITY);
 
       // start using these values and make them permanent if plausible
       if( set_acceleration_calibration( calibration))
