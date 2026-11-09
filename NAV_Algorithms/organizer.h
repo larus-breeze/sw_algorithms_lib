@@ -196,8 +196,8 @@ private:
 
     for( unsigned i=0; i<3; ++i)
       {
-	accelerometer_offset[i] = calibration[2*i] * GRAVITY; // g -> m/s^2
-	accelerometer_gain[i] = ONE / calibration[2*i + 1];
+	accelerometer_offset[i] = calibration[2*i];
+	accelerometer_gain[i] = calibration[2*i + 1];
       }
     return true;
   }
