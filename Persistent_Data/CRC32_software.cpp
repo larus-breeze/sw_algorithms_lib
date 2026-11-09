@@ -1,3 +1,6 @@
+#if defined( __ARM_ARCH) // ARM CORTEX M
+#else
+
 #include "CRC32.h"
 #include "embedded_memory.h"
 
@@ -20,6 +23,54 @@ ROM uint32_t crc32_table[] =
       0xc5a92679, 0xc1683bce, 0xcc2b1d17, 0xc8ea00a0, 0xd6ad50a5, 0xd26c4d12, 0xdf2f6bcb, 0xdbee767c, 0xe3a1cbc1, 0xe760d676, 0xea23f0af, 0xeee2ed18, 0xf0a5bd1d, 0xf464a0aa, 0xf9278673, 0xfde69bc4,
       0x89b8fd09, 0x8d79e0be, 0x803ac667, 0x84fbdbd0, 0x9abc8bd5, 0x9e7d9662, 0x933eb0bb, 0x97ffad0c, 0xafb010b1, 0xab710d06, 0xa6322bdf, 0xa2f33668, 0xbcb4666d, 0xb8757bda, 0xb5365d03, 0xb1f740b4
     };
+
+CRC32::CRC32(void)
+  : crc(0xffffffff)
+{}
+
+//! match STM32F407 hardware CRC unit
+uint32_t CRC32::update( uint32_t input)
+{
+  uint8_t work;
+  for( unsigned i=0; i < 4; ++i)
+	{
+	  work = input >> (8 * (3-i)); // little endian order
+	  crc = (crc << 8) ^ crc32_table[(crc >> 24) ^ work];
+	}
+  return crc;
+}
+
+uint32_t CRC32::update( const uint32_t *data, uint32_t len)
+{
+  uint8_t work;
+  while( len--)
+    {
+      for( unsigned i=0; i < 4; ++i)
+	{
+	  work = *data >> (8 * (3-i)); // little endian order
+	  crc = (crc << 8) ^ crc32_table[(crc >> 24) ^ work];
+	}
+      ++data;
+    }
+  return crc;
+}
+
+void CRC32::reset( void)
+{
+  crc = 0xffffffff;
+}
+
+uint32_t CRC32::get_value( void)
+{
+  return crc;
+}
+
+uint16_t CRC32::get_value_16bits( void)
+{
+  uint16_t retv = (uint16_t)(crc ^ (crc >> 16));
+  return retv;
+}
+#endif
 
 #if CREATE_CRC_TABLE
 
@@ -48,3 +99,4 @@ void stm32_crc32_init_table(void)
     }
 }
 #endif
+
