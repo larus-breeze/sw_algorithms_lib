@@ -137,6 +137,18 @@ public:
     navigator.update_pitot ( ( pitot_pressure - pitot_offset) * pitot_span);
   }
 
+  //! update the navigator taking the current pressure measurement
+  void on_new_static_pressure( float static_pressure)
+  {
+    navigator.update_pressure( static_pressure - QNH_offset);
+  }
+
+  //! update the navigator taking the current pressure measurement
+  void on_new_pitot_pressure( float pitot_pressure)
+  {
+    navigator.update_pitot ( ( pitot_pressure - pitot_offset) * pitot_span);
+  }
+
   // initialization of the AHRS attitude if the roll pitch heading angles are known
   void set_attitude ( float roll, float pitch, float present_heading)
   {

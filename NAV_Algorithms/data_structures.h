@@ -63,6 +63,22 @@ typedef struct
   int32_t timestamp;
 } measurement_data_timed_t;
 
+//! contains all input data from the IMU
+typedef struct
+{
+  float3vector acc;
+  float3vector gyro;
+  float3vector mag;
+  int32_t timestamp;
+} imu_data_timed_t;
+
+//! value with timestamp
+typedef struct
+{
+  float value;
+  int32_t timestamp;
+} value_and_timestamp_t;
+
 //! contains all input data from the external magnetometer
 typedef struct
 {
