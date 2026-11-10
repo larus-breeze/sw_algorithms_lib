@@ -11,6 +11,7 @@ class CRC32
 {
 public:
   CRC32(void);
+  ~CRC32(void);
 
   //! match STM32F407 hardware CRC unit
   uint32_t update( uint32_t input);
