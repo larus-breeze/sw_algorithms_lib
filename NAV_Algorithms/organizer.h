@@ -128,7 +128,7 @@ public:
   }
 
   //! attitude setup after getting the first set of acceleration an magnetic data
-  void initialize_after_first_measurement( const D_GNSS_coordinates_t &c, const measurement_data_t &m);
+  void initialize_after_first_measurement( const D_GNSS_coordinates_t &c, const measurement_data_timed_t &m);
 
   //! update the navigator taking the current pressure measurements
   void on_new_pressure_data( float static_pressure, float pitot_pressure)
@@ -155,10 +155,10 @@ public:
   }
 
   //! the "FAST" update of the observed properties
-  void update_at_100_Hz( const measurement_data_t &m, bool external_magnetometer_active, const float3vector &x_mag);
+  void update_at_100_Hz( const measurement_data_timed_t &m, bool external_magnetometer_active, const float3vector &x_mag);
 
   //! the "SLOW" update of the observed properties
-  bool update_at_10Hz( const D_GNSS_coordinates_t &c, const measurement_data_t &m);
+  bool update_at_10Hz( const D_GNSS_coordinates_t &c, const measurement_data_timed_t &m);
 
   void cleanup_after_landing( void)
   {
@@ -172,9 +172,9 @@ public:
   }
 
   // return true if significant changes in configuration were made
-  bool on_command( communicator_command_t command, D_GNSS_coordinates_t &coordinates, measurement_data_t &observations);
+  bool on_command( communicator_command_t command, D_GNSS_coordinates_t &coordinates, measurement_data_timed_t &observations);
 
-  bool manage_attitude_setup_in_progress( D_GNSS_coordinates_t &coordinates, measurement_data_t &observations);
+  bool manage_attitude_setup_in_progress( D_GNSS_coordinates_t &coordinates, measurement_data_timed_t &observations);
 
   acceleration_calibrator_state manage_acceleration_calibration( const float3vector &acceleration);
 

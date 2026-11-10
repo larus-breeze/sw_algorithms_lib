@@ -72,7 +72,7 @@ enum CAN_ID_SENSOR
 #if SUPPORT_D_GNSS_ACCURACY
 void CAN_output ( const measurement_data_t &m, const D_GNSS_coordinates_t &c, state_vector_t &x, const D_GNSS_accuracy_t &accuracy, bool horizon_activated)
 #else
-void CAN_output ( const measurement_data_t &m, const D_GNSS_coordinates_t &c, state_vector_t &x, bool horizon_activated)
+void CAN_output ( const measurement_data_timed_t &m, const D_GNSS_coordinates_t &c, state_vector_t &x, bool horizon_activated)
 #endif
 {
   CANpacket p( 0x7ff, 8);
