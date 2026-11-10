@@ -72,6 +72,11 @@ uint16_t CRC32::get_value_16bits( void)
 }
 #endif
 
+CRC32::~CRC32( void)
+{
+
+}
+
 #if CREATE_CRC_TABLE
 
 // match STM32F407 hardware CRC unit
