@@ -335,17 +335,14 @@ bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates
 }
 
 //! the "FAST" update of the observed properties
-  void organizer_t::update_at_100_Hz( const measurement_data_t &m, uint32_t system_state, const float3vector &x_mag)
+void organizer_t::update_at_100_Hz( const measurement_data_t &m, bool external_magnetometer_active, const float3vector &x_mag)
   {
     float3vector acc = make_body_acceleration( m.acc);
     float3vector gyro = sensor_mapping * m.gyro;
 
-    bool external_magnetometer_active = system_state & EXTERNAL_MAGNETOMETER_AVAILABLE;
-
     navigator.update_at_100Hz (
 	acc, m.mag, gyro,
 	x_mag, external_magnetometer_active);
-
 
     if( acceleration_calibration_time_to_go > 0)
       {

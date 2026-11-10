@@ -155,7 +155,7 @@ public:
   }
 
   //! the "FAST" update of the observed properties
-  void update_at_100_Hz( const measurement_data_t &m, uint32_t system_state, const float3vector &x_mag);
+  void update_at_100_Hz( const measurement_data_t &m, bool external_magnetometer_active, const float3vector &x_mag);
 
   //! the "SLOW" update of the observed properties
   bool update_at_10Hz( const D_GNSS_coordinates_t &c, const measurement_data_t &m);
