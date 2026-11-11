@@ -70,12 +70,12 @@ uint16_t CRC32::get_value_16bits( void)
   uint16_t retv = (uint16_t)(crc ^ (crc >> 16));
   return retv;
 }
-#endif
 
 CRC32::~CRC32( void)
 {
 
 }
+#endif
 
 #if CREATE_CRC_TABLE
 
