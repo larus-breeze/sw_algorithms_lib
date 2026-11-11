@@ -229,7 +229,7 @@ acceleration_calibrator_state organizer_t::manage_acceleration_calibration( cons
     return ACTIVE; // work in progress
 }
 
-bool organizer_t::manage_attitude_setup_in_progress( D_GNSS_coordinates_t &coordinates, measurement_data_timed_t &observations)
+bool organizer_t::manage_attitude_setup_in_progress( D_GNSS_coordinates_t &coordinates, measurement_data_t &observations)
 {
   // vector averaging in case of ground or air calibration activity *********************************
   if (vector_average_organizer.counter != 0)
@@ -249,7 +249,7 @@ bool organizer_t::manage_attitude_setup_in_progress( D_GNSS_coordinates_t &coord
 }
 
 // return true if significant changes in configuration were made
-bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates_t &coordinates, measurement_data_timed_t &observations)
+bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates_t &coordinates, measurement_data_t &observations)
 {
 	  switch (command)
 	    {
@@ -335,7 +335,7 @@ bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates
 }
 
 //! the "FAST" update of the observed properties
-void organizer_t::update_at_100_Hz( const measurement_data_timed_t &m, bool external_magnetometer_active, const float3vector &x_mag)
+void organizer_t::update_at_100_Hz( const measurement_data_t &m, bool external_magnetometer_active, const float3vector &x_mag)
   {
     float3vector acc = make_body_acceleration( m.acc);
     float3vector gyro = sensor_mapping * m.gyro;
@@ -365,7 +365,7 @@ void organizer_t::update_at_100_Hz( const measurement_data_timed_t &m, bool exte
   }
 
   //! the "SLOW" update of the observed properties
-    bool organizer_t::update_at_10Hz( const D_GNSS_coordinates_t &c, const measurement_data_timed_t &m)
+    bool organizer_t::update_at_10Hz( const D_GNSS_coordinates_t &c, const measurement_data_t &m)
     {
       bool landing_detected_here = navigator.update_at_10Hz ();
 
@@ -399,7 +399,7 @@ void organizer_t::update_at_100_Hz( const measurement_data_timed_t &m, bool exte
     }
 
     //! attitude setup after getting the first set of acceleration an magnetic data
-    void organizer_t::initialize_after_first_measurement( const D_GNSS_coordinates_t &c, const measurement_data_timed_t &m)
+    void organizer_t::initialize_after_first_measurement( const D_GNSS_coordinates_t &c, const measurement_data_t &m)
     {
       navigator.update_pressure( m.static_pressure - QNH_offset);
 

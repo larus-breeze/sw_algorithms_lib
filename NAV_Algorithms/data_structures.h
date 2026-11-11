@@ -57,19 +57,6 @@ typedef struct
   float supply_voltage;  //Measuring the supply voltage. Might be related to sensor noise.
 } supplementary_data_t;
 
-//! contains all input data from the sensors
-typedef struct
-{
-  float3vector acc;   //XSENSE MTi1 IMU
-  float3vector gyro;  //XSENSE MTi1 IMU
-  float3vector mag;   //XSENSE MTi1 IMU
-  float pitot_pressure;
-  float static_pressure;
-  float static_sensor_temperature;  //log temperature to monitor temperature in enclosure
-  float supply_voltage;  //Measuring the supply voltage. Might be related to sensor noise.
-  int32_t timestamp;
-} measurement_data_timed_t;
-
 //! contains all input data from the IMU
 typedef struct
 {

@@ -410,7 +410,7 @@ void format_NMEA_string_fast( const state_vector_t &output_data, string_buffer_t
 }
 
 //! this procedure formats all our NMEA sequences
-void format_NMEA_string_slow( const measurement_data_timed_t &m, const D_GNSS_coordinates_t &c, const state_vector_t &output_data, const char *fw_version, string_buffer_t &NMEA_buf)
+void format_NMEA_string_slow( const measurement_data_t &m, const D_GNSS_coordinates_t &c, const state_vector_t &output_data, const char *fw_version, string_buffer_t &NMEA_buf)
 {
   char *next = NMEA_buf.string + NMEA_buf.length;
 
