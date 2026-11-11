@@ -53,6 +53,13 @@ typedef struct
 //! contains all input data from the sensors
 typedef struct
 {
+  float sensor_temperature;  //log temperature to monitor temperature in enclosure
+  float supply_voltage;  //Measuring the supply voltage. Might be related to sensor noise.
+} supplementary_data_t;
+
+//! contains all input data from the sensors
+typedef struct
+{
   float3vector acc;   //XSENSE MTi1 IMU
   float3vector gyro;  //XSENSE MTi1 IMU
   float3vector mag;   //XSENSE MTi1 IMU
@@ -79,18 +86,20 @@ typedef struct
   int32_t timestamp;
 } value_and_timestamp_t;
 
+//! value with timestamp
+typedef struct
+{
+  float dynamic_pressure;
+  float absolute_pressure;
+  int32_t timestamp;
+} pressure_data_timed_t;
+
 //! contains all input data from the external magnetometer
 typedef struct
 {
   float3vector induction;
   int32_t timestamp;
 } magnetometer_data_timed_t;
-
-//! contains all input data from the external magnetometer
-typedef struct
-{
-  float3vector induction;
-} magnetometer_data_t;
 
 //! this structure contains all the observations from sensors and GNSS
 typedef struct

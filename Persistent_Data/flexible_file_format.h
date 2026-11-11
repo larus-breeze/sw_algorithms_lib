@@ -16,8 +16,9 @@
 
     BASIC_SENSOR_DATA = 20, 	//!< IMU-data, pressures, temperature
     MAGNETOMETER_DATA = 21,	//!< external magnetometer readings
-    STATIC_PRESSURE =   22,	//!< static pressure and timestamp
+    PRESSURE_DATA =   22,	//!< static and dynamic pressure and timestamp
     IMU_DATA =   23,		//!< IMU data and timestamp
+    SUPPLEMENTARY_DATA = 24,	//!< Voltage, Temperature
 
     GNSS_DATA   = 30,		//!< abstract GNSS receiver output
     D_GNSS_DATA = 31,		//!< abstract D-GNSS receiver output
