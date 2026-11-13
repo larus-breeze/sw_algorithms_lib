@@ -36,6 +36,7 @@
 #include "accumulating_averager.h"
 #include "airborne_detector.h"
 #include "wind_observer.h"
+#include "magnetic_model.h"
 
 //! organizes horizontal navigation, wind observation and variometer
 class navigator_t
@@ -91,12 +92,17 @@ public:
 #endif
   }
 
-  void update_geo_data( float latitude, float longitude)
+  void update_geo_data( float latitude_deg, float longitude_deg)
   {
-    // todo fixme set induction here
-    ahrs.set_earth_rotation( latitude);
+    float value[3];
+    // todo fixme take coorect time here !
+    magnetic_field_ned_uT( latitude_deg, longitude_deg, 2026, value);
+    float3vector vec_value( value);
+    ahrs.update_magnetic_induction_data( vec_value);
+    ahrs.set_earth_rotation( latitude_deg);
 #if DEVELOPMENT_ADDITIONS
-    ahrs_magnetic.set_earth_rotation( latitude);
+    ahrs_magnetic.update_magnetic_induction_data( vec_value);
+    ahrs_magnetic.set_earth_rotation( latitude_deg);
 #endif
   }
 
