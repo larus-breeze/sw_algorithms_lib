@@ -65,7 +65,7 @@ class input_data_t
 {
 public:
   flexible_log_file_record_type type;
-  void * input;
+  void * data;
 };
 
 //! set of algorithms and data to be used by Larus flight sensor
@@ -90,6 +90,8 @@ public:
   {
     for( unsigned i=0; i<3; ++i) // poor CPP language ...
       accelerometer_gain[i]=ONE;
+
+    initialize_before_measurement ();
   }
 
   // poor man's RTTI input ;-)
@@ -98,27 +100,28 @@ public:
     switch( input.type)
     {
       case IMU_DATA:
-	on_new_information( ( imu_data_timed_t &)(input.input));
+	return on_new_information( ( const imu_data_timed_t &)(input.data));
 	break;
       case MAGNETOMETER_DATA:
-	on_new_information( ( magnetometer_data_timed_t &)(input.input));
+	return on_new_information( ( const magnetometer_data_timed_t &)(input.data));
 	break;
       case PRESSURE_DATA:
-	on_new_information( ( pressure_data_timed_t &)(input.input));
+	return on_new_information( ( const pressure_data_timed_t &)(input.data));
 	break;
       case SUPPLEMENTARY_DATA:
-	on_new_information( ( supplementary_data_t &)(input.input));
+	return on_new_information( ( const supplementary_data_t &)(input.data));
 	break;
       case GNSS_DATA:
-	on_new_information( ( GNSS_coordinates_t &)(input.input));
+	return on_new_information( ( const GNSS_coordinates_t &)(input.data));
 	break;
       case D_GNSS_DATA:
-	on_new_information( ( D_GNSS_coordinates_t &)(input.input));
+	return on_new_information( ( const D_GNSS_coordinates_t &)(input.data));
 	break;
       case SENSOR_STATUS:
-	on_new_information( ( uint32_t &)(input.input));
+	return on_new_information( ( const uint32_t &)(input.data));
 	break;
       default:
+	return false;
 	break;
     }
   }
