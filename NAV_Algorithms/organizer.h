@@ -89,6 +89,8 @@ public:
       acceleration_count_down(0),
       external_mag_measurement({0}),
       counter_10Hz(0),
+      sensor_temperature(0),
+      supply_voltage(0),
       state( VIRGIN)
   {
     for( unsigned i=0; i<3; ++i) // poor CPP language ...
@@ -127,9 +129,11 @@ public:
   }
 
   //! write the output data for the SIL environment
-    void report_data ( state_vector_t &data)
+    void report_data ( state_vector_t &data, measurement_data_t &observations)
     {
       navigator.report_data ( data);
+      observations.static_sensor_temperature = sensor_temperature;
+      observations.supply_voltage = supply_voltage;
     }
 
 // *************************************************************************************
@@ -165,6 +169,8 @@ private:
 
   bool on_new_information( const supplementary_data_t &input)
   {
+    sensor_temperature = input.sensor_temperature;
+    supply_voltage = input.supply_voltage;
     return true;
   }
 
@@ -276,9 +282,6 @@ private:
   //! the "FAST" update of the observed properties
   void update_at_100_Hz( const imu_data_timed_t &m, const magnetometer_data_timed_t &x_mag);
 
-  //! the "SLOW" update of the observed properties
-  bool update_at_10Hz( const D_GNSS_coordinates_t &c);
-
   void cleanup_after_landing( void)
   {
     navigator.cleanup_after_landing();
@@ -356,6 +359,8 @@ private:
 
   magnetometer_data_timed_t external_mag_measurement;
   unsigned counter_10Hz;
+  float sensor_temperature;
+  float supply_voltage;
   enum
   {
     VIRGIN,
