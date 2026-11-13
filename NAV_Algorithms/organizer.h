@@ -105,7 +105,10 @@ public:
     switch( input.type)
     {
       case IMU_DATA:
-	return on_new_information( ( const imu_data_timed_t &)(input.data));
+	{
+		imu_data_timed_t &my_data = *(imu_data_timed_t *)(input.data);
+		return on_new_information( my_data);
+	}
 	break;
       case MAGNETOMETER_DATA:
 	return on_new_information( ( const magnetometer_data_timed_t &)(input.data));
@@ -117,7 +120,10 @@ public:
 	return on_new_information( ( const supplementary_data_t &)(input.data));
 	break;
       case D_GNSS_DATA:
-	return on_new_information( ( const D_GNSS_coordinates_t &)(input.data));
+	{
+	  D_GNSS_coordinates_t &my_data = *(D_GNSS_coordinates_t *)(input.data);
+	  return on_new_information( my_data);
+	}
 	break;
       case SENSOR_STATUS:
 	return on_new_information( ( const uint32_t &)(input.data));
