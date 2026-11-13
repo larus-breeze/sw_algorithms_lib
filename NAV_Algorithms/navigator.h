@@ -83,16 +83,17 @@ public:
 #endif
   }
 
-  void update_magnetic_induction_data( float declination, float inclination)
+  void update_magnetic_induction_data( const float3vector& nav_induction)
   {
-    ahrs.update_magnetic_induction_data( declination, inclination);
+    ahrs.update_magnetic_induction_data( nav_induction);
 #if DEVELOPMENT_ADDITIONS
-    ahrs_magnetic.update_magnetic_induction_data( declination, inclination);
+    ahrs_magnetic.update_magnetic_induction_data( nav_induction);
 #endif
   }
 
-  void set_earth_rotation( float latitude)
+  void update_geo_data( float latitude, float longitude)
   {
+    // todo fixme set induction here
     ahrs.set_earth_rotation( latitude);
 #if DEVELOPMENT_ADDITIONS
     ahrs_magnetic.set_earth_rotation( latitude);
@@ -148,11 +149,6 @@ public:
   void initialize_QFF_density_metering( float MSL_altitude)
   {
     atmosphere.initialize( MSL_altitude);
-  }
-
-  void feed_QFF_density_metering( float pressure, float MSL_altitude)
-  {
-    atmosphere.air_density_metering( pressure, MSL_altitude);
   }
 
   void report_data( state_vector_t &d);
@@ -269,37 +265,37 @@ public:
 
 
 private:
-  float3vector body_acceleration;
-  float3vector body_gyro;
-  AHRS_type	ahrs;
+  float3vector		body_acceleration;
+  float3vector		body_gyro;
+  AHRS_type		ahrs;
 #if DEVELOPMENT_ADDITIONS
-  AHRS_type	ahrs_magnetic;
+  AHRS_type		ahrs_magnetic;
 #endif
-  atmosphere_t 	atmosphere;
-  variometer_t 	variometer;
-  wind_oberserver_t internal_wind_observer;
-  wind_oberserver_t user_wind_observer;
+  atmosphere_t 		atmosphere;
+  variometer_t 		variometer;
+  wind_oberserver_t 	internal_wind_observer;
+  wind_oberserver_t 	user_wind_observer;
   airborne_detector_t	airborne_detector;
 
-  pt2<float,float> air_pressure_resampler_100Hz_10Hz;
-  float 	pitot_pressure;
-  float 	TAS;
-  float 	IAS;
+  pt2<float,float> 	air_pressure_resampler_100Hz_10Hz;
+  float 		pitot_pressure;
+  float 		TAS;
+  float 		IAS;
 
-  int32_t 	old_GNSS_timestamp_ms;
-  float3vector 	GNSS_velocity_3d; 	//!< 3-dim velocity
-  float		GNSS_speed; 		//!< absolute speed over ground
-  float 	GNSS_track;		//!< true ground track
-  float		GNSS_speed_accuracy; 	//!< observing gnss quality for reporting
-  float3vector 	GNSS_acceleration;
-  float 	GNSS_heading;
-  float 	GNSS_negative_altitude;
-  unsigned	GNSS_fix_type;
-  GNSS_configration_t GNSS_type;
+  int32_t 		old_GNSS_timestamp_ms;
+  float3vector 		GNSS_velocity_3d; 	//!< 3-dim velocity
+  float			GNSS_speed; 		//!< absolute speed over ground
+  float 		GNSS_track;		//!< true ground track
+  float			GNSS_speed_accuracy; 	//!< observing gnss quality for reporting
+  float3vector 		GNSS_acceleration;
+  float 		GNSS_heading;
+  float 		GNSS_negative_altitude;
+  unsigned		GNSS_fix_type;
+  GNSS_configration_t 	GNSS_type;
 
   soaring_flight_averager< float, false> vario_integrator;
-  pt2<float,float> TAS_averager;
-  pt2<float,float> IAS_averager;
+  pt2<float,float> 	TAS_averager;
+  pt2<float,float> 	IAS_averager;
 };
 
 #endif /* NAVIGATORT_H_ */

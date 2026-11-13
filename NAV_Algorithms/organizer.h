@@ -86,7 +86,10 @@ public:
       attitude_in_progress( INVALID),
       acceleration_sums{0},
       acceleration_measurement_complete(0),
-      acceleration_count_down(0)
+      acceleration_count_down(0),
+      external_mag_measurement({0}),
+      counter_10Hz(0),
+      state( VIRGIN)
   {
     for( unsigned i=0; i<3; ++i) // poor CPP language ...
       accelerometer_gain[i]=ONE;
@@ -111,9 +114,6 @@ public:
       case SUPPLEMENTARY_DATA:
 	return on_new_information( ( const supplementary_data_t &)(input.data));
 	break;
-      case GNSS_DATA:
-	return on_new_information( ( const GNSS_coordinates_t &)(input.data));
-	break;
       case D_GNSS_DATA:
 	return on_new_information( ( const D_GNSS_coordinates_t &)(input.data));
 	break;
@@ -126,42 +126,81 @@ public:
     }
   }
 
+  //! write the output data for the SIL environment
+    void report_data ( state_vector_t &data)
+    {
+      navigator.report_data ( data);
+    }
+
 // *************************************************************************************
 private:
 
   bool on_new_information( const imu_data_timed_t &input)
   {
-
+    update_at_100_Hz( input, external_mag_measurement);
+    ++ counter_10Hz;
+    if( counter_10Hz >= 9)
+      {
+	counter_10Hz = 0;
+	update_status_flags();
+	bool landing_detected_here = navigator.update_at_10Hz ();
+	if( landing_detected_here)
+	  cleanup_after_landing ();
+      }
+    return true;
   }
 
   bool on_new_information( const magnetometer_data_timed_t &input)
   {
-
+    external_mag_measurement = input;
+    return true;
   }
 
   bool on_new_information( const pressure_data_timed_t &input)
   {
-
+    on_new_static_pressure( input.absolute_pressure);
+    on_new_pitot_pressure( input.dynamic_pressure);
+    return true;
   }
 
   bool on_new_information( const supplementary_data_t &input)
   {
-
-  }
-
-  bool on_new_information( const GNSS_coordinates_t &input)
-  {
-
+    return true;
   }
 
   bool on_new_information( const D_GNSS_coordinates_t &input)
   {
-
+    update_GNSS_data( input);
+    if( ++magnetic_induction_update_counter > MAGNETIC_UPDATE_TIME_TENTH_SECS) // every 15 minutes
+      {
+	navigator.update_geo_data( input.latitude, input.longitude);
+	magnetic_induction_update_counter=0;
+      }
+    return true;
   }
+
   bool on_new_information( const uint32_t &input)
   {
-
+    return true;
   }
+
+  void update_status_flags( void)
+      {
+        if ( navigator.get_speed_accuracy_bad_status() == true )
+          update_system_state_set(GNSS_VELOCITY_ACCURACY_BAD);
+        else
+          {
+    	update_system_state_clear(GNSS_VELOCITY_ACCURACY_BAD);
+
+          }
+
+        if ( navigator.get_magnetic_disturbance_bad_status() == true )
+    	update_system_state_set(MAGNETIC_DISTURBANCE_BAD);
+        else
+          {
+    	update_system_state_clear(MAGNETIC_DISTURBANCE_BAD);
+          }
+      }
 
   void tune_pressure_gauges( void)
   {
@@ -193,17 +232,6 @@ private:
   void tune_filters( void)
   {
     navigator.tune();
-  }
-
-  //! initialize the earth magnetic field data taking the observed location
-  void update_magnetic_induction_data( double latitude, double longitude)
-  {
-    induction_values induction_data;
-    induction_data = earth_induction_model.get_induction_data_at( latitude, longitude);
-    if( induction_data.valid)
-      navigator.update_magnetic_induction_data( induction_data.declination, induction_data.inclination);
-
-    navigator.set_earth_rotation( (float)latitude * M_PI_F / 180.0f);
   }
 
   //! attitude setup after getting the first set of acceleration an magnetic data
@@ -246,20 +274,14 @@ private:
   }
 
   //! the "FAST" update of the observed properties
-  void update_at_100_Hz( const measurement_data_t &m, bool external_magnetometer_active, const float3vector &x_mag);
+  void update_at_100_Hz( const imu_data_timed_t &m, const magnetometer_data_timed_t &x_mag);
 
   //! the "SLOW" update of the observed properties
-  bool update_at_10Hz( const D_GNSS_coordinates_t &c, const measurement_data_t &m);
+  bool update_at_10Hz( const D_GNSS_coordinates_t &c);
 
   void cleanup_after_landing( void)
   {
     navigator.cleanup_after_landing();
-  }
-
-//! write the output data for the SIL environment
-  void report_data ( state_vector_t &data)
-  {
-    navigator.report_data ( data);
   }
 
   // return true if significant changes in configuration were made
@@ -319,6 +341,7 @@ private:
   float3vector accelerometer_offset;	//!< zero G reading of the accelerometers
   float3vector accelerometer_gain;	//!< gain factor to be applied to the accelerometers
   float QNH_offset;   		//!< static pressure sensor offset
+
   unsigned magnetic_induction_update_counter; //!< timer for declination+inclination update
   vector_average_organizer_t vector_average_organizer;
   vector_average_collection_t vector_average_collection;
@@ -327,8 +350,17 @@ private:
   unsigned acceleration_calibration_time_to_go;
   attitude_t attitude_in_progress;
   float acceleration_sums[6];
+
   unsigned acceleration_measurement_complete; //!< bitfield
   unsigned acceleration_count_down;
-};
 
+  magnetometer_data_timed_t external_mag_measurement;
+  unsigned counter_10Hz;
+  enum
+  {
+    VIRGIN,
+    INITIALIZED,
+  } state;
+
+  };
 #endif /* ORGANIZER_H_ */

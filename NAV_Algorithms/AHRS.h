@@ -65,14 +65,9 @@ public:
   void tune (void);
 
   //! compute and remember any changes in the earth's magnetic induction
-  void update_magnetic_induction_data (float declination, float inclination)
+  void update_magnetic_induction_data (float3vector nav_induction)
   {
-    declination *= (M_PI_F / 180.0f); // degrees to radiant
-    inclination *= (M_PI_F / 180.0f);
-
-    expected_nav_induction[NORTH] = COS( inclination) * COS( declination);
-    expected_nav_induction[EAST] = COS( inclination) * SIN(declination);
-    expected_nav_induction[DOWN] = SIN(inclination);
+    expected_nav_induction = nav_induction;
     update_magnetic_loop_gain (); // adapt to magnetic inclination
   }
 

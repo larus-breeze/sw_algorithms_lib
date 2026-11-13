@@ -335,14 +335,13 @@ bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates
 }
 
 //! the "FAST" update of the observed properties
-void organizer_t::update_at_100_Hz( const measurement_data_t &m, bool external_magnetometer_active, const float3vector &x_mag)
+void organizer_t::update_at_100_Hz( const imu_data_timed_t &m, const magnetometer_data_timed_t &x_mag)
   {
+    bool external_magnetometer_active = m.timestamp - x_mag.timestamp < MAX_XMAG_AGE;
     float3vector acc = make_body_acceleration( m.acc);
     float3vector gyro = sensor_mapping * m.gyro;
 
-    navigator.update_at_100Hz (
-	acc, m.mag, gyro,
-	x_mag, external_magnetometer_active);
+    navigator.update_at_100Hz ( acc, m.mag, gyro, x_mag.induction, external_magnetometer_active);
 
     if( acceleration_calibration_time_to_go > 0)
       {
@@ -364,40 +363,6 @@ void organizer_t::update_at_100_Hz( const measurement_data_t &m, bool external_m
       }
   }
 
-  //! the "SLOW" update of the observed properties
-    bool organizer_t::update_at_10Hz( const D_GNSS_coordinates_t &c, const measurement_data_t &m)
-    {
-      bool landing_detected_here = navigator.update_at_10Hz ();
-
-      if ( navigator.get_speed_accuracy_bad_status() == true )
-        update_system_state_set(GNSS_VELOCITY_ACCURACY_BAD);
-      else
-        {
-  	update_system_state_clear(GNSS_VELOCITY_ACCURACY_BAD);
-
-  	// this stuff can only be done with good GNSS quality
-  	navigator.feed_QFF_density_metering( m.static_pressure - QNH_offset, c.GNSS_MSL_altitude);
-
-  	if( ++magnetic_induction_update_counter > MAGNETIC_UPDATE_TIME_TENTH_SECS) // every 15 minutes
-  	  {
-  	    update_magnetic_induction_data( c.latitude, c.longitude);
-  	    magnetic_induction_update_counter=0;
-  	  }
-        }
-
-      if ( navigator.get_magnetic_disturbance_bad_status() == true )
-  	update_system_state_set(MAGNETIC_DISTURBANCE_BAD);
-      else
-        {
-  	update_system_state_clear(MAGNETIC_DISTURBANCE_BAD);
-        }
-
-      if( landing_detected_here)
-        cleanup_after_landing ();
-
-      return landing_detected_here;
-    }
-
     //! attitude setup after getting the first set of acceleration an magnetic data
     void organizer_t::initialize_after_first_measurement( const D_GNSS_coordinates_t &c, const measurement_data_t &m)
     {
@@ -405,14 +370,14 @@ void organizer_t::update_at_100_Hz( const measurement_data_t &m, bool external_m
 
       if( (c.sat_fix_type & 0x03) > SAT_FIX_NONE)
         {
-  	update_magnetic_induction_data( c.latitude, c.longitude);
-  	navigator.initialize_QFF_density_metering( c.GNSS_MSL_altitude);
-  	navigator.reset_altitude ( c.GNSS_MSL_altitude);
+	  navigator.update_geo_data( c.latitude, c.longitude);
+	  navigator.initialize_QFF_density_metering( c.GNSS_MSL_altitude);
+	  navigator.reset_altitude ( c.GNSS_MSL_altitude);
         }
       else
         {
-  	navigator.initialize_QFF_density_metering( navigator.get_pressure_altitude() );
-  	navigator.reset_altitude ( navigator.get_pressure_altitude()); // we do not have a GNSS altitude
+	  navigator.initialize_QFF_density_metering( navigator.get_pressure_altitude() );
+	  navigator.reset_altitude ( navigator.get_pressure_altitude()); // we do not have a GNSS altitude
         }
 
       // setup initial attitude
