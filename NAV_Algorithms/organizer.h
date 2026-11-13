@@ -33,6 +33,7 @@
 #include "system_state.h"
 #include "communicator_command.h"
 #include "abstract_EEPROM_storage.h"
+#include "flexible_file_format.h"
 
 typedef enum
 {
@@ -60,6 +61,13 @@ typedef struct
   unsigned counter;
 } vector_average_organizer_t;
 
+class input_data_t
+{
+public:
+  flexible_log_file_record_type type;
+  void * input;
+};
+
 //! set of algorithms and data to be used by Larus flight sensor
 class organizer_t
 {
@@ -82,6 +90,74 @@ public:
   {
     for( unsigned i=0; i<3; ++i) // poor CPP language ...
       accelerometer_gain[i]=ONE;
+  }
+
+  // poor man's RTTI input ;-)
+  bool on_new_information( const input_data_t &input)
+  {
+    switch( input.type)
+    {
+      case IMU_DATA:
+	on_new_information( ( imu_data_timed_t &)(input.input));
+	break;
+      case MAGNETOMETER_DATA:
+	on_new_information( ( magnetometer_data_timed_t &)(input.input));
+	break;
+      case PRESSURE_DATA:
+	on_new_information( ( pressure_data_timed_t &)(input.input));
+	break;
+      case SUPPLEMENTARY_DATA:
+	on_new_information( ( supplementary_data_t &)(input.input));
+	break;
+      case GNSS_DATA:
+	on_new_information( ( GNSS_coordinates_t &)(input.input));
+	break;
+      case D_GNSS_DATA:
+	on_new_information( ( D_GNSS_coordinates_t &)(input.input));
+	break;
+      case SENSOR_STATUS:
+	on_new_information( ( uint32_t &)(input.input));
+	break;
+      default:
+	break;
+    }
+  }
+
+// *************************************************************************************
+private:
+
+  bool on_new_information( const imu_data_timed_t &input)
+  {
+
+  }
+
+  bool on_new_information( const magnetometer_data_timed_t &input)
+  {
+
+  }
+
+  bool on_new_information( const pressure_data_timed_t &input)
+  {
+
+  }
+
+  bool on_new_information( const supplementary_data_t &input)
+  {
+
+  }
+
+  bool on_new_information( const GNSS_coordinates_t &input)
+  {
+
+  }
+
+  bool on_new_information( const D_GNSS_coordinates_t &input)
+  {
+
+  }
+  bool on_new_information( const uint32_t &input)
+  {
+
   }
 
   void tune_pressure_gauges( void)
