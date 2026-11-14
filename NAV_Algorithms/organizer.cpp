@@ -337,7 +337,7 @@ bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates
 //! the "FAST" update of the observed properties
 void organizer_t::update_at_100_Hz( const imu_data_timed_t &m, const magnetometer_data_timed_t &x_mag)
   {
-    bool external_magnetometer_active = m.timestamp - x_mag.timestamp < MAX_XMAG_AGE;
+    bool external_magnetometer_active = ( m.timestamp - x_mag.timestamp) < MAX_XMAG_AGE;
     float3vector acc = make_body_acceleration( m.acc);
     float3vector gyro = sensor_mapping * m.gyro;
 
@@ -361,6 +361,26 @@ void organizer_t::update_at_100_Hz( const imu_data_timed_t &m, const magnetomete
 	    break;
 	}
       }
+  }
+
+//! initialization of the AHRS taking configuration data
+  void organizer_t::initialize_before_measurement( void)
+  {
+    tune_pressure_gauges();
+
+    quaternion<float> q;
+    q.from_euler (configuration (SENS_TILT_ROLL),
+	    configuration (SENS_TILT_PITCH),
+	    configuration (SENS_TILT_YAW));
+    q.get_rotation_matrix (sensor_mapping);
+
+    float acc_calibration[6];
+    bool acc_parameters_available = permanent_data_file.retrieve_data( ACCELEROMETER_CALIBRATION, 6, acc_calibration);
+    if( acc_parameters_available)
+      set_acceleration_calibration( acc_calibration);
+
+    setup_compass_calibrator_3d();
+    navigator.tune();
   }
 
     //! attitude setup after getting the first set of acceleration an magnetic data

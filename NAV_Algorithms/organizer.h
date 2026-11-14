@@ -95,9 +95,10 @@ public:
   {
     for( unsigned i=0; i<3; ++i) // poor CPP language ...
       accelerometer_gain[i]=ONE;
-
-    initialize_before_measurement ();
   }
+
+      //! initialization of the AHRS taking configuration data
+  void initialize_before_measurement( void);
 
   // poor man's RTTI input ;-)
   bool on_new_information( const input_data_t &input)
@@ -106,18 +107,27 @@ public:
     {
       case IMU_DATA:
 	{
-		imu_data_timed_t &my_data = *(imu_data_timed_t *)(input.data);
-		return on_new_information( my_data);
+	  imu_data_timed_t &my_data = *(imu_data_timed_t *)(input.data);
+	  return on_new_information( my_data);
 	}
 	break;
       case MAGNETOMETER_DATA:
-	return on_new_information( ( const magnetometer_data_timed_t &)(input.data));
+	{
+	  magnetometer_data_timed_t &my_data = *(magnetometer_data_timed_t *)(input.data);
+	  return on_new_information( my_data);
+	}
 	break;
       case PRESSURE_DATA:
-	return on_new_information( ( const pressure_data_timed_t &)(input.data));
+	{
+	  pressure_data_timed_t &my_data = *( pressure_data_timed_t *)(input.data);
+	  return on_new_information( my_data);
+	}
 	break;
       case SUPPLEMENTARY_DATA:
-	return on_new_information( ( const supplementary_data_t &)(input.data));
+	{
+	  supplementary_data_t &my_data = *( supplementary_data_t *)(input.data);
+	  return on_new_information( my_data);
+	}
 	break;
       case D_GNSS_DATA:
 	{
@@ -126,7 +136,10 @@ public:
 	}
 	break;
       case SENSOR_STATUS:
-	return on_new_information( ( const uint32_t &)(input.data));
+	{
+	  uint32_t &my_data = *(uint32_t *)(input.data);
+	  return on_new_information( my_data);
+	}
 	break;
       default:
 	return false;
@@ -219,26 +232,6 @@ private:
     pitot_offset= configuration (PITOT_OFFSET);
     pitot_span 	= configuration (PITOT_SPAN);
     QNH_offset	= configuration (QNH_OFFSET);
-  }
-
-//! initialization of the AHRS taking configuration data
-  void initialize_before_measurement( void)
-  {
-    tune_pressure_gauges();
-
-    quaternion<float> q;
-    q.from_euler (configuration (SENS_TILT_ROLL),
-		  configuration (SENS_TILT_PITCH),
-		  configuration (SENS_TILT_YAW));
-    q.get_rotation_matrix (sensor_mapping);
-
-    float acc_calibration[6];
-    bool acc_parameters_available = permanent_data_file.retrieve_data( ACCELEROMETER_CALIBRATION, 6, acc_calibration);
-    if( acc_parameters_available)
-      set_acceleration_calibration( acc_calibration);
-
-    setup_compass_calibrator_3d();
-    navigator.tune();
   }
 
   void tune_filters( void)
