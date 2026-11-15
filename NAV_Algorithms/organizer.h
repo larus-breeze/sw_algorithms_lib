@@ -78,7 +78,7 @@ public:
       accelerometer_offset(),
       accelerometer_gain(),
       QNH_offset(0.0f),
-      magnetic_induction_update_counter(0),
+      magnetic_induction_update_counter( MAGNETIC_UPDATE_TIME_TENTH_SECS), // due for renewal
       vector_average_organizer({ 0 }),
       vector_average_collection({ 0 }),
       fine_tune_sensor_attitude_in_progress( false),
@@ -97,9 +97,9 @@ public:
       accelerometer_gain[i]=ONE;
   }
 
-      //! initialization of the AHRS taking configuration data
+  //! initialization of the AHRS taking configuration data
   void initialize_before_measurement( void);
-
+  
   // poor man's RTTI input ;-)
   bool on_new_information( const input_data_t &input)
   {
@@ -196,10 +196,14 @@ private:
   bool on_new_information( const D_GNSS_coordinates_t &input)
   {
     update_GNSS_data( input);
-    if( ++magnetic_induction_update_counter > MAGNETIC_UPDATE_TIME_TENTH_SECS) // every 15 minutes
+    if( (input.sat_fix_type & 0x03) > 0) // have sat fix ?
       {
-	navigator.update_geo_data( input.latitude, input.longitude);
-	magnetic_induction_update_counter=0;
+	++magnetic_induction_update_counter;
+	if( magnetic_induction_update_counter > MAGNETIC_UPDATE_TIME_TENTH_SECS)
+	  {
+	    magnetic_induction_update_counter=0;
+	    navigator.update_geo_data( input.latitude, input.longitude);
+	  }
       }
     return true;
   }

@@ -95,8 +95,8 @@ public:
   void update_geo_data( float latitude_deg, float longitude_deg)
   {
     float value[3];
-    // todo fixme take coorect time here !
-    magnetic_field_ned_uT( latitude_deg, longitude_deg, 2026, value);
+    // todo fixme take correct time here !
+    magnetic_field_ned_uT( latitude_deg, longitude_deg, 2027.0f, value);
     float3vector vec_value( value);
     ahrs.update_magnetic_induction_data( vec_value);
     ahrs.set_earth_rotation( latitude_deg);

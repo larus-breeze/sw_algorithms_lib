@@ -283,7 +283,6 @@ bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates
 		{
 		  fine_tune_sensor_orientation ( vector_average_collection);
 		  initialize_before_measurement ();
-		  initialize_after_first_measurement (coordinates, observations);
 		  fine_tune_sensor_attitude_in_progress = false;
 		  return true; // report significant config change
 		}
@@ -299,7 +298,6 @@ bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates
 
 		  update_sensor_orientation_data ( vector_average_collection);
 		  initialize_before_measurement ();
-		  initialize_after_first_measurement (coordinates, observations);
 		  return true; // report significant config change
 		}
 	      break;
@@ -380,11 +378,13 @@ void organizer_t::update_at_100_Hz( const imu_data_timed_t &m, const magnetomete
       set_acceleration_calibration( acc_calibration);
 
     setup_compass_calibrator_3d();
+    navigator.update_geo_data( ZERO, ZERO);
     navigator.tune();
+    state = VIRGIN;
   }
 
     //! attitude setup after getting the first set of acceleration an magnetic data
-    void organizer_t::initialize_after_first_measurement( const D_GNSS_coordinates_t &c, const measurement_data_t &m)
+  void organizer_t::initialize_after_first_measurement( const D_GNSS_coordinates_t &c, const measurement_data_t &m)
     {
       navigator.update_pressure( m.static_pressure - QNH_offset);
 
