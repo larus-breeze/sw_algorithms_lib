@@ -72,30 +72,7 @@ public:
 class organizer_t
 {
 public:
-  organizer_t( void)
-    : pitot_offset(0.0f),
-      pitot_span(0.0f),
-      accelerometer_offset(),
-      accelerometer_gain(),
-      QNH_offset(0.0f),
-      magnetic_induction_update_counter( MAGNETIC_UPDATE_TIME_TENTH_SECS), // due for renewal
-      vector_average_organizer({ 0 }),
-      vector_average_collection({ 0 }),
-      fine_tune_sensor_attitude_in_progress( false),
-      acceleration_calibration_time_to_go( ACCELERATION_CALIBRATION_TIMEOUT),
-      attitude_in_progress( INVALID),
-      acceleration_sums{0},
-      acceleration_measurement_complete(0),
-      acceleration_count_down(0),
-      external_mag_measurement({0}),
-      counter_10Hz(0),
-      sensor_temperature(0),
-      supply_voltage(0),
-      state( VIRGIN)
-  {
-    for( unsigned i=0; i<3; ++i) // poor CPP language ...
-      accelerometer_gain[i]=ONE;
-  }
+  organizer_t(   D_GNSS_coordinates_t &_coordinates, measurement_data_t &_observations);
 
   //! initialization of the AHRS taking configuration data
   void initialize_before_measurement( void);
@@ -161,6 +138,7 @@ private:
   bool on_new_information( const imu_data_timed_t &input)
   {
     update_at_100_Hz( input, external_mag_measurement);
+    IMU_data_timestamp = input.timestamp;
     ++ counter_10Hz;
     if( counter_10Hz >= 9)
       {
@@ -183,6 +161,7 @@ private:
   {
     on_new_static_pressure( input.absolute_pressure);
     on_new_pitot_pressure( input.dynamic_pressure);
+    pressure_data_timestamp = input.timestamp;
     return true;
   }
 
@@ -198,6 +177,12 @@ private:
     update_GNSS_data( input);
     if( (input.sat_fix_type & 0x03) > 0) // have sat fix ?
       {
+	if( state == VIRGIN and IMU_data_timestamp != 0 and pressure_data_timestamp != 0)
+	  {
+	    state =INITIALIZED;
+	    initialize_after_first_measurement();
+	  }
+
 	++magnetic_induction_update_counter;
 	if( magnetic_induction_update_counter > MAGNETIC_UPDATE_TIME_TENTH_SECS)
 	  {
@@ -244,14 +229,7 @@ private:
   }
 
   //! attitude setup after getting the first set of acceleration an magnetic data
-  void initialize_after_first_measurement( const D_GNSS_coordinates_t &c, const measurement_data_t &m);
-
-  //! update the navigator taking the current pressure measurements
-  void on_new_pressure_data( float static_pressure, float pitot_pressure)
-  {
-    navigator.update_pressure( static_pressure - QNH_offset);
-    navigator.update_pitot ( ( pitot_pressure - pitot_offset) * pitot_span);
-  }
+  void initialize_after_first_measurement( void);
 
   //! update the navigator taking the current pressure measurement
   void on_new_static_pressure( float static_pressure)
@@ -340,6 +318,8 @@ private:
     return acc;
   }
 
+  D_GNSS_coordinates_t &coordinates;
+  measurement_data_t &observations;
   navigator_t navigator; 	//!< the container for all the algorithms
   float3matrix sensor_mapping; 	//!< sensor -> airframe rotation matrix
   float pitot_offset; 		//!< pitot pressure sensor offset
@@ -362,6 +342,8 @@ private:
 
   magnetometer_data_timed_t external_mag_measurement;
   unsigned counter_10Hz;
+  int32_t IMU_data_timestamp;
+  int32_t pressure_data_timestamp;
   float sensor_temperature;
   float supply_voltage;
   enum

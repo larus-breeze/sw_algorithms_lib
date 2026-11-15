@@ -27,6 +27,35 @@
 
 #define MINIMAL_ACC 0.4f
 
+organizer_t::organizer_t(   D_GNSS_coordinates_t &_coordinates, measurement_data_t &_observations)
+    : coordinates ( _coordinates),
+      observations( _observations),
+      pitot_offset(0.0f),
+      pitot_span(0.0f),
+      accelerometer_offset(),
+      accelerometer_gain(),
+      QNH_offset(0.0f),
+      magnetic_induction_update_counter( MAGNETIC_UPDATE_TIME_TENTH_SECS), // due for renewal
+      vector_average_organizer({ 0 }),
+      vector_average_collection({ 0 }),
+      fine_tune_sensor_attitude_in_progress( false),
+      acceleration_calibration_time_to_go( ACCELERATION_CALIBRATION_TIMEOUT),
+      attitude_in_progress( INVALID),
+      acceleration_sums{0},
+      acceleration_measurement_complete(0),
+      acceleration_count_down(0),
+      external_mag_measurement({0}),
+      counter_10Hz(0),
+      IMU_data_timestamp(0),
+      pressure_data_timestamp(0),
+      sensor_temperature(0),
+      supply_voltage(0),
+      state( VIRGIN)
+  {
+    for( unsigned i=0; i<3; ++i) // poor CPP language ...
+      accelerometer_gain[i]=ONE;
+  }
+
 //! compute sensor orientation relative to airframe front/right/down system
 //  and make changes permanent
 void organizer_t::update_sensor_orientation_data( const vector_average_collection_t & values)
@@ -384,15 +413,15 @@ void organizer_t::update_at_100_Hz( const imu_data_timed_t &m, const magnetomete
   }
 
     //! attitude setup after getting the first set of acceleration an magnetic data
-  void organizer_t::initialize_after_first_measurement( const D_GNSS_coordinates_t &c, const measurement_data_t &m)
+  void organizer_t::initialize_after_first_measurement( void)
     {
-      navigator.update_pressure( m.static_pressure - QNH_offset);
+      navigator.update_pressure( observations.static_pressure - QNH_offset);
 
-      if( (c.sat_fix_type & 0x03) > SAT_FIX_NONE)
+      if( (coordinates.sat_fix_type & 0x03) > SAT_FIX_NONE)
         {
-	  navigator.update_geo_data( c.latitude, c.longitude);
-	  navigator.initialize_QFF_density_metering( c.GNSS_MSL_altitude);
-	  navigator.reset_altitude ( c.GNSS_MSL_altitude);
+	  navigator.update_geo_data( coordinates.latitude, coordinates.longitude);
+	  navigator.initialize_QFF_density_metering( coordinates.GNSS_MSL_altitude);
+	  navigator.reset_altitude ( coordinates.GNSS_MSL_altitude);
         }
       else
         {
@@ -401,12 +430,12 @@ void organizer_t::update_at_100_Hz( const imu_data_timed_t &m, const magnetomete
         }
 
       // setup initial attitude
-      float3vector acc = make_body_acceleration( m.acc);
-      float3vector mag = m.mag; // coordinate rotation sensor->body done within calibration !
+      float3vector acc = make_body_acceleration( observations.acc);
+      float3vector mag = observations.mag; // coordinate rotation sensor->body done within calibration !
 
-      if ( c.sat_fix_type & SAT_HEADING)
+      if ( coordinates.sat_fix_type & SAT_HEADING)
         {
-  	navigator.set_attitude ( 0.0f, 0.0f, c.relPosHeading);
+  	navigator.set_attitude ( 0.0f, 0.0f, coordinates.relPosHeading);
         }
       else
         navigator.set_from_acc_mag( acc, mag); // initialize attitude from acceleration + compass
