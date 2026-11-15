@@ -433,12 +433,7 @@ void organizer_t::update_at_100_Hz( const imu_data_timed_t &m, const magnetomete
       float3vector acc = make_body_acceleration( observations.acc);
       float3vector mag = observations.mag; // coordinate rotation sensor->body done within calibration !
 
-      if ( coordinates.sat_fix_type & SAT_HEADING)
-        {
-  	navigator.set_attitude ( 0.0f, 0.0f, coordinates.relPosHeading);
-        }
-      else
-        navigator.set_from_acc_mag( acc, mag); // initialize attitude from acceleration + compass
+      navigator.set_from_acc_mag( acc, mag); // initialize attitude from acceleration + compass
     }
 
 
