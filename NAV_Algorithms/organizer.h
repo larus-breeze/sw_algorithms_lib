@@ -132,6 +132,11 @@ public:
       observations.supply_voltage = supply_voltage;
     }
 
+    void cleanup_after_landing( void)
+    {
+      navigator.cleanup_after_landing();
+    }
+
 // *************************************************************************************
 private:
 
@@ -262,11 +267,6 @@ private:
 
   //! the "FAST" update of the observed properties
   void update_at_100_Hz( const imu_data_timed_t &m, const magnetometer_data_timed_t &x_mag);
-
-  void cleanup_after_landing( void)
-  {
-    navigator.cleanup_after_landing();
-  }
 
   // return true if significant changes in configuration were made
   bool on_command( communicator_command_t command, D_GNSS_coordinates_t &coordinates, measurement_data_t &observations);
