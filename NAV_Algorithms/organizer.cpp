@@ -417,7 +417,7 @@ void organizer_t::update_at_100_Hz( const imu_data_timed_t &m, const magnetomete
     {
       navigator.update_pressure( observations.static_pressure - QNH_offset);
 
-      if( (coordinates.sat_fix_type & 0x03) > SAT_FIX_NONE)
+      if( (coordinates.sat_fix_type & 0x03) > SAT_FIX_NONE and coordinates.GNSS_MSL_altitude > ZERO)
         {
 	  navigator.update_geo_data( coordinates.latitude, coordinates.longitude);
 	  navigator.initialize_QFF_density_metering( coordinates.GNSS_MSL_altitude);
