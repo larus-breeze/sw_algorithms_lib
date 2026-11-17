@@ -43,6 +43,7 @@
 #define MAX_EXPECTED_INDUCTION_SLOPE	1.1f
 #define MAX_VELOCITY_ERROR_GNSS_M9N 	0.35f	// A M9N-GNSS shall be < 0.35m/s with a good reception
 #define MAX_VELOCITY_ERROR_GNSS_F9X	0.15f  	// A F9P-GNSS shall be < 0.15m/s with a good reception
+#define SYSTEM_ERROR_DELAY_TENTH_SECS	100	// error must persist this long in flight to raise SYSTEM_ERROR
 
 #define ACCELERATION_CALIBRATION_COUNT	100 // number of measurements
 #define ACCELERATION_CALIBRATION_WAIT	100 // delay time in 10ms units
