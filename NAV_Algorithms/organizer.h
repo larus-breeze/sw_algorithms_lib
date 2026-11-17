@@ -137,6 +137,10 @@ public:
       navigator.cleanup_after_landing();
     }
 
+    //! handle external command
+    //! @return true if significant changes in configuration were made
+    bool on_command( communicator_command_t command);
+
 // *************************************************************************************
 private:
 
@@ -274,9 +278,6 @@ private:
 
   //! the "FAST" update of the observed properties
   void update_at_100_Hz( const imu_data_timed_t &m, const magnetometer_data_timed_t &x_mag);
-
-  // return true if significant changes in configuration were made
-  bool on_command( communicator_command_t command);
 
   bool manage_attitude_setup_in_progress( void);
 
