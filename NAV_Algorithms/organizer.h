@@ -182,10 +182,17 @@ private:
     update_GNSS_data( input);
     if( (input.sat_fix_type & 0x03) > 0) // have sat fix ?
       {
-	if( state == VIRGIN and IMU_data_timestamp != 0 and pressure_data_timestamp != 0)
+	if( // we already have pressure measurements and IMU data
+	      state == VIRGIN
+	    and
+	      IMU_data_timestamp != 0
+	    and
+	      pressure_data_timestamp != 0
+	    )
 	  {
 	    state =INITIALIZED;
 	    initialize_after_first_measurement();
+	    navigator.update_geo_data( input.latitude, input.longitude);
 	  }
 
 	++magnetic_induction_update_counter;

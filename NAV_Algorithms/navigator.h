@@ -84,14 +84,6 @@ public:
 #endif
   }
 
-  void update_magnetic_induction_data( const float3vector& nav_induction)
-  {
-    ahrs.update_magnetic_induction_data( nav_induction);
-#if DEVELOPMENT_ADDITIONS
-    ahrs_magnetic.update_magnetic_induction_data( nav_induction);
-#endif
-  }
-
   void update_geo_data( float latitude_deg, float longitude_deg)
   {
     float value[3];

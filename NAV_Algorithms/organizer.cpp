@@ -407,7 +407,7 @@ void organizer_t::update_at_100_Hz( const imu_data_timed_t &m, const magnetomete
       set_acceleration_calibration( acc_calibration);
 
     setup_compass_calibrator_3d();
-    navigator.update_geo_data( ZERO, ZERO);
+    navigator.update_geo_data( ZERO, ZERO); // just to have SOME setting ...
     navigator.tune();
     state = VIRGIN;
   }
