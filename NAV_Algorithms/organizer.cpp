@@ -258,7 +258,7 @@ acceleration_calibrator_state organizer_t::manage_acceleration_calibration( cons
     return ACTIVE; // work in progress
 }
 
-bool organizer_t::manage_attitude_setup_in_progress( D_GNSS_coordinates_t &coordinates, measurement_data_t &observations)
+bool organizer_t::manage_attitude_setup_in_progress( void)
 {
   // vector averaging in case of ground or air calibration activity *********************************
   if (vector_average_organizer.counter != 0)
@@ -279,7 +279,7 @@ bool organizer_t::manage_attitude_setup_in_progress( D_GNSS_coordinates_t &coord
 }
 
 // return true if significant changes in configuration were made
-bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates_t &coordinates, measurement_data_t &observations)
+bool organizer_t::on_command( communicator_command_t command)
 {
 	  switch (command)
 	    {

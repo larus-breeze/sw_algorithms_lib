@@ -125,7 +125,7 @@ public:
   }
 
   //! write the output data for the SIL environment
-    void report_data ( state_vector_t &data, measurement_data_t &observations)
+    void report_data ( state_vector_t &data)
     {
       navigator.report_data ( data);
       observations.static_sensor_temperature = sensor_temperature;
@@ -276,9 +276,9 @@ private:
   void update_at_100_Hz( const imu_data_timed_t &m, const magnetometer_data_timed_t &x_mag);
 
   // return true if significant changes in configuration were made
-  bool on_command( communicator_command_t command, D_GNSS_coordinates_t &coordinates, measurement_data_t &observations);
+  bool on_command( communicator_command_t command);
 
-  bool manage_attitude_setup_in_progress( D_GNSS_coordinates_t &coordinates, measurement_data_t &observations);
+  bool manage_attitude_setup_in_progress( void);
 
   acceleration_calibrator_state manage_acceleration_calibration( const float3vector &acceleration);
 
