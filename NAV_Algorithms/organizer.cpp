@@ -272,6 +272,7 @@ bool organizer_t::manage_attitude_setup_in_progress( D_GNSS_coordinates_t &coord
 	      float inverse_count = 1.0f / VECTOR_AVERAGE_COUNT_SETUP;
 	      *(vector_average_organizer.destination) =
 		  vector_average_organizer.sum * inverse_count;
+	      return true;
 	    }
 	}
   return false;
