@@ -198,8 +198,9 @@ AHRS_type::update (const float3vector &gyro, const float3vector &acc,
   else
     {
 	handle_magnetic_induction (mag, external_mag, external_mag_valid, gyro, false);
-	update_blind( gyro, acc, mag, TAS);
-//	update_experimental(gyro, acc, GNSS_acceleration);
+	update_compass( gyro, acc, GNSS_acceleration);
+	//	update_blind( gyro, acc, mag, TAS);
+	//	update_experimental(gyro, acc, GNSS_acceleration);
     }
 }
 
