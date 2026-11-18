@@ -135,6 +135,27 @@ public:
     return false;
   }
 
+  //! momentary sensor health, without delay or flight-state gating
+  bool get_system_error_condition( bool GNSS_available)
+  {
+    if( ! GNSS_available) // GNSS_fix_type and speed accuracy are stale then
+      return true;
+
+    if( get_speed_accuracy_bad_status())
+      return true;
+
+    if( GNSS_type == GNSS_M9N)
+      return get_magnetic_disturbance_bad_status();
+
+    // D-GNSS: heading comes from GNSS, the magnetometer is not essential
+    return GNSS_fix_type != (SAT_FIX | SAT_HEADING);
+  }
+
+  bool is_airborne( void)
+  {
+    return airborne_detector.is_airborne();
+  }
+
   float get_GNSS_speed( void) const
   {
     return GNSS_speed;

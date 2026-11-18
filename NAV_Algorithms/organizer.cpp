@@ -395,6 +395,20 @@ bool organizer_t::on_command( communicator_command_t command, D_GNSS_coordinates
   	update_system_state_clear(MAGNETIC_DISTURBANCE_BAD);
         }
 
+      bool GNSS_available = (system_state & GNSS_AVAILABLE) != 0;
+      if( navigator.is_airborne() && navigator.get_system_error_condition( GNSS_available))
+        {
+  	if( system_error_counter < SYSTEM_ERROR_DELAY_TENTH_SECS)
+  	  ++system_error_counter;
+  	else
+  	  update_system_state_set(SYSTEM_ERROR);
+        }
+      else
+        {
+  	system_error_counter = 0;
+  	update_system_state_clear(SYSTEM_ERROR);
+        }
+
       if( landing_detected_here)
         cleanup_after_landing ();
 

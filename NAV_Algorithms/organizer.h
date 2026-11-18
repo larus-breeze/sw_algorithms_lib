@@ -71,6 +71,7 @@ public:
       accelerometer_gain(),
       QNH_offset(0.0f),
       magnetic_induction_update_counter(0),
+      system_error_counter(0),
       vector_average_organizer({ 0 }),
       vector_average_collection({ 0 }),
       fine_tune_sensor_attitude_in_progress( false),
@@ -229,6 +230,7 @@ private:
   float3vector accelerometer_gain;	//!< gain factor to be applied to the accelerometers
   float QNH_offset;   		//!< static pressure sensor offset
   unsigned magnetic_induction_update_counter; //!< timer for declination+inclination update
+  unsigned system_error_counter; //!< duration of the present in-flight error / 0.1s
   vector_average_organizer_t vector_average_organizer;
   vector_average_collection_t vector_average_collection;
   bool fine_tune_sensor_attitude_in_progress;
