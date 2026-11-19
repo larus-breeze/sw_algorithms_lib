@@ -365,7 +365,11 @@ bool organizer_t::on_command( communicator_command_t command)
 //! the "FAST" update of the observed properties
 void organizer_t::update_at_100_Hz( const imu_data_timed_t &m, const magnetometer_data_timed_t &x_mag)
   {
-    bool external_magnetometer_active = ( m.timestamp - x_mag.timestamp) < MAX_XMAG_AGE;
+    bool external_magnetometer_active =
+	( x_mag.timestamp > 0)
+	and
+	abs( m.timestamp - x_mag.timestamp) < MAX_XMAG_AGE;
+
     float3vector acc = make_body_acceleration( m.acc);
     float3vector gyro = sensor_mapping * m.gyro;
 

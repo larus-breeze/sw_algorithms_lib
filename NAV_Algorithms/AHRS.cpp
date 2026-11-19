@@ -508,7 +508,10 @@ void AHRS_type::handle_magnetic_induction (
 
   if (external_mag_valid)
     {
-      body_induction = external_compass_calibrator_3D.calibrate ( external_induction_measurement);
+      // todo patch
+//      body_induction = external_compass_calibrator_3D.calibrate ( external_induction_measurement);
+      float3vector mag_calibrated = external_compass_calibrator_3D.calibrate ( external_induction_measurement);
+      body_induction = filter_magnetic_induction (gyro, mag_calibrated);
     }
   else
     {
