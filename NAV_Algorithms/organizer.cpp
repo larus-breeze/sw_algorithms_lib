@@ -420,7 +420,7 @@ void organizer_t::update_at_100_Hz( const imu_data_timed_t &m, const magnetomete
 
       if( (coordinates.sat_fix_type & 0x03) > SAT_FIX_NONE and coordinates.GNSS_MSL_altitude > ZERO)
         {
-	  navigator.update_geo_data( coordinates.latitude, coordinates.longitude);
+	  navigator.update_geo_data( coordinates.latitude, coordinates.longitude, coordinates.year + coordinates.month / 12.0f);
 	  navigator.initialize_QFF_density_metering( coordinates.GNSS_MSL_altitude);
 	  navigator.reset_altitude ( coordinates.GNSS_MSL_altitude);
         }
