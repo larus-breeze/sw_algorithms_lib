@@ -90,7 +90,6 @@ public:
     // todo fixme take correct time here !
     magnetic_field_ned_uT( latitude_deg, longitude_deg, 2027.0f, value);
     float3vector vec_value( value);
-    vec_value.normalize(); // todo patch some day: also use field strength !
     ahrs.update_magnetic_induction_data( vec_value);
     ahrs.set_earth_rotation( latitude_deg);
 #if DEVELOPMENT_ADDITIONS
