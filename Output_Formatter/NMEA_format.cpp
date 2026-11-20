@@ -179,9 +179,8 @@ void format_GGA( const D_GNSS_coordinates_t &coordinates, char * &p)
   *p++ = (coordinates.SATS_number) % 10 + '0';
   *p++ = ',';
 
-  *p++ = '1'; // fake HDOP
-  *p++ = '.';
-  *p++ = '0';
+  to_ascii_n_decimals( (float)(coordinates.pDOP) * 0.01f, 1, p);
+
   *p++ = ',';
 
   to_ascii_n_decimals( coordinates.GNSS_MSL_altitude, 1, p);
