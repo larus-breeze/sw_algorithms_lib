@@ -173,12 +173,14 @@ void format_GGA( const D_GNSS_coordinates_t &coordinates, char * &p)
   *p++ = ',';
 
   *p++ = (coordinates.sat_fix_type & 1) != 0 ? '1' : '0';
+
   *p++ = ',';
 
   *p++ = (coordinates.SATS_number) / 10 + '0';
   *p++ = (coordinates.SATS_number) % 10 + '0';
   *p++ = ',';
 
+  // we do not have hDOP - but pDOP is a conservative upper limit
   to_ascii_n_decimals( (float)(coordinates.pDOP) * 0.01f, 1, p);
 
   *p++ = ',';
