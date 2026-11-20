@@ -48,6 +48,9 @@ uint32_t flexible_log_file_t::verify_record_get_size( uint32_t block_identifier)
   if( type == 255 and size == 255) // extended record
     return 255;
 
+  if( size == 0) // size includes the identifier itself, 0 is impossible
+    return 0;
+
   uint32_t crc_computed = CRC16( info, CRC_SEED);
   if( crc_computed != (block_identifier >> 16))
     return 0; // wrong CRC !
@@ -62,6 +65,8 @@ uint32_t flexible_log_file_t::verify_extended_record_get_size ( uint32_t record,
   crc = CRC16( (uint16_t)(extended_size), crc);
   crc = CRC16( (uint16_t)(extended_size >> 16), crc);
   if( ( (record & 0xffff) != 0xffff) || (crc != (record >> 16)))
+    return 0;
+  if( extended_size < 3) // size includes node, extended id and size itself
     return 0;
   return extended_size - 3;
 }
