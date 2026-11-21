@@ -17,7 +17,8 @@ LIB_SOURCES := $(wildcard $(LIB)/Generic_Algorithms/*.cpp $(LIB)/NAV_Algorithms/
                           $(LIB)/Output_Formatter/*.cpp $(LIB)/Persistent_Data/*.cpp)
 ARM_MATH_SOURCES := $(wildcard $(LIB)/ARM_math/*.c)
 TEST_SOURCES := test_regression.cpp $(LIB)/Output_Formatter/ascii_support.cpp \
-                $(LIB)/Persistent_Data/CRC16_table.cpp $(LIB)/Persistent_Data/flexible_log_file.cpp
+                $(LIB)/Persistent_Data/CRC16_table.cpp $(LIB)/Persistent_Data/flexible_log_file.cpp \
+                $(LIB)/Generic_Algorithms/microphone_analysis.cpp
 
 # language standards and flags as in sw_sensor's release builds (see its README, "Release toolchain")
 CXXSTD   := -std=gnu++14 -fno-exceptions -fno-rtti
