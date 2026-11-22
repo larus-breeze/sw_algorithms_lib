@@ -36,8 +36,8 @@ organizer_t::organizer_t(   D_GNSS_coordinates_t &_coordinates, measurement_data
       accelerometer_gain(),
       QNH_offset(0.0f),
       magnetic_induction_update_counter( MAGNETIC_UPDATE_TIME_TENTH_SECS), // due for renewal
-      vector_average_organizer({ 0 }),
-      vector_average_collection({ 0 }),
+      vector_average_organizer(),
+      vector_average_collection(),
       fine_tune_sensor_attitude_in_progress( false),
       acceleration_calibration_time_to_go( ACCELERATION_CALIBRATION_TIMEOUT),
       attitude_in_progress( INVALID),
@@ -427,7 +427,7 @@ void organizer_t::update_at_100_Hz( const imu_data_timed_t &m, const magnetomete
 
       if( (coordinates.sat_fix_type & 0x03) > SAT_FIX_NONE and coordinates.GNSS_MSL_altitude > ZERO)
         {
-	  navigator.update_geo_data( coordinates.latitude, coordinates.longitude, coordinates.year + coordinates.month / 12.0f);
+	  navigator.update_geo_data( (float)coordinates.latitude, (float)coordinates.longitude, coordinates.year + coordinates.month / 12.0f);
 	  navigator.initialize_QFF_density_metering( coordinates.GNSS_MSL_altitude);
 	  navigator.reset_altitude ( coordinates.GNSS_MSL_altitude);
         }

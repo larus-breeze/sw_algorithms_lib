@@ -53,13 +53,22 @@ typedef enum
   DONE
 } acceleration_calibrator_state;
 
-typedef struct
+class vector_average_organizer_t
 {
+public:
+  vector_average_organizer_t( void)
+  : source(0),
+    destination(0),
+    sum(0),
+    counter(0)
+  {}
+
   float3vector * source;
   float3vector * destination;
   float3vector sum;
   unsigned counter;
-} vector_average_organizer_t;
+
+};
 
 class input_data_t
 {
@@ -206,20 +215,19 @@ private:
 	  {
 	    state =INITIALIZED;
 	    initialize_after_first_measurement();
-	    navigator.update_geo_data( input.latitude, input.longitude);
 	  }
 
 	++magnetic_induction_update_counter;
 	if( magnetic_induction_update_counter > MAGNETIC_UPDATE_TIME_TENTH_SECS)
 	  {
 	    magnetic_induction_update_counter=0;
-	    navigator.update_geo_data( input.latitude, input.longitude);
+	    navigator.update_geo_data( (float)(input.latitude), (float)(input.longitude));
 	  }
       }
     return true;
   }
 
-  bool on_new_information( const uint32_t &input)
+  bool on_new_information( const uint32_t)
   {
     return true;
   }

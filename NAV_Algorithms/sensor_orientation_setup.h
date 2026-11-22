@@ -27,12 +27,18 @@
 
 #include "float3vector.h"
 
-typedef struct
+class vector_average_collection_t
 {
-  float3vector acc_observed_left;
-  float3vector acc_observed_right;
-  float3vector acc_observed_level;
-} vector_average_collection_t;
+public:
+  vector_average_collection_t( void)
+  : acc_observed_left(),
+    acc_observed_right(),
+    acc_observed_level()
+  {}
+    float3vector acc_observed_left;
+    float3vector acc_observed_right;
+    float3vector acc_observed_level;
+};
 
 void setup_compass_calibrator_3d( void);
 
