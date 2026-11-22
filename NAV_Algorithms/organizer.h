@@ -141,6 +141,16 @@ public:
     //! @return true if significant changes in configuration were made
     bool on_command( communicator_command_t command);
 
+    bool landing_has_been_detected( void)
+    {
+      if( landing_detected)
+	{
+	  landing_detected = false;
+	  return true;
+	}
+      return false;
+    }
+
 // *************************************************************************************
 private:
 
@@ -153,9 +163,9 @@ private:
       {
 	counter_10Hz = 0;
 	update_status_flags();
-	bool landing_detected_here = navigator.update_at_10Hz ();
-	if( landing_detected_here)
-	  cleanup_after_landing ();
+	landing_detected = navigator.update_at_10Hz ();
+	if( landing_detected)
+	    cleanup_after_landing ();
       }
     return true;
   }
@@ -279,13 +289,11 @@ private:
   //! the "FAST" update of the observed properties
   void update_at_100_Hz( const imu_data_timed_t &m, const magnetometer_data_timed_t &x_mag);
 
-  bool manage_attitude_setup_in_progress( void);
-
-  acceleration_calibrator_state manage_acceleration_calibration( const float3vector &acceleration);
-
 private:
   void update_sensor_orientation_data( const vector_average_collection_t & values);
   void fine_tune_sensor_orientation( const vector_average_collection_t & values);
+  acceleration_calibrator_state manage_acceleration_calibration( const float3vector &acceleration);
+  bool manage_attitude_setup_in_progress( void);
 
   //! apply accelerometer calibration: per axis bias / g and sensitivity
   bool set_acceleration_calibration( const float calibration[6])
@@ -359,6 +367,6 @@ private:
     VIRGIN,
     INITIALIZED,
   } state;
-
+  bool landing_detected;
   };
 #endif /* ORGANIZER_H_ */

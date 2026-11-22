@@ -50,7 +50,8 @@ organizer_t::organizer_t(   D_GNSS_coordinates_t &_coordinates, measurement_data
       pressure_data_timestamp(0),
       sensor_temperature(0),
       supply_voltage(0),
-      state( VIRGIN)
+      state( VIRGIN),
+      landing_detected( false)
   {
     for( unsigned i=0; i<3; ++i) // poor CPP language ...
       accelerometer_gain[i]=ONE;
@@ -374,6 +375,8 @@ void organizer_t::update_at_100_Hz( const imu_data_timed_t &m, const magnetomete
     float3vector gyro = sensor_mapping * m.gyro;
 
     navigator.update_at_100Hz ( acc, m.mag, gyro, x_mag.induction, external_magnetometer_active);
+
+    manage_attitude_setup_in_progress();
 
     if( acceleration_calibration_time_to_go > 0)
       {
