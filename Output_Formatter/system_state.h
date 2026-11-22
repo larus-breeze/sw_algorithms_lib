@@ -19,7 +19,8 @@ enum availability_bits
 	PITOT_SENSOR_AVAILABLE 		= 0x200,
 	AMBIENT_AIR_SENSOR_AVAILABLE	= 0x400,
 	EXTERNAL_MAGNETOMETER_AVAILABLE = 0x800,
-	HORIZON_NOT_AVAILABLE		= 0x10000
+	HORIZON_NOT_AVAILABLE		= 0x10000,
+	SYSTEM_ERROR			= 0x20000
 };
 
 extern uint32_t system_state; //!< bits collected from availability_bits
