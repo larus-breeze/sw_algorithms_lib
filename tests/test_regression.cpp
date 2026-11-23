@@ -15,6 +15,7 @@
 #include "ascii_support.h"
 #include "abstract_EEPROM_storage.h"
 #include "flexible_log_file.h"
+#include "microphone_analysis.h"
 
 // ---- environment stubs --------------------------------------------------
 EEPROM_file_system<LOWEST_UNUSED_EEPROM_ID> permanent_data_file;
@@ -143,6 +144,79 @@ static void test_ascii_formatting( void)
     }
 }
 
+// feed a sine (amplitude relative to full scale) plus tiny noise for 3 s
+static microphone_record_t microphone_tone( float frequency, float amplitude, unsigned *records = 0)
+{
+  microphone_analysis_t analysis;
+  uint32_t random = 12345;
+  unsigned n_records = 0;
+  for( unsigned i = 0; i < 3 * (unsigned)MIC_SAMPLE_RATE_HZ; ++i)
+    {
+      random = random * 1664525u + 1013904223u;
+      float noise = ((float)(random >> 8) / 16777216.0f - 0.5f) * 2e-5f;
+      float x = amplitude * sinf( 2.0f * (float)M_PI * frequency * (float)i / MIC_SAMPLE_RATE_HZ) + noise;
+      if( analysis.update( (int32_t)( x * 2147483647.0f)))
+	++n_records;
+    }
+  if( records)
+    *records = n_records;
+  return analysis.get_record();
+}
+
+static void test_microphone_analysis( void)
+{
+  unsigned records;
+  microphone_record_t r = microphone_tone( 150.0f, 0.0f, &records);
+  // 3 s = 0.5 s settling + 10 records of 250 ms
+  check( records == 10, "microphone: record rate");
+  check( r.ENL == ENL_BASELINE && r.status == 0, "microphone: baseline 010 without noise");
+
+  {
+    microphone_analysis_t analysis;
+    for( unsigned i = 0; i < 8000; ++i)
+      analysis.update( 0);
+    check( analysis.get_ENL() == ENL_UNSERVICEABLE
+	   && (analysis.get_record().status & MIC_STATUS_NO_SIGNAL), "microphone: no signal reported as 000");
+  }
+
+  r = microphone_tone( ENL_CENTER_FREQUENCY_HZ, 0.05012f); // -26 dBFS
+  check( r.ENL >= 890 && r.ENL <= 910, "microphone: ENL calibration point");
+  check( fabsf( r.ENL_band_dBFS + 26.0f) < 0.5f, "microphone: ENL band level");
+  check( microphone_tone( ENL_CENTER_FREQUENCY_HZ, 0.5f).ENL == ENL_MAXIMUM, "microphone: ENL saturates at 999");
+
+  // bell shaped sensitivity around the center frequency
+  unsigned enl_center = microphone_tone( 150.0f, 0.03f).ENL;
+  unsigned enl_50 = microphone_tone( 50.0f, 0.03f).ENL;
+  unsigned enl_400 = microphone_tone( 400.0f, 0.03f).ENL;
+  unsigned enl_2000 = microphone_tone( 2000.0f, 0.03f).ENL;
+  check( enl_center > 2 * enl_50 && enl_center > 2 * enl_400 && enl_400 > enl_2000 && enl_2000 < 30,
+	 "microphone: ENL band-pass");
+
+  r = microphone_tone( 1000.0f, 0.5f); // -6 dBFS
+  check( fabsf( r.broadband_dBFS + 6.0f) < 0.3f, "microphone: broadband level");
+  check( fabsf( r.peak_dBFS + 6.0f) < 0.1f, "microphone: peak level");
+  check( fabsf( r.band_dBFS[MIC_BAND_1KHZ] + 6.0f) < 0.3f, "microphone: 1 kHz band level");
+  check( r.band_dBFS[MIC_BAND_1KHZ - 1] < -6.0f - 15.0f && r.band_dBFS[MIC_BAND_1KHZ + 1] < -6.0f - 15.0f,
+	 "microphone: neighbour bands attenuated");
+  check( r.record_count == 10, "microphone: record counter");
+
+  // every band at its own center frequency, lowest and highest included
+  bool all_bands_ok = true;
+  for( unsigned i = 0; i < MIC_BANDS; ++i)
+    {
+      microphone_record_t b = microphone_tone( microphone_analysis_t::band_center_frequency( i), 0.1f); // -20 dBFS
+      if( fabsf( b.band_dBFS[i] + 20.0f) > 0.3f)
+	all_bands_ok = false;
+    }
+  check( all_bands_ok, "microphone: all third-octave bands calibrated");
+
+  // the decimators must keep frequencies above an octave's band from
+  // folding into it: 3 kHz would alias to 1 kHz at a 4 kHz rate
+  r = microphone_tone( 3000.0f, 0.5f);
+  check( r.band_dBFS[MIC_BAND_1KHZ] < -6.0f - 30.0f && r.band_dBFS[MIC_BAND_1KHZ - 3] < -6.0f - 30.0f,
+	 "microphone: no aliasing into lower octaves");
+}
+
 int main( void)
 {
   test_eeprom_file_system();
@@ -150,6 +224,7 @@ int main( void)
   test_quaternion();
   test_least_square_fit();
   test_ascii_formatting();
+  test_microphone_analysis();
 
   printf( "%u checks, %u failed\n", checks, failures);
   return failures == 0 ? 0 : 1;

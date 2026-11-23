@@ -19,6 +19,8 @@
     D_GNSS_DATA = 31,		//!< abstract D-GNSS receiver output
     D_GNSS_ACC  = 32,		//!< abstract D-GNSS receiver accuracy
 
+    MICROPHONE_DATA = 35,	//!< ENL and band levels, microphone_record_t, 4 Hz
+
     CRASH_LOG_REGISTERS = 40,	//!< processor register and exception data
     RTOS_TRACE_DATA = 41,	//!< Post-mortem snapshot of RTOS-events
     SYSTEM_STATE_VECTOR = 42,	//!< All significant state-vector variables
