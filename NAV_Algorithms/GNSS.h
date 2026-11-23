@@ -250,7 +250,7 @@ public:
   GNSS_Result update( const uint8_t * data);
   GNSS_Result update_delta_X20D( const uint8_t * data);
   GNSS_Result update_delta_F9x( const uint8_t * data);
-  GNSS_Result update_combined ( const uint8_t *data, GNSS_configration_t gnss);
+  GNSS_Result update_combined ( const uint8_t *data, GNSS_configuration_t gnss);
 
   void report_dead_GNSS( void);
 

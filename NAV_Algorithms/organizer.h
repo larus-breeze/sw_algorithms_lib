@@ -283,11 +283,6 @@ private:
     navigator.set_attitude ( roll, pitch, present_heading);
   }
 
-  void set_GNSS_type(GNSS_configration_t configuration)
-  {
-    navigator.set_gnss_type(configuration);
-  }
-
   //! all that needs to be done when a new data set comes from the GNSS receiver
   void update_GNSS_data( const D_GNSS_coordinates_t &coordinates)
   {

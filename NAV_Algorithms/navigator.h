@@ -66,8 +66,8 @@ public:
 	 GNSS_acceleration(),
 	 GNSS_heading(),
 	 GNSS_negative_altitude( ZERO),
-	 GNSS_fix_type( 0),
-	 GNSS_type(GNSS_TYPE_NOT_DEFINED),
+	 GNSS_fix_type( ),
+	 GNSS_type( (GNSS_configuration_t)round( configuration( GNSS_CONFIGURATION))),
 	 vario_integrator( SLOW_SAMPLING_TIME / configuration( VARIO_INT_TC) ),
 	 TAS_averager(1.0f / 1.0f / 100.0f),
 	 IAS_averager(1.0f / 1.0f / 100.0f)
@@ -95,11 +95,6 @@ public:
     ahrs_magnetic.update_magnetic_induction_data( vec_value);
     ahrs_magnetic.set_earth_rotation( latitude_deg);
 #endif
-  }
-
-  void set_gnss_type(GNSS_configration_t type)
-  {
-    GNSS_type = type;
   }
 
   float get_pressure_altitude( void) const
@@ -309,7 +304,7 @@ private:
   float 		GNSS_heading;
   float 		GNSS_negative_altitude;
   unsigned		GNSS_fix_type;
-  GNSS_configration_t 	GNSS_type;
+  GNSS_configuration_t 	GNSS_type;
 
   soaring_flight_averager< float, false> vario_integrator;
   pt2<float,float> 	TAS_averager;

@@ -38,7 +38,7 @@ typedef union
     int16_t  i16;
   } EEPROM_data_t;
 
-enum GNSS_configration_t
+enum GNSS_configuration_t
 {
   GNSS_TYPE_NOT_DEFINED=0,
   GNSS_M9N, 	// single frequency module, usually on PCB
